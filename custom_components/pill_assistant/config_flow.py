@@ -97,7 +97,14 @@ class PillAssistantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema(
                 {
                     vol.Required(CONF_SCHEDULE_TIMES): selector(
-                        {"text": {"multiple": True}}
+                        {
+                            "select": {
+                                "options": [],
+                                "custom_value": True,
+                                "multiple": True,
+                                "mode": "dropdown",
+                            }
+                        }
                     ),
                     vol.Required(
                         CONF_SCHEDULE_DAYS, default=DEFAULT_SCHEDULE_DAYS
@@ -169,7 +176,7 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
 
     def __init__(self, config_entry):
         """Initialize options flow."""
-        self.config_entry = config_entry
+        self._config_entry = config_entry
 
     def _get_notify_services(self):
         """Get list of available notify services."""
@@ -187,12 +194,12 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
         if user_input is not None:
             # Update the config entry with new data
             self.hass.config_entries.async_update_entry(
-                self.config_entry,
-                data={**self.config_entry.data, **user_input},
+                self._config_entry,
+                data={**self._config_entry.data, **user_input},
             )
             return self.async_create_entry(title="", data={})
 
-        current_data = self.config_entry.data
+        current_data = self._config_entry.data
 
         # Get available notification services
         notify_services = self._get_notify_services()
@@ -211,7 +218,16 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
             vol.Required(
                 CONF_SCHEDULE_TIMES,
                 default=current_data.get(CONF_SCHEDULE_TIMES, []),
-            ): selector({"text": {"multiple": True}}),
+            ): selector(
+                {
+                    "select": {
+                        "options": [],
+                        "custom_value": True,
+                        "multiple": True,
+                        "mode": "dropdown",
+                    }
+                }
+            ),
             vol.Required(
                 CONF_SCHEDULE_DAYS,
                 default=current_data.get(CONF_SCHEDULE_DAYS, DEFAULT_SCHEDULE_DAYS),
