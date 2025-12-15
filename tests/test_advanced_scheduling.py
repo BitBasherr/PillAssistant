@@ -28,7 +28,7 @@ async def test_relative_medication_schedule_config(hass: HomeAssistant):
     base_result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
     )
-    
+
     base_result = await hass.config_entries.flow.async_configure(
         base_result["flow_id"],
         user_input={
@@ -37,14 +37,14 @@ async def test_relative_medication_schedule_config(hass: HomeAssistant):
             CONF_DOSAGE_UNIT: "mg",
         },
     )
-    
+
     base_result = await hass.config_entries.flow.async_configure(
         base_result["flow_id"],
         user_input={
             "schedule_type": "fixed_time",
         },
     )
-    
+
     base_result = await hass.config_entries.flow.async_configure(
         base_result["flow_id"],
         user_input={
@@ -52,7 +52,7 @@ async def test_relative_medication_schedule_config(hass: HomeAssistant):
             CONF_SCHEDULE_DAYS: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
         },
     )
-    
+
     base_result = await hass.config_entries.flow.async_configure(
         base_result["flow_id"],
         user_input={
@@ -61,15 +61,15 @@ async def test_relative_medication_schedule_config(hass: HomeAssistant):
             "create_test_button": False,
         },
     )
-    
+
     assert base_result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
     base_med_id = base_result["result"].entry_id
-    
+
     # Now create a relative medication
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
     )
-    
+
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={
@@ -78,14 +78,14 @@ async def test_relative_medication_schedule_config(hass: HomeAssistant):
             CONF_DOSAGE_UNIT: "mg",
         },
     )
-    
+
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={
             "schedule_type": "relative_medication",
         },
     )
-    
+
     # Now configure relative scheduling
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
@@ -96,7 +96,7 @@ async def test_relative_medication_schedule_config(hass: HomeAssistant):
             CONF_SCHEDULE_DAYS: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
         },
     )
-    
+
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={
@@ -105,7 +105,7 @@ async def test_relative_medication_schedule_config(hass: HomeAssistant):
             "create_test_button": False,
         },
     )
-    
+
     assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
     assert result["data"][CONF_SCHEDULE_TYPE] == "relative_medication"
     assert result["data"][CONF_RELATIVE_TO_MEDICATION] == base_med_id
@@ -118,7 +118,7 @@ async def test_relative_sensor_schedule_config(hass: HomeAssistant):
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
     )
-    
+
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={
@@ -127,14 +127,14 @@ async def test_relative_sensor_schedule_config(hass: HomeAssistant):
             CONF_DOSAGE_UNIT: "mg",
         },
     )
-    
+
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={
             "schedule_type": "relative_sensor",
         },
     )
-    
+
     # Configure sensor-based scheduling
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
@@ -145,7 +145,7 @@ async def test_relative_sensor_schedule_config(hass: HomeAssistant):
             CONF_SCHEDULE_DAYS: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
         },
     )
-    
+
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={
@@ -154,7 +154,7 @@ async def test_relative_sensor_schedule_config(hass: HomeAssistant):
             "create_test_button": False,
         },
     )
-    
+
     assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
     assert result["data"][CONF_SCHEDULE_TYPE] == "relative_sensor"
     assert result["data"][CONF_RELATIVE_TO_SENSOR] == "binary_sensor.wake_up"
@@ -181,7 +181,7 @@ async def test_relative_medication_next_dose_calculation(hass: HomeAssistant):
     base_entry.add_to_hass(hass)
     await hass.config_entries.async_setup(base_entry.entry_id)
     await hass.async_block_till_done()
-    
+
     # Take the base medication
     await hass.services.async_call(
         DOMAIN,
@@ -190,7 +190,7 @@ async def test_relative_medication_next_dose_calculation(hass: HomeAssistant):
         blocking=True,
     )
     await hass.async_block_till_done()
-    
+
     # Create relative medication (2 hours after base)
     rel_entry = MockConfigEntry(
         domain=DOMAIN,
@@ -210,13 +210,15 @@ async def test_relative_medication_next_dose_calculation(hass: HomeAssistant):
     rel_entry.add_to_hass(hass)
     await hass.config_entries.async_setup(rel_entry.entry_id)
     await hass.async_block_till_done()
-    
+
     # Get the relative medication sensor
     entity_id = "sensor.relative_med"
     state = hass.states.get(entity_id)
-    
+
     assert state is not None
-    
+
     # Check that next_dose_time is set (should be 2 hours after base med was taken)
     next_dose_time = state.attributes.get("next_dose_time")
-    assert next_dose_time is not None, "Next dose time should be calculated based on base medication"
+    assert (
+        next_dose_time is not None
+    ), "Next dose time should be calculated based on base medication"

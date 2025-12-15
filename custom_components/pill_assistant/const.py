@@ -18,11 +18,19 @@ CONF_NOTES = "notes"
 CONF_NOTIFY_SERVICES = "notify_services"  # List of notification services to use
 
 # Advanced scheduling
-CONF_SCHEDULE_TYPE = "schedule_type"  # "fixed_time", "relative_medication", "relative_sensor"
-CONF_RELATIVE_TO_MEDICATION = "relative_to_medication"  # Medication ID to schedule relative to
-CONF_RELATIVE_TO_SENSOR = "relative_to_sensor"  # Sensor entity_id to schedule relative to
+CONF_SCHEDULE_TYPE = (
+    "schedule_type"  # "fixed_time", "relative_medication", "relative_sensor"
+)
+CONF_RELATIVE_TO_MEDICATION = (
+    "relative_to_medication"  # Medication ID to schedule relative to
+)
+CONF_RELATIVE_TO_SENSOR = (
+    "relative_to_sensor"  # Sensor entity_id to schedule relative to
+)
 CONF_RELATIVE_OFFSET_HOURS = "relative_offset_hours"  # Hours offset from reference
-CONF_RELATIVE_OFFSET_MINUTES = "relative_offset_minutes"  # Minutes offset from reference
+CONF_RELATIVE_OFFSET_MINUTES = (
+    "relative_offset_minutes"  # Minutes offset from reference
+)
 
 # Default values
 DEFAULT_DOSAGE_UNIT = "pill(s)"

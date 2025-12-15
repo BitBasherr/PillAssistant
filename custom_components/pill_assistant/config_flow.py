@@ -94,7 +94,7 @@ class PillAssistantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             schedule_type = user_input.get(CONF_SCHEDULE_TYPE, DEFAULT_SCHEDULE_TYPE)
             self._data.update(user_input)
-            
+
             # Route to appropriate schedule configuration step
             if schedule_type == "fixed_time":
                 return await self.async_step_schedule_fixed()
@@ -182,14 +182,15 @@ class PillAssistantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             # Get all config entries for this domain
             for entry in self.hass.config_entries.async_entries(DOMAIN):
                 med_name = entry.data.get(CONF_MEDICATION_NAME, "Unknown")
-                existing_meds.append({
-                    "label": med_name,
-                    "value": entry.entry_id
-                })
+                existing_meds.append({"label": med_name, "value": entry.entry_id})
 
         schema_dict = {
-            vol.Required(CONF_RELATIVE_OFFSET_HOURS, default=DEFAULT_RELATIVE_OFFSET_HOURS): vol.Coerce(int),
-            vol.Required(CONF_RELATIVE_OFFSET_MINUTES, default=DEFAULT_RELATIVE_OFFSET_MINUTES): vol.Coerce(int),
+            vol.Required(
+                CONF_RELATIVE_OFFSET_HOURS, default=DEFAULT_RELATIVE_OFFSET_HOURS
+            ): vol.Coerce(int),
+            vol.Required(
+                CONF_RELATIVE_OFFSET_MINUTES, default=DEFAULT_RELATIVE_OFFSET_MINUTES
+            ): vol.Coerce(int),
             vol.Required(
                 CONF_SCHEDULE_DAYS, default=DEFAULT_SCHEDULE_DAYS
             ): SELECT_DAYS,
@@ -234,8 +235,14 @@ class PillAssistantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             }
                         }
                     ),
-                    vol.Required(CONF_RELATIVE_OFFSET_HOURS, default=DEFAULT_RELATIVE_OFFSET_HOURS): vol.Coerce(int),
-                    vol.Required(CONF_RELATIVE_OFFSET_MINUTES, default=DEFAULT_RELATIVE_OFFSET_MINUTES): vol.Coerce(int),
+                    vol.Required(
+                        CONF_RELATIVE_OFFSET_HOURS,
+                        default=DEFAULT_RELATIVE_OFFSET_HOURS,
+                    ): vol.Coerce(int),
+                    vol.Required(
+                        CONF_RELATIVE_OFFSET_MINUTES,
+                        default=DEFAULT_RELATIVE_OFFSET_MINUTES,
+                    ): vol.Coerce(int),
                     vol.Required(
                         CONF_SCHEDULE_DAYS, default=DEFAULT_SCHEDULE_DAYS
                     ): SELECT_DAYS,
@@ -265,7 +272,7 @@ class PillAssistantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 title=self._data[CONF_MEDICATION_NAME],
                 data=self._data,
             )
-            
+
             # If requested, create input_button helper for test notifications
             if user_input.get(CONF_CREATE_TEST_BUTTON, DEFAULT_CREATE_TEST_BUTTON):
                 try:
@@ -273,9 +280,10 @@ class PillAssistantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 except Exception as e:
                     # Log error but don't fail the entire setup
                     import logging
+
                     _LOGGER = logging.getLogger(__name__)
                     _LOGGER.warning("Failed to create test button: %s", e)
-            
+
             return entry
 
         # Get available notification services
@@ -317,7 +325,7 @@ class PillAssistantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Create an input_button helper for test notifications."""
         # Sanitize medication name for entity_id
         button_name = f"test_{medication_name.lower().replace(' ', '_')}_notification"
-        
+
         # Create input_button using the input_button service
         await self.hass.services.async_call(
             "input_button",
@@ -361,7 +369,7 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
                 self._config_entry,
                 data={**self._config_entry.data, **user_input},
             )
-            
+
             # If requested, create input_button helper for test notifications
             if user_input.get(CONF_CREATE_TEST_BUTTON, False):
                 try:
@@ -369,9 +377,10 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
                 except Exception as e:
                     # Log error but don't fail the entire update
                     import logging
+
                     _LOGGER = logging.getLogger(__name__)
                     _LOGGER.warning("Failed to create test button: %s", e)
-            
+
             return self.async_create_entry(title="", data={})
 
         current_data = self._config_entry.data
@@ -407,10 +416,12 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
 
         # Add schedule-type specific fields
         if schedule_type == "fixed_time":
-            schema_dict[vol.Required(
-                CONF_SCHEDULE_TIMES,
-                default=current_data.get(CONF_SCHEDULE_TIMES, []),
-            )] = selector(
+            schema_dict[
+                vol.Required(
+                    CONF_SCHEDULE_TIMES,
+                    default=current_data.get(CONF_SCHEDULE_TIMES, []),
+                )
+            ] = selector(
                 {
                     "select": {
                         "options": [],
@@ -426,16 +437,18 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
             for entry in self.hass.config_entries.async_entries(DOMAIN):
                 if entry.entry_id != self._config_entry.entry_id:
                     med_name = entry.data.get(CONF_MEDICATION_NAME, "Unknown")
-                    existing_meds.append({
-                        "label": med_name,
-                        "value": entry.entry_id
-                    })
-            
+                    existing_meds.append({"label": med_name, "value": entry.entry_id})
+
             if existing_meds:
-                schema_dict[vol.Required(
-                    CONF_RELATIVE_TO_MEDICATION,
-                    default=current_data.get(CONF_RELATIVE_TO_MEDICATION, existing_meds[0]["value"] if existing_meds else ""),
-                )] = selector(
+                schema_dict[
+                    vol.Required(
+                        CONF_RELATIVE_TO_MEDICATION,
+                        default=current_data.get(
+                            CONF_RELATIVE_TO_MEDICATION,
+                            existing_meds[0]["value"] if existing_meds else "",
+                        ),
+                    )
+                ] = selector(
                     {
                         "select": {
                             "options": existing_meds,
@@ -443,55 +456,85 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
                         }
                     }
                 )
-            
-            schema_dict[vol.Required(
-                CONF_RELATIVE_OFFSET_HOURS,
-                default=current_data.get(CONF_RELATIVE_OFFSET_HOURS, DEFAULT_RELATIVE_OFFSET_HOURS),
-            )] = vol.Coerce(int)
-            schema_dict[vol.Required(
-                CONF_RELATIVE_OFFSET_MINUTES,
-                default=current_data.get(CONF_RELATIVE_OFFSET_MINUTES, DEFAULT_RELATIVE_OFFSET_MINUTES),
-            )] = vol.Coerce(int)
+
+            schema_dict[
+                vol.Required(
+                    CONF_RELATIVE_OFFSET_HOURS,
+                    default=current_data.get(
+                        CONF_RELATIVE_OFFSET_HOURS, DEFAULT_RELATIVE_OFFSET_HOURS
+                    ),
+                )
+            ] = vol.Coerce(int)
+            schema_dict[
+                vol.Required(
+                    CONF_RELATIVE_OFFSET_MINUTES,
+                    default=current_data.get(
+                        CONF_RELATIVE_OFFSET_MINUTES, DEFAULT_RELATIVE_OFFSET_MINUTES
+                    ),
+                )
+            ] = vol.Coerce(int)
         elif schedule_type == "relative_sensor":
-            schema_dict[vol.Required(
-                CONF_RELATIVE_TO_SENSOR,
-                default=current_data.get(CONF_RELATIVE_TO_SENSOR, ""),
-            )] = selector(
+            schema_dict[
+                vol.Required(
+                    CONF_RELATIVE_TO_SENSOR,
+                    default=current_data.get(CONF_RELATIVE_TO_SENSOR, ""),
+                )
+            ] = selector(
                 {
                     "entity": {
                         "domain": ["binary_sensor", "sensor"],
                     }
                 }
             )
-            schema_dict[vol.Required(
-                CONF_RELATIVE_OFFSET_HOURS,
-                default=current_data.get(CONF_RELATIVE_OFFSET_HOURS, DEFAULT_RELATIVE_OFFSET_HOURS),
-            )] = vol.Coerce(int)
-            schema_dict[vol.Required(
-                CONF_RELATIVE_OFFSET_MINUTES,
-                default=current_data.get(CONF_RELATIVE_OFFSET_MINUTES, DEFAULT_RELATIVE_OFFSET_MINUTES),
-            )] = vol.Coerce(int)
+            schema_dict[
+                vol.Required(
+                    CONF_RELATIVE_OFFSET_HOURS,
+                    default=current_data.get(
+                        CONF_RELATIVE_OFFSET_HOURS, DEFAULT_RELATIVE_OFFSET_HOURS
+                    ),
+                )
+            ] = vol.Coerce(int)
+            schema_dict[
+                vol.Required(
+                    CONF_RELATIVE_OFFSET_MINUTES,
+                    default=current_data.get(
+                        CONF_RELATIVE_OFFSET_MINUTES, DEFAULT_RELATIVE_OFFSET_MINUTES
+                    ),
+                )
+            ] = vol.Coerce(int)
 
         # Add common fields
-        schema_dict[vol.Required(
-            CONF_SCHEDULE_DAYS,
-            default=current_data.get(CONF_SCHEDULE_DAYS, DEFAULT_SCHEDULE_DAYS),
-        )] = SELECT_DAYS
-        schema_dict[vol.Required(
-            CONF_REFILL_AMOUNT,
-            default=current_data.get(CONF_REFILL_AMOUNT, 30),
-        )] = vol.Coerce(int)
-        schema_dict[vol.Required(
-            CONF_REFILL_REMINDER_DAYS,
-            default=current_data.get(
-                CONF_REFILL_REMINDER_DAYS, DEFAULT_REFILL_REMINDER_DAYS
-            ),
-        )] = vol.Coerce(int)
-        schema_dict[vol.Optional(
-            CONF_SNOOZE_DURATION_MINUTES,
-            default=current_data.get(CONF_SNOOZE_DURATION_MINUTES, DEFAULT_SNOOZE_DURATION_MINUTES),
-        )] = vol.Coerce(int)
-        schema_dict[vol.Optional(CONF_NOTES, default=current_data.get(CONF_NOTES, ""))] = str
+        schema_dict[
+            vol.Required(
+                CONF_SCHEDULE_DAYS,
+                default=current_data.get(CONF_SCHEDULE_DAYS, DEFAULT_SCHEDULE_DAYS),
+            )
+        ] = SELECT_DAYS
+        schema_dict[
+            vol.Required(
+                CONF_REFILL_AMOUNT,
+                default=current_data.get(CONF_REFILL_AMOUNT, 30),
+            )
+        ] = vol.Coerce(int)
+        schema_dict[
+            vol.Required(
+                CONF_REFILL_REMINDER_DAYS,
+                default=current_data.get(
+                    CONF_REFILL_REMINDER_DAYS, DEFAULT_REFILL_REMINDER_DAYS
+                ),
+            )
+        ] = vol.Coerce(int)
+        schema_dict[
+            vol.Optional(
+                CONF_SNOOZE_DURATION_MINUTES,
+                default=current_data.get(
+                    CONF_SNOOZE_DURATION_MINUTES, DEFAULT_SNOOZE_DURATION_MINUTES
+                ),
+            )
+        ] = vol.Coerce(int)
+        schema_dict[
+            vol.Optional(CONF_NOTES, default=current_data.get(CONF_NOTES, ""))
+        ] = str
         schema_dict[vol.Optional(CONF_CREATE_TEST_BUTTON, default=False)] = bool
 
         # Add notification service selector if services are available
@@ -520,7 +563,7 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
         """Create an input_button helper for test notifications."""
         # Sanitize medication name for entity_id
         button_name = f"test_{medication_name.lower().replace(' ', '_')}_notification"
-        
+
         # Create input_button using the input_button service
         await self.hass.services.async_call(
             "input_button",

@@ -141,9 +141,9 @@ class PillAssistantSensor(SensorEntity):
         """Calculate the next dose time based on schedule type."""
         schedule_type = self._entry.data.get(CONF_SCHEDULE_TYPE, DEFAULT_SCHEDULE_TYPE)
         schedule_days = self._entry.data.get(CONF_SCHEDULE_DAYS, [])
-        
+
         now = dt_util.now()
-        
+
         # Map full day names to 3-letter abbreviations
         day_map = {
             "monday": "mon",
@@ -154,7 +154,7 @@ class PillAssistantSensor(SensorEntity):
             "saturday": "sat",
             "sunday": "sun",
         }
-        
+
         # Normalize schedule_days
         normalized_days = []
         for day in schedule_days:
@@ -163,87 +163,91 @@ class PillAssistantSensor(SensorEntity):
                 normalized_days.append(day_lower)
             elif day_lower in day_map:
                 normalized_days.append(day_map[day_lower])
-        
+
         if schedule_type == "fixed_time":
             return self._calculate_fixed_time_dose(normalized_days)
         elif schedule_type == "relative_medication":
             return self._calculate_relative_medication_dose(normalized_days)
         elif schedule_type == "relative_sensor":
             return self._calculate_relative_sensor_dose(normalized_days)
-        
+
         return None
-    
+
     def _calculate_fixed_time_dose(self, normalized_days: list) -> datetime | None:
         """Calculate next dose for fixed time schedule."""
         schedule_times = self._entry.data.get(CONF_SCHEDULE_TIMES, [])
-        
+
         if not schedule_times or not normalized_days:
             return None
-        
+
         now = dt_util.now()
-        
+
         # Find next scheduled time
         for day_offset in range(8):  # Check next 7 days plus today
             check_date = now + timedelta(days=day_offset)
             check_day = check_date.strftime("%a").lower()[:3]
-            
+
             if check_day not in normalized_days:
                 continue
-            
+
             for time_str in schedule_times:
                 try:
                     # Handle both single time and list of times
                     if isinstance(time_str, list):
                         time_str = time_str[0] if time_str else "00:00"
-                    
+
                     hour, minute = map(int, time_str.split(":"))
                     dose_time = check_date.replace(
                         hour=hour, minute=minute, second=0, microsecond=0
                     )
-                    
+
                     # Only return future times
                     if dose_time > now:
                         return dose_time
                 except (ValueError, AttributeError) as e:
                     _LOGGER.error("Error parsing time %s: %s", time_str, e)
                     continue
-        
+
         return None
-    
-    def _calculate_relative_medication_dose(self, normalized_days: list) -> datetime | None:
+
+    def _calculate_relative_medication_dose(
+        self, normalized_days: list
+    ) -> datetime | None:
         """Calculate next dose relative to another medication."""
         rel_med_id = self._entry.data.get(CONF_RELATIVE_TO_MEDICATION)
         offset_hours = self._entry.data.get(CONF_RELATIVE_OFFSET_HOURS, 0)
         offset_minutes = self._entry.data.get(CONF_RELATIVE_OFFSET_MINUTES, 0)
-        
+
         if not rel_med_id:
             return None
-        
+
         # Get the reference medication's last taken time
         if rel_med_id not in self.hass.data[DOMAIN]:
             return None
-        
+
         ref_entry_data = self.hass.data[DOMAIN][rel_med_id]
         ref_storage_data = ref_entry_data["storage_data"]
         ref_med_data = ref_storage_data["medications"].get(rel_med_id, {})
         ref_last_taken_str = ref_med_data.get("last_taken")
-        
+
         if not ref_last_taken_str:
             # If reference medication hasn't been taken yet, return None
             return None
-        
+
         try:
             ref_last_taken = datetime.fromisoformat(ref_last_taken_str)
         except (ValueError, TypeError):
             return None
-        
+
         # Calculate next dose time as offset from reference medication
-        next_dose = ref_last_taken + timedelta(hours=offset_hours, minutes=offset_minutes)
-        
+        next_dose = ref_last_taken + timedelta(
+            hours=offset_hours, minutes=offset_minutes
+        )
+
         # Check if it's on a valid day
         now = dt_util.now()
         check_day = next_dose.strftime("%a").lower()[:3]
-        
+
         if check_day not in normalized_days:
             # Find next valid day
             for day_offset in range(1, 8):
@@ -252,38 +256,40 @@ class PillAssistantSensor(SensorEntity):
                 if check_day in normalized_days:
                     next_dose = check_date
                     break
-        
+
         # Only return if in the future
         if next_dose > now:
             return next_dose
-        
+
         return None
-    
+
     def _calculate_relative_sensor_dose(self, normalized_days: list) -> datetime | None:
         """Calculate next dose relative to a sensor event."""
         sensor_entity_id = self._entry.data.get(CONF_RELATIVE_TO_SENSOR)
         offset_hours = self._entry.data.get(CONF_RELATIVE_OFFSET_HOURS, 0)
         offset_minutes = self._entry.data.get(CONF_RELATIVE_OFFSET_MINUTES, 0)
-        
+
         if not sensor_entity_id:
             return None
-        
+
         # Get the sensor's last changed time
         sensor_state = self.hass.states.get(sensor_entity_id)
         if not sensor_state:
             return None
-        
+
         sensor_last_changed = sensor_state.last_changed
         if not sensor_last_changed:
             return None
-        
+
         # Calculate next dose time as offset from sensor event
-        next_dose = sensor_last_changed + timedelta(hours=offset_hours, minutes=offset_minutes)
-        
+        next_dose = sensor_last_changed + timedelta(
+            hours=offset_hours, minutes=offset_minutes
+        )
+
         # Check if it's on a valid day
         now = dt_util.now()
         check_day = next_dose.strftime("%a").lower()[:3]
-        
+
         if check_day not in normalized_days:
             # Find next valid day
             for day_offset in range(1, 8):
@@ -292,11 +298,11 @@ class PillAssistantSensor(SensorEntity):
                 if check_day in normalized_days:
                     next_dose = check_date
                     break
-        
+
         # Only return if in the future
         if next_dose > now:
             return next_dose
-        
+
         return None
 
     def _get_missed_doses(self) -> list:
@@ -321,7 +327,7 @@ class PillAssistantSensor(SensorEntity):
 
         # Collect all scheduled dose times in the last 24 hours (use a set to avoid duplicates)
         scheduled_dose_times = set()
-        
+
         # Check each day in the last 2 days to cover 24 hour window
         for day_offset in range(2):
             check_date = now - timedelta(days=day_offset)
@@ -373,7 +379,7 @@ class PillAssistantSensor(SensorEntity):
         now = dt_util.now()
         snooze_until_str = med_data.get("snooze_until")
         is_snoozed = False
-        
+
         if snooze_until_str:
             try:
                 snooze_until = datetime.fromisoformat(snooze_until_str)

@@ -55,20 +55,20 @@ async def test_snooze_medication_service(hass: HomeAssistant):
     )
 
     await hass.async_block_till_done()
-    
+
     # Verify snooze was stored in storage
     store_data = hass.data[DOMAIN][config_entry.entry_id]
     storage_data = store_data["storage_data"]
     med_data = storage_data["medications"].get(config_entry.entry_id, {})
     snooze_until_str = med_data.get("snooze_until")
-    
+
     assert snooze_until_str is not None, "Snooze should be stored in medication data"
-    
+
     # Verify snooze_until is in the future
     snooze_until = datetime.fromisoformat(snooze_until_str)
     now = dt_util.now()
     assert snooze_until > now
-    
+
     # Verify snooze duration is approximately 30 minutes
     duration_seconds = (snooze_until - now).total_seconds()
     assert 1700 < duration_seconds < 1900  # Allow some tolerance
@@ -109,7 +109,7 @@ async def test_snooze_medication_default_duration(hass: HomeAssistant):
     storage_data = store_data["storage_data"]
     med_data = storage_data["medications"].get(config_entry.entry_id, {})
     snooze_until_str = med_data.get("snooze_until")
-    
+
     assert snooze_until_str is not None, "Snooze should be stored with default duration"
 
 
@@ -149,9 +149,9 @@ async def test_snooze_prevents_due_state(hass: HomeAssistant):
     # Get the sensor entity
     entity_id = "sensor.test_med_snooze_state"
     state = hass.states.get(entity_id)
-    
+
     assert state is not None
-    
+
     # The state should be "scheduled" even if dose time would normally make it "due"
     # (depends on current time, but snooze should prevent "due" or "overdue" state)
     assert state.state in ["scheduled", "taken", "refill_needed"]

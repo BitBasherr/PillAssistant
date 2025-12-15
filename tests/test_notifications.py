@@ -87,4 +87,3 @@ async def test_test_notification_with_invalid_id(hass: HomeAssistant):
 
     # Should complete without raising exceptions
     assert True
-

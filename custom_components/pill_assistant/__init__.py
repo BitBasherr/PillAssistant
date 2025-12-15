@@ -242,7 +242,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         notify_services = med_data.get(CONF_NOTIFY_SERVICES, [])
 
         # Create notification message
-        message = f"Test notification: Time to take {dosage} {dosage_unit} of {med_name}"
+        message = (
+            f"Test notification: Time to take {dosage} {dosage_unit} of {med_name}"
+        )
         title = "Medication Reminder (Test)"
 
         # Send notification to configured services
@@ -276,7 +278,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                             blocking=False,
                         )
                 except Exception as e:
-                    _LOGGER.error("Failed to send notification via %s: %s", service_name, e)
+                    _LOGGER.error(
+                        "Failed to send notification via %s: %s", service_name, e
+                    )
         else:
             # Fall back to persistent notification
             await hass.services.async_call(
@@ -296,10 +300,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         """Handle snooze medication service."""
         med_id = call.data.get(ATTR_MEDICATION_ID)
         snooze_duration = call.data.get(
-            ATTR_SNOOZE_DURATION, 
-            DEFAULT_SNOOZE_DURATION_MINUTES
+            ATTR_SNOOZE_DURATION, DEFAULT_SNOOZE_DURATION_MINUTES
         )
-        
+
         if med_id not in hass.data[DOMAIN]:
             _LOGGER.error("Medication ID %s not found", med_id)
             return
@@ -315,10 +318,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         # Calculate snooze until time
         now = dt_util.now()
         snooze_until = now + timedelta(minutes=int(snooze_duration))
-        
+
         # Store snooze information
         med_data["snooze_until"] = snooze_until.isoformat()
-        
+
         await store.async_save(storage_data)
 
         _LOGGER.info(
