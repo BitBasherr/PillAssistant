@@ -28,6 +28,7 @@ from .const import (
     ATTR_REMAINING_AMOUNT,
     ATTR_SCHEDULE,
     ATTR_MISSED_DOSES,
+    ATTR_SNOOZE_UNTIL,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -112,6 +113,11 @@ class PillAssistantSensor(SensorEntity):
             ),
             CONF_NOTES: self._entry.data.get(CONF_NOTES, ""),
         }
+
+        # Add snooze information if snoozed
+        snooze_until_str = med_data.get("snooze_until")
+        if snooze_until_str:
+            attributes[ATTR_SNOOZE_UNTIL] = snooze_until_str
 
         # Calculate next dose time
         next_dose = self._calculate_next_dose()
@@ -254,6 +260,24 @@ class PillAssistantSensor(SensorEntity):
         refill_amount = self._entry.data.get(CONF_REFILL_AMOUNT, 0)
         refill_reminder_days = self._entry.data.get(CONF_REFILL_REMINDER_DAYS, 7)
 
+        # Check if medication is snoozed
+        now = dt_util.now()
+        snooze_until_str = med_data.get("snooze_until")
+        is_snoozed = False
+        
+        if snooze_until_str:
+            try:
+                snooze_until = datetime.fromisoformat(snooze_until_str)
+                if snooze_until > now:
+                    is_snoozed = True
+                else:
+                    # Snooze period has expired, clear it
+                    med_data["snooze_until"] = None
+                    store = self._store_data["store"]
+                    await store.async_save(storage_data)
+            except (ValueError, TypeError):
+                pass
+
         # Calculate if refill is needed
         # Assuming one dose per scheduled time
         schedule_times = self._entry.data.get(CONF_SCHEDULE_TIMES, [])
@@ -265,15 +289,17 @@ class PillAssistantSensor(SensorEntity):
         if days_remaining <= refill_reminder_days:
             self._state = "refill_needed"
         else:
-            # Check if dose is due
+            # Check if dose is due (but respect snooze)
             next_dose = self._calculate_next_dose()
-            now = dt_util.now()
 
             if next_dose:
                 time_to_dose = (next_dose - now).total_seconds()
 
+                # If snoozed, don't mark as due or overdue
+                if is_snoozed:
+                    self._state = "scheduled"
                 # Due if within 30 minutes
-                if 0 <= time_to_dose <= 1800:
+                elif 0 <= time_to_dose <= 1800:
                     self._state = "due"
                 # Overdue if missed by more than 30 minutes
                 elif time_to_dose < 0:
