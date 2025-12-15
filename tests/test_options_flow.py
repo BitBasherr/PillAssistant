@@ -16,6 +16,20 @@ from custom_components.pill_assistant.const import (
     CONF_REFILL_REMINDER_DAYS,
     CONF_NOTES,
 )
+from custom_components.pill_assistant.config_flow import PillAssistantOptionsFlow
+
+
+async def test_options_flow_instantiation(mock_config_entry: MockConfigEntry):
+    """Test that PillAssistantOptionsFlow can be instantiated without AttributeError.
+
+    This test specifically checks for the bug where config_entry property
+    had no setter, causing AttributeError when trying to initialize the flow.
+    """
+    # This should not raise AttributeError
+    flow = PillAssistantOptionsFlow(mock_config_entry)
+
+    # Verify the config entry was stored correctly
+    assert flow._config_entry == mock_config_entry
 
 
 async def test_options_flow_init(
