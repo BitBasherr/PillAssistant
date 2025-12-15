@@ -1,4 +1,5 @@
 """Constants for Pill Assistant integration."""
+
 from __future__ import annotations
 
 from homeassistant.helpers.selector import selector
@@ -10,7 +11,7 @@ CONF_MEDICATION_NAME = "medication_name"
 CONF_DOSAGE = "dosage"
 CONF_DOSAGE_UNIT = "dosage_unit"
 CONF_SCHEDULE_TIMES = "schedule_times"  # List of times in HH:MM format
-CONF_SCHEDULE_DAYS = "schedule_days"    # List of days (mon, tue, wed, thu, fri, sat, sun)
+CONF_SCHEDULE_DAYS = "schedule_days"  # List of days (mon, tue, wed, thu, fri, sat, sun)
 CONF_REFILL_AMOUNT = "refill_amount"
 CONF_REFILL_REMINDER_DAYS = "refill_reminder_days"
 CONF_NOTES = "notes"
@@ -45,17 +46,15 @@ DAY_OPTIONS = [
 ]
 
 # Selectors
-SELECT_DOSAGE_UNIT = selector({
-    "select": {"options": DOSAGE_UNIT_OPTIONS, "mode": "dropdown"}
-})
+SELECT_DOSAGE_UNIT = selector(
+    {"select": {"options": DOSAGE_UNIT_OPTIONS, "mode": "dropdown"}}
+)
 
-SELECT_DAYS = selector({
-    "select": {"options": DAY_OPTIONS, "multiple": True, "mode": "list"}
-})
+SELECT_DAYS = selector(
+    {"select": {"options": DAY_OPTIONS, "multiple": True, "mode": "list"}}
+)
 
-SELECT_TIME = selector({
-    "time": {}
-})
+SELECT_TIME = selector({"time": {}})
 
 # Storage
 STORAGE_VERSION = 1

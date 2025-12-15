@@ -1,4 +1,5 @@
 """Config flow for Pill Assistant."""
+
 from __future__ import annotations
 
 import voluptuous as vol
@@ -48,12 +49,16 @@ class PillAssistantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="user",
-            data_schema=vol.Schema({
-                vol.Required(CONF_MEDICATION_NAME): str,
-                vol.Required(CONF_DOSAGE, default="1"): str,
-                vol.Required(CONF_DOSAGE_UNIT, default=DEFAULT_DOSAGE_UNIT): SELECT_DOSAGE_UNIT,
-                vol.Optional(CONF_NOTES, default=""): str,
-            }),
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_MEDICATION_NAME): str,
+                    vol.Required(CONF_DOSAGE, default="1"): str,
+                    vol.Required(
+                        CONF_DOSAGE_UNIT, default=DEFAULT_DOSAGE_UNIT
+                    ): SELECT_DOSAGE_UNIT,
+                    vol.Optional(CONF_NOTES, default=""): str,
+                }
+            ),
             errors=errors,
         )
 
@@ -77,12 +82,16 @@ class PillAssistantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="schedule",
-            data_schema=vol.Schema({
-                vol.Required(CONF_SCHEDULE_TIMES): selector({
-                    "text": {"multiple": True}
-                }),
-                vol.Required(CONF_SCHEDULE_DAYS, default=DEFAULT_SCHEDULE_DAYS): SELECT_DAYS,
-            }),
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_SCHEDULE_TIMES): selector(
+                        {"text": {"multiple": True}}
+                    ),
+                    vol.Required(
+                        CONF_SCHEDULE_DAYS, default=DEFAULT_SCHEDULE_DAYS
+                    ): SELECT_DAYS,
+                }
+            ),
             errors=errors,
             description_placeholders={
                 "schedule_times_example": "Enter times in HH:MM format (e.g., 08:00, 20:00)"
@@ -95,7 +104,7 @@ class PillAssistantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             self._data.update(user_input)
-            
+
             # Create unique ID based on medication name
             await self.async_set_unique_id(
                 f"{DOMAIN}_{self._data[CONF_MEDICATION_NAME].lower().replace(' ', '_')}"
@@ -109,10 +118,14 @@ class PillAssistantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="refill",
-            data_schema=vol.Schema({
-                vol.Required(CONF_REFILL_AMOUNT, default=30): vol.Coerce(int),
-                vol.Required(CONF_REFILL_REMINDER_DAYS, default=DEFAULT_REFILL_REMINDER_DAYS): vol.Coerce(int),
-            }),
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_REFILL_AMOUNT, default=30): vol.Coerce(int),
+                    vol.Required(
+                        CONF_REFILL_REMINDER_DAYS, default=DEFAULT_REFILL_REMINDER_DAYS
+                    ): vol.Coerce(int),
+                }
+            ),
             errors=errors,
         )
 
@@ -144,16 +157,42 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
 
         return self.async_show_form(
             step_id="init",
-            data_schema=vol.Schema({
-                vol.Required(CONF_MEDICATION_NAME, default=current_data.get(CONF_MEDICATION_NAME, "")): str,
-                vol.Required(CONF_DOSAGE, default=current_data.get(CONF_DOSAGE, "1")): str,
-                vol.Required(CONF_DOSAGE_UNIT, default=current_data.get(CONF_DOSAGE_UNIT, DEFAULT_DOSAGE_UNIT)): SELECT_DOSAGE_UNIT,
-                vol.Required(CONF_SCHEDULE_TIMES, default=current_data.get(CONF_SCHEDULE_TIMES, [])): selector({
-                    "text": {"multiple": True}
-                }),
-                vol.Required(CONF_SCHEDULE_DAYS, default=current_data.get(CONF_SCHEDULE_DAYS, DEFAULT_SCHEDULE_DAYS)): SELECT_DAYS,
-                vol.Required(CONF_REFILL_AMOUNT, default=current_data.get(CONF_REFILL_AMOUNT, 30)): vol.Coerce(int),
-                vol.Required(CONF_REFILL_REMINDER_DAYS, default=current_data.get(CONF_REFILL_REMINDER_DAYS, DEFAULT_REFILL_REMINDER_DAYS)): vol.Coerce(int),
-                vol.Optional(CONF_NOTES, default=current_data.get(CONF_NOTES, "")): str,
-            }),
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_MEDICATION_NAME,
+                        default=current_data.get(CONF_MEDICATION_NAME, ""),
+                    ): str,
+                    vol.Required(
+                        CONF_DOSAGE, default=current_data.get(CONF_DOSAGE, "1")
+                    ): str,
+                    vol.Required(
+                        CONF_DOSAGE_UNIT,
+                        default=current_data.get(CONF_DOSAGE_UNIT, DEFAULT_DOSAGE_UNIT),
+                    ): SELECT_DOSAGE_UNIT,
+                    vol.Required(
+                        CONF_SCHEDULE_TIMES,
+                        default=current_data.get(CONF_SCHEDULE_TIMES, []),
+                    ): selector({"text": {"multiple": True}}),
+                    vol.Required(
+                        CONF_SCHEDULE_DAYS,
+                        default=current_data.get(
+                            CONF_SCHEDULE_DAYS, DEFAULT_SCHEDULE_DAYS
+                        ),
+                    ): SELECT_DAYS,
+                    vol.Required(
+                        CONF_REFILL_AMOUNT,
+                        default=current_data.get(CONF_REFILL_AMOUNT, 30),
+                    ): vol.Coerce(int),
+                    vol.Required(
+                        CONF_REFILL_REMINDER_DAYS,
+                        default=current_data.get(
+                            CONF_REFILL_REMINDER_DAYS, DEFAULT_REFILL_REMINDER_DAYS
+                        ),
+                    ): vol.Coerce(int),
+                    vol.Optional(
+                        CONF_NOTES, default=current_data.get(CONF_NOTES, "")
+                    ): str,
+                }
+            ),
         )
