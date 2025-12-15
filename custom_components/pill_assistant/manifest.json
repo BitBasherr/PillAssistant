@@ -1,0 +1,12 @@
+{
+  "domain": "pill_assistant",
+  "name": "Pill Assistant",
+  "version": "1.0.0",
+  "documentation": "https://github.com/BitBasherr/PillAssistant",
+  "issue_tracker": "https://github.com/BitBasherr/PillAssistant/issues",
+  "config_flow": true,
+  "iot_class": "local_polling",
+  "requirements": [],
+  "dependencies": [],
+  "codeowners": ["@BitBasherr"]
+}

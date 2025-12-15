@@ -1,0 +1,159 @@
+"""Config flow for Pill Assistant."""
+from __future__ import annotations
+
+import voluptuous as vol
+from homeassistant import config_entries
+from homeassistant.core import callback
+from homeassistant.helpers.selector import selector
+
+from .const import (
+    DOMAIN,
+    CONF_MEDICATION_NAME,
+    CONF_DOSAGE,
+    CONF_DOSAGE_UNIT,
+    CONF_SCHEDULE_TIMES,
+    CONF_SCHEDULE_DAYS,
+    CONF_REFILL_AMOUNT,
+    CONF_REFILL_REMINDER_DAYS,
+    CONF_NOTES,
+    DEFAULT_DOSAGE_UNIT,
+    DEFAULT_REFILL_REMINDER_DAYS,
+    DEFAULT_SCHEDULE_DAYS,
+    SELECT_DOSAGE_UNIT,
+    SELECT_DAYS,
+    SELECT_TIME,
+)
+
+
+class PillAssistantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+    """Handle a config flow for Pill Assistant."""
+
+    VERSION = 1
+
+    def __init__(self):
+        """Initialize the config flow."""
+        self._data = {}
+
+    async def async_step_user(self, user_input=None):
+        """Handle the initial step - medication details."""
+        errors = {}
+
+        if user_input is not None:
+            # Validate medication name
+            if not user_input.get(CONF_MEDICATION_NAME):
+                errors["base"] = "medication_name_required"
+            else:
+                self._data.update(user_input)
+                return await self.async_step_schedule()
+
+        return self.async_show_form(
+            step_id="user",
+            data_schema=vol.Schema({
+                vol.Required(CONF_MEDICATION_NAME): str,
+                vol.Required(CONF_DOSAGE, default="1"): str,
+                vol.Required(CONF_DOSAGE_UNIT, default=DEFAULT_DOSAGE_UNIT): SELECT_DOSAGE_UNIT,
+                vol.Optional(CONF_NOTES, default=""): str,
+            }),
+            errors=errors,
+        )
+
+    async def async_step_schedule(self, user_input=None):
+        """Handle the schedule step."""
+        errors = {}
+
+        if user_input is not None:
+            # Convert schedule_times to list if it's a single value
+            schedule_times = user_input.get(CONF_SCHEDULE_TIMES, [])
+            if isinstance(schedule_times, str):
+                schedule_times = [schedule_times]
+            user_input[CONF_SCHEDULE_TIMES] = schedule_times
+
+            # Ensure schedule_days is set
+            if not user_input.get(CONF_SCHEDULE_DAYS):
+                user_input[CONF_SCHEDULE_DAYS] = DEFAULT_SCHEDULE_DAYS
+
+            self._data.update(user_input)
+            return await self.async_step_refill()
+
+        return self.async_show_form(
+            step_id="schedule",
+            data_schema=vol.Schema({
+                vol.Required(CONF_SCHEDULE_TIMES): selector({
+                    "text": {"multiple": True}
+                }),
+                vol.Required(CONF_SCHEDULE_DAYS, default=DEFAULT_SCHEDULE_DAYS): SELECT_DAYS,
+            }),
+            errors=errors,
+            description_placeholders={
+                "schedule_times_example": "Enter times in HH:MM format (e.g., 08:00, 20:00)"
+            },
+        )
+
+    async def async_step_refill(self, user_input=None):
+        """Handle the refill step."""
+        errors = {}
+
+        if user_input is not None:
+            self._data.update(user_input)
+            
+            # Create unique ID based on medication name
+            await self.async_set_unique_id(
+                f"{DOMAIN}_{self._data[CONF_MEDICATION_NAME].lower().replace(' ', '_')}"
+            )
+            self._abort_if_unique_id_configured()
+
+            return self.async_create_entry(
+                title=self._data[CONF_MEDICATION_NAME],
+                data=self._data,
+            )
+
+        return self.async_show_form(
+            step_id="refill",
+            data_schema=vol.Schema({
+                vol.Required(CONF_REFILL_AMOUNT, default=30): vol.Coerce(int),
+                vol.Required(CONF_REFILL_REMINDER_DAYS, default=DEFAULT_REFILL_REMINDER_DAYS): vol.Coerce(int),
+            }),
+            errors=errors,
+        )
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry):
+        """Get the options flow for this handler."""
+        return PillAssistantOptionsFlow(config_entry)
+
+
+class PillAssistantOptionsFlow(config_entries.OptionsFlow):
+    """Handle options flow for Pill Assistant."""
+
+    def __init__(self, config_entry):
+        """Initialize options flow."""
+        self.config_entry = config_entry
+
+    async def async_step_init(self, user_input=None):
+        """Manage the options."""
+        if user_input is not None:
+            # Update the config entry with new data
+            self.hass.config_entries.async_update_entry(
+                self.config_entry,
+                data={**self.config_entry.data, **user_input},
+            )
+            return self.async_create_entry(title="", data={})
+
+        current_data = self.config_entry.data
+
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema({
+                vol.Required(CONF_MEDICATION_NAME, default=current_data.get(CONF_MEDICATION_NAME, "")): str,
+                vol.Required(CONF_DOSAGE, default=current_data.get(CONF_DOSAGE, "1")): str,
+                vol.Required(CONF_DOSAGE_UNIT, default=current_data.get(CONF_DOSAGE_UNIT, DEFAULT_DOSAGE_UNIT)): SELECT_DOSAGE_UNIT,
+                vol.Required(CONF_SCHEDULE_TIMES, default=current_data.get(CONF_SCHEDULE_TIMES, [])): selector({
+                    "text": {"multiple": True}
+                }),
+                vol.Required(CONF_SCHEDULE_DAYS, default=current_data.get(CONF_SCHEDULE_DAYS, DEFAULT_SCHEDULE_DAYS)): SELECT_DAYS,
+                vol.Required(CONF_REFILL_AMOUNT, default=current_data.get(CONF_REFILL_AMOUNT, 30)): vol.Coerce(int),
+                vol.Required(CONF_REFILL_REMINDER_DAYS, default=current_data.get(CONF_REFILL_REMINDER_DAYS, DEFAULT_REFILL_REMINDER_DAYS)): vol.Coerce(int),
+                vol.Optional(CONF_NOTES, default=current_data.get(CONF_NOTES, "")): str,
+            }),
+        )

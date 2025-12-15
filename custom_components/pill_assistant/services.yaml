@@ -1,0 +1,35 @@
+take_medication:
+  name: Take Medication
+  description: Record that a medication has been taken
+  fields:
+    medication_id:
+      name: Medication ID
+      description: The ID of the medication entry (from entity attributes)
+      required: true
+      example: "abc123def456"
+      selector:
+        text:
+
+skip_medication:
+  name: Skip Medication
+  description: Record that a medication dose has been skipped
+  fields:
+    medication_id:
+      name: Medication ID
+      description: The ID of the medication entry (from entity attributes)
+      required: true
+      example: "abc123def456"
+      selector:
+        text:
+
+refill_medication:
+  name: Refill Medication
+  description: Reset medication count to full refill amount
+  fields:
+    medication_id:
+      name: Medication ID
+      description: The ID of the medication entry (from entity attributes)
+      required: true
+      example: "abc123def456"
+      selector:
+        text:
