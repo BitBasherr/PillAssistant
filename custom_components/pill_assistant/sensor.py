@@ -186,12 +186,11 @@ class PillAssistantSensor(SensorEntity):
 
     def _get_missed_doses(self) -> list:
         """Get list of missed doses."""
-        missed = []
         schedule_times = self._entry.data.get(CONF_SCHEDULE_TIMES, [])
         schedule_days = self._entry.data.get(CONF_SCHEDULE_DAYS, [])
 
         if not schedule_times or not schedule_days:
-            return missed
+            return []
 
         now = dt_util.now()
         storage_data = self._store_data["storage_data"]
@@ -205,10 +204,13 @@ class PillAssistantSensor(SensorEntity):
             except (ValueError, TypeError):
                 pass
 
-        # Check last 24 hours for missed doses
-        for hour_offset in range(24):
-            check_time = now - timedelta(hours=hour_offset)
-            check_day = check_time.strftime("%a").lower()[:3]
+        # Collect all scheduled dose times in the last 24 hours (use a set to avoid duplicates)
+        scheduled_dose_times = set()
+        
+        # Check each day in the last 2 days to cover 24 hour window
+        for day_offset in range(2):
+            check_date = now - timedelta(days=day_offset)
+            check_day = check_date.strftime("%a").lower()[:3]
 
             if check_day not in schedule_days:
                 continue
@@ -219,18 +221,26 @@ class PillAssistantSensor(SensorEntity):
                         time_str = time_str[0] if time_str else "00:00"
 
                     hour, minute = map(int, time_str.split(":"))
-                    dose_time = check_time.replace(
+                    dose_time = check_date.replace(
                         hour=hour, minute=minute, second=0, microsecond=0
                     )
 
-                    # If dose time is in the past and after last taken
-                    if dose_time < now:
-                        if last_taken is None or dose_time > last_taken:
-                            # Check if it's more than 30 minutes overdue
-                            if (now - dose_time).total_seconds() > 1800:
-                                missed.append(dose_time.isoformat())
+                    # Only consider doses within last 24 hours
+                    time_diff = (now - dose_time).total_seconds()
+                    if 0 < time_diff <= 86400:  # Between 0 and 24 hours ago
+                        scheduled_dose_times.add(dose_time)
                 except (ValueError, AttributeError):
                     continue
+
+        # Filter for actually missed doses
+        missed = []
+        for dose_time in sorted(scheduled_dose_times):
+            # If dose time is in the past and after last taken
+            if dose_time < now:
+                if last_taken is None or dose_time > last_taken:
+                    # Check if it's more than 30 minutes overdue
+                    if (now - dose_time).total_seconds() > 1800:
+                        missed.append(dose_time.isoformat())
 
         return missed[:5]  # Limit to 5 most recent
 
