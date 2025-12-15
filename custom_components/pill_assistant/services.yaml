@@ -33,3 +33,15 @@ refill_medication:
       example: "abc123def456"
       selector:
         text:
+
+test_notification:
+  name: Test Notification
+  description: Send a test notification for a medication
+  fields:
+    medication_id:
+      name: Medication ID
+      description: The ID of the medication entry (from entity attributes)
+      required: true
+      example: "abc123def456"
+      selector:
+        text:

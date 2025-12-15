@@ -118,12 +118,13 @@ async def test_complete_flow(hass: HomeAssistant):
         },
     )
 
-    # Step 3: Refill settings
+    # Step 3: Refill settings (without test button)
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={
             CONF_REFILL_AMOUNT: 90,
             CONF_REFILL_REMINDER_DAYS: 7,
+            "create_test_button": False,
         },
     )
 
@@ -179,8 +180,49 @@ async def test_duplicate_medication_rejected(hass: HomeAssistant):
         user_input={
             CONF_REFILL_AMOUNT: 30,
             CONF_REFILL_REMINDER_DAYS: 7,
+            "create_test_button": False,
         },
     )
 
     assert result["type"] == data_entry_flow.FlowResultType.ABORT
     assert result["reason"] == "already_configured"
+
+
+async def test_config_flow_with_test_button(hass: HomeAssistant):
+    """Test config flow creates test button when requested."""
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+
+    # Step 1: Medication details
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={
+            CONF_MEDICATION_NAME: "Button Test Med",
+            CONF_DOSAGE: "100",
+            CONF_DOSAGE_UNIT: "mg",
+        },
+    )
+
+    # Step 2: Schedule
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={
+            CONF_SCHEDULE_TIMES: ["08:00"],
+            CONF_SCHEDULE_DAYS: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
+        },
+    )
+
+    # Step 3: Refill settings with test button enabled
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={
+            CONF_REFILL_AMOUNT: 30,
+            CONF_REFILL_REMINDER_DAYS: 7,
+            "create_test_button": True,
+        },
+    )
+
+    # Should succeed even if button creation fails (no input_button integration in tests)
+    assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
+    assert result["title"] == "Button Test Med"

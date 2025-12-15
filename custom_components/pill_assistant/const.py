@@ -78,6 +78,7 @@ LOG_FILE_NAME = "pill_assistant_history.log"
 SERVICE_TAKE_MEDICATION = "take_medication"
 SERVICE_SKIP_MEDICATION = "skip_medication"
 SERVICE_REFILL_MEDICATION = "refill_medication"
+SERVICE_TEST_NOTIFICATION = "test_notification"
 
 # Attributes
 ATTR_MEDICATION_ID = "medication_id"
@@ -86,3 +87,7 @@ ATTR_LAST_TAKEN = "last_taken"
 ATTR_REMAINING_AMOUNT = "remaining_amount"
 ATTR_SCHEDULE = "schedule"
 ATTR_MISSED_DOSES = "missed_doses"
+
+# Input button configuration
+CONF_CREATE_TEST_BUTTON = "create_test_button"
+DEFAULT_CREATE_TEST_BUTTON = True
