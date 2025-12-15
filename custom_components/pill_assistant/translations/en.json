@@ -24,7 +24,8 @@
         "description": "Configure refill tracking",
         "data": {
           "refill_amount": "Initial/Refill Amount",
-          "refill_reminder_days": "Days Before Refill Reminder"
+          "refill_reminder_days": "Days Before Refill Reminder",
+          "notify_services": "Notification Services (optional)"
         }
       }
     },
@@ -48,7 +49,8 @@
           "schedule_days": "Days of the Week",
           "refill_amount": "Refill Amount",
           "refill_reminder_days": "Days Before Refill Reminder",
-          "notes": "Notes (optional)"
+          "notes": "Notes (optional)",
+          "notify_services": "Notification Services (optional)"
         }
       }
     }

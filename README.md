@@ -43,7 +43,7 @@ A comprehensive medication management integration for Home Assistant that helps 
 4. Follow the setup wizard:
    - **Step 1**: Enter medication name, dosage amount, dosage unit, and optional notes
    - **Step 2**: Set schedule times (e.g., "08:00", "20:00") and days of week
-   - **Step 3**: Configure refill amount and reminder threshold
+   - **Step 3**: Configure refill amount, reminder threshold, and optional notification services
 
 ### Modifying a Medication
 
@@ -77,6 +77,7 @@ Each sensor provides detailed attributes:
 - `refill_amount`: Full refill quantity
 - `refill_reminder_days`: Days threshold for refill reminder
 - `notes`: Optional notes about the medication
+- `notify_services`: List of configured notification services (optional)
 
 ## Services
 

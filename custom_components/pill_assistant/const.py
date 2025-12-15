@@ -15,6 +15,7 @@ CONF_SCHEDULE_DAYS = "schedule_days"  # List of days (mon, tue, wed, thu, fri, s
 CONF_REFILL_AMOUNT = "refill_amount"
 CONF_REFILL_REMINDER_DAYS = "refill_reminder_days"
 CONF_NOTES = "notes"
+CONF_NOTIFY_SERVICES = "notify_services"  # List of notification services to use
 
 # Default values
 DEFAULT_DOSAGE_UNIT = "pill(s)"
@@ -55,6 +56,18 @@ SELECT_DAYS = selector(
 )
 
 SELECT_TIME = selector({"time": {}})
+
+# Notification service selector
+SELECT_NOTIFY_SERVICE = selector(
+    {
+        "select": {
+            "options": [],  # Will be dynamically populated
+            "multiple": True,
+            "custom_value": True,
+            "mode": "dropdown",
+        }
+    }
+)
 
 # Storage
 STORAGE_VERSION = 1
