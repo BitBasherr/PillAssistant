@@ -1,0 +1,90 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Add Medication",
+        "description": "Enter the medication details",
+        "data": {
+          "medication_name": "Medication Name",
+          "dosage": "Dosage Amount",
+          "dosage_unit": "Dosage Unit",
+          "notes": "Notes (optional)"
+        }
+      },
+      "schedule": {
+        "title": "Set Schedule",
+        "description": "Configure when to take this medication. Enter times in HH:MM format (e.g., 08:00, 20:00)",
+        "data": {
+          "schedule_times": "Times to Take Medication",
+          "schedule_days": "Days of the Week"
+        }
+      },
+      "refill": {
+        "title": "Refill Settings",
+        "description": "Configure refill tracking",
+        "data": {
+          "refill_amount": "Initial/Refill Amount",
+          "refill_reminder_days": "Days Before Refill Reminder",
+          "notify_services": "Notification Services (optional)"
+        }
+      }
+    },
+    "error": {
+      "medication_name_required": "Medication name is required"
+    },
+    "abort": {
+      "already_configured": "This medication is already configured"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Update Medication Settings",
+        "description": "Modify medication details and schedule",
+        "data": {
+          "medication_name": "Medication Name",
+          "dosage": "Dosage Amount",
+          "dosage_unit": "Dosage Unit",
+          "schedule_times": "Times to Take Medication",
+          "schedule_days": "Days of the Week",
+          "refill_amount": "Refill Amount",
+          "refill_reminder_days": "Days Before Refill Reminder",
+          "notes": "Notes (optional)",
+          "notify_services": "Notification Services (optional)"
+        }
+      }
+    }
+  },
+  "services": {
+    "take_medication": {
+      "name": "Take Medication",
+      "description": "Record that a medication has been taken",
+      "fields": {
+        "medication_id": {
+          "name": "Medication ID",
+          "description": "The ID of the medication entry"
+        }
+      }
+    },
+    "skip_medication": {
+      "name": "Skip Medication",
+      "description": "Record that a medication dose has been skipped",
+      "fields": {
+        "medication_id": {
+          "name": "Medication ID",
+          "description": "The ID of the medication entry"
+        }
+      }
+    },
+    "refill_medication": {
+      "name": "Refill Medication",
+      "description": "Reset medication count to full refill amount",
+      "fields": {
+        "medication_id": {
+          "name": "Medication ID",
+          "description": "The ID of the medication entry"
+        }
+      }
+    }
+  }
+}
