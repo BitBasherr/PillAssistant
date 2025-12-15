@@ -1,0 +1,154 @@
+# Example configuration.yaml entries for Pill Assistant
+
+# While Pill Assistant uses UI configuration primarily, 
+# you can add helper entities to enhance functionality
+
+# Input buttons for quick medication tracking
+input_button:
+  took_aspirin:
+    name: "Took Aspirin"
+    icon: mdi:pill
+  
+  took_vitamin_d:
+    name: "Took Vitamin D"
+    icon: mdi:vitamin
+  
+  refilled_aspirin:
+    name: "Refilled Aspirin"
+    icon: mdi:package-variant
+
+# Input booleans for tracking states
+input_boolean:
+  medication_reminders_enabled:
+    name: "Enable Medication Reminders"
+    icon: mdi:bell-ring
+
+# Input datetime for custom scheduling
+input_datetime:
+  next_pharmacy_visit:
+    name: "Next Pharmacy Visit"
+    has_date: true
+    has_time: false
+
+# Template sensors for additional tracking
+template:
+  - sensor:
+      - name: "Medications Due Today"
+        state: >
+          {% set meds = states.sensor | selectattr('entity_id', 'search', 'sensor\\..*') 
+                        | selectattr('attributes.medication_id', 'defined') 
+                        | selectattr('state', 'in', ['due', 'overdue', 'scheduled']) | list %}
+          {{ meds | count }}
+        icon: mdi:calendar-check
+      
+      - name: "Medications Needing Refill"
+        state: >
+          {% set meds = states.sensor | selectattr('entity_id', 'search', 'sensor\\..*') 
+                        | selectattr('attributes.medication_id', 'defined') 
+                        | selectattr('state', 'eq', 'refill_needed') | list %}
+          {{ meds | count }}
+        icon: mdi:package-variant-closed
+      
+      - name: "Aspirin Days Until Refill"
+        state: >
+          {% set remaining = state_attr('sensor.aspirin', 'remaining_amount') | float(0) %}
+          {% set times = state_attr('sensor.aspirin', 'schedule')['times'] | list %}
+          {% set days = state_attr('sensor.aspirin', 'schedule')['days'] | list %}
+          {% set doses_per_day = (times | count * days | count) / 7 %}
+          {{ (remaining / doses_per_day) | round(1) if doses_per_day > 0 else 0 }}
+        unit_of_measurement: "days"
+        icon: mdi:calendar-range
+
+# Automation examples
+automation:
+  # Basic notification when medication is due
+  - alias: "Notify - Medication Due"
+    description: "Send notification when any medication is due"
+    trigger:
+      - platform: state
+        entity_id:
+          - sensor.aspirin
+          - sensor.vitamin_d
+        to: "due"
+    condition:
+      - condition: state
+        entity_id: input_boolean.medication_reminders_enabled
+        state: "on"
+    action:
+      - service: notify.mobile_app
+        data:
+          title: "💊 Medication Reminder"
+          message: "Time to take {{ trigger.to_state.name }}"
+  
+  # Record medication from button press
+  - alias: "Record - Aspirin Taken"
+    description: "Record Aspirin when button pressed"
+    trigger:
+      - platform: state
+        entity_id: input_button.took_aspirin
+    action:
+      - service: pill_assistant.take_medication
+        data:
+          medication_id: "{{ state_attr('sensor.aspirin', 'medication_id') }}"
+  
+  # Record refill from button press
+  - alias: "Record - Aspirin Refilled"
+    description: "Record Aspirin refill when button pressed"
+    trigger:
+      - platform: state
+        entity_id: input_button.refilled_aspirin
+    action:
+      - service: pill_assistant.refill_medication
+        data:
+          medication_id: "{{ state_attr('sensor.aspirin', 'medication_id') }}"
+      - service: notify.mobile_app
+        data:
+          message: "Aspirin has been refilled to {{ state_attr('sensor.aspirin', 'refill_amount') }} doses"
+
+# Script examples for common actions
+script:
+  take_all_due_medications:
+    alias: "Take All Due Medications"
+    description: "Mark all due medications as taken"
+    sequence:
+      - repeat:
+          for_each: >
+            {% set ns = namespace(meds=[]) %}
+            {% for state in states.sensor %}
+              {% if state.attributes.medication_id is defined and state.state == 'due' %}
+                {% set ns.meds = ns.meds + [state.entity_id] %}
+              {% endif %}
+            {% endfor %}
+            {{ ns.meds }}
+          sequence:
+            - service: pill_assistant.take_medication
+              data:
+                medication_id: "{{ state_attr(repeat.item, 'medication_id') }}"
+            - delay:
+                seconds: 1
+  
+  medication_morning_routine:
+    alias: "Morning Medication Routine"
+    description: "Announce morning medications"
+    sequence:
+      - service: tts.google_translate_say
+        data:
+          entity_id: media_player.bedroom_speaker
+          message: >
+            Good morning! You have {{ states('sensor.medications_due_today') }} 
+            medications scheduled for today.
+      - delay:
+          seconds: 5
+      - condition: numeric_state
+        entity_id: sensor.medications_needing_refill
+        above: 0
+      - service: tts.google_translate_say
+        data:
+          entity_id: media_player.bedroom_speaker
+          message: >
+            Please note that {{ states('sensor.medications_needing_refill') }} 
+            medication(s) need to be refilled soon.
+
+# Note: Replace 'sensor.aspirin' and 'sensor.vitamin_d' with your actual medication sensor entity IDs
+# Note: Replace 'mobile_app' with your actual notification service (e.g., 'mobile_app_iphone')
+# Note: Replace media player entity IDs with your actual devices
