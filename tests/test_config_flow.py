@@ -10,6 +10,7 @@ from custom_components.pill_assistant.const import (
     CONF_MEDICATION_NAME,
     CONF_DOSAGE,
     CONF_DOSAGE_UNIT,
+    CONF_SCHEDULE_TYPE,
     CONF_SCHEDULE_TIMES,
     CONF_SCHEDULE_DAYS,
     CONF_REFILL_AMOUNT,
@@ -79,7 +80,15 @@ async def test_schedule_step(hass: HomeAssistant):
         },
     )
 
-    # Test schedule step
+    # Select schedule type
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={
+            "schedule_type": "fixed_time",
+        },
+    )
+
+    # Test schedule_fixed step
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={
@@ -109,7 +118,15 @@ async def test_complete_flow(hass: HomeAssistant):
         },
     )
 
-    # Step 2: Schedule
+    # Step 2: Schedule type
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={
+            "schedule_type": "fixed_time",
+        },
+    )
+
+    # Step 3: Fixed time schedule
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={
@@ -118,7 +135,7 @@ async def test_complete_flow(hass: HomeAssistant):
         },
     )
 
-    # Step 3: Refill settings (without test button)
+    # Step 4: Refill settings (without test button)
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={
@@ -145,6 +162,7 @@ async def test_duplicate_medication_rejected(hass: HomeAssistant):
             CONF_MEDICATION_NAME: "Test Med",
             CONF_DOSAGE: "50",
             CONF_DOSAGE_UNIT: "mg",
+            CONF_SCHEDULE_TYPE: "fixed_time",
             CONF_SCHEDULE_TIMES: ["09:00"],
             CONF_SCHEDULE_DAYS: ["mon", "tue", "wed"],
             CONF_REFILL_AMOUNT: 30,
@@ -164,6 +182,13 @@ async def test_duplicate_medication_rejected(hass: HomeAssistant):
             CONF_MEDICATION_NAME: "Test Med",
             CONF_DOSAGE: "50",
             CONF_DOSAGE_UNIT: "mg",
+        },
+    )
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={
+            "schedule_type": "fixed_time",
         },
     )
 
@@ -204,7 +229,15 @@ async def test_config_flow_with_test_button(hass: HomeAssistant):
         },
     )
 
-    # Step 2: Schedule
+    # Step 2: Schedule type
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={
+            "schedule_type": "fixed_time",
+        },
+    )
+
+    # Step 3: Fixed time schedule
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={
@@ -213,7 +246,7 @@ async def test_config_flow_with_test_button(hass: HomeAssistant):
         },
     )
 
-    # Step 3: Refill settings with test button enabled
+    # Step 4: Refill settings with test button enabled
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={

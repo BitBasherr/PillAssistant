@@ -20,6 +20,7 @@ def mock_config_entry():
             "medication_name": "Test Medication",
             "dosage": "100",
             "dosage_unit": "mg",
+            "schedule_type": "fixed_time",
             "schedule_times": ["08:00", "20:00"],
             "schedule_days": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
             "refill_amount": 30,
