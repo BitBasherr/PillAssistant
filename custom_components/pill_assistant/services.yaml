@@ -33,3 +33,38 @@ refill_medication:
       example: "abc123def456"
       selector:
         text:
+
+test_notification:
+  name: Test Notification
+  description: Send a test notification for a medication
+  fields:
+    medication_id:
+      name: Medication ID
+      description: The ID of the medication entry (from entity attributes)
+      required: true
+      example: "abc123def456"
+      selector:
+        text:
+
+snooze_medication:
+  name: Snooze Medication
+  description: Snooze a medication reminder for a specified duration
+  fields:
+    medication_id:
+      name: Medication ID
+      description: The ID of the medication entry (from entity attributes)
+      required: true
+      example: "abc123def456"
+      selector:
+        text:
+    snooze_duration:
+      name: Snooze Duration (minutes)
+      description: How long to snooze the reminder (in minutes)
+      required: false
+      default: 15
+      example: 30
+      selector:
+        number:
+          min: 1
+          max: 1440
+          unit_of_measurement: minutes

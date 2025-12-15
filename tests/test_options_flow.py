@@ -133,6 +133,7 @@ async def test_options_flow_update_refill_settings(
             CONF_REFILL_AMOUNT: 90,  # Changed from 30
             CONF_REFILL_REMINDER_DAYS: 14,  # Changed from 7
             CONF_NOTES: "Updated notes",
+            "create_test_button": False,
         },
     )
 
@@ -143,3 +144,33 @@ async def test_options_flow_update_refill_settings(
     assert entry.data[CONF_REFILL_AMOUNT] == 90
     assert entry.data[CONF_REFILL_REMINDER_DAYS] == 14
     assert entry.data[CONF_NOTES] == "Updated notes"
+
+
+async def test_options_flow_with_test_button(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry
+):
+    """Test options flow can request test button creation."""
+    mock_config_entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    result = await hass.config_entries.options.async_init(mock_config_entry.entry_id)
+
+    # Update with test button enabled
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={
+            CONF_MEDICATION_NAME: "Test Medication",
+            CONF_DOSAGE: "100",
+            CONF_DOSAGE_UNIT: "mg",
+            CONF_SCHEDULE_TIMES: ["08:00", "20:00"],
+            CONF_SCHEDULE_DAYS: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
+            CONF_REFILL_AMOUNT: 30,
+            CONF_REFILL_REMINDER_DAYS: 7,
+            CONF_NOTES: "Test notes",
+            "create_test_button": True,
+        },
+    )
+
+    # Should succeed even if button creation fails (no input_button integration in tests)
+    assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
@@ -21,11 +21,17 @@ from .const import (
     SERVICE_TAKE_MEDICATION,
     SERVICE_SKIP_MEDICATION,
     SERVICE_REFILL_MEDICATION,
+    SERVICE_TEST_NOTIFICATION,
+    SERVICE_SNOOZE_MEDICATION,
     ATTR_MEDICATION_ID,
+    ATTR_SNOOZE_DURATION,
     CONF_MEDICATION_NAME,
     CONF_DOSAGE,
     CONF_DOSAGE_UNIT,
     CONF_REFILL_AMOUNT,
+    CONF_NOTIFY_SERVICES,
+    CONF_SNOOZE_DURATION_MINUTES,
+    DEFAULT_SNOOZE_DURATION_MINUTES,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -215,6 +221,116 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             now,
         )
 
+    async def handle_test_notification(call: ServiceCall) -> None:
+        """Handle test notification service."""
+        med_id = call.data.get(ATTR_MEDICATION_ID)
+        if med_id not in hass.data[DOMAIN]:
+            _LOGGER.error("Medication ID %s not found", med_id)
+            return
+
+        entry_data = hass.data[DOMAIN][med_id]
+        storage_data = entry_data["storage_data"]
+
+        med_data = storage_data["medications"].get(med_id)
+        if not med_data:
+            return
+
+        # Get medication details
+        med_name = med_data.get(CONF_MEDICATION_NAME, "Unknown")
+        dosage = med_data.get(CONF_DOSAGE, "")
+        dosage_unit = med_data.get(CONF_DOSAGE_UNIT, "")
+        notify_services = med_data.get(CONF_NOTIFY_SERVICES, [])
+
+        # Create notification message
+        message = (
+            f"Test notification: Time to take {dosage} {dosage_unit} of {med_name}"
+        )
+        title = "Medication Reminder (Test)"
+
+        # Send notification to configured services
+        if notify_services:
+            for service_name in notify_services:
+                try:
+                    # Extract domain and service
+                    service_parts = service_name.split(".")
+                    if len(service_parts) == 2:
+                        domain, service = service_parts
+                        await hass.services.async_call(
+                            domain,
+                            service,
+                            {
+                                "title": title,
+                                "message": message,
+                                "data": {
+                                    "tag": f"pill_assistant_{med_id}",
+                                    "actions": [
+                                        {
+                                            "action": f"take_medication_{med_id}",
+                                            "title": "Mark as Taken",
+                                        },
+                                        {
+                                            "action": f"skip_medication_{med_id}",
+                                            "title": "Skip",
+                                        },
+                                    ],
+                                },
+                            },
+                            blocking=False,
+                        )
+                except Exception as e:
+                    _LOGGER.error(
+                        "Failed to send notification via %s: %s", service_name, e
+                    )
+        else:
+            # Fall back to persistent notification
+            await hass.services.async_call(
+                "persistent_notification",
+                "create",
+                {
+                    "title": title,
+                    "message": message,
+                    "notification_id": f"pill_assistant_test_{med_id}",
+                },
+                blocking=False,
+            )
+
+        _LOGGER.info("Test notification sent for %s", med_name)
+
+    async def handle_snooze_medication(call: ServiceCall) -> None:
+        """Handle snooze medication service."""
+        med_id = call.data.get(ATTR_MEDICATION_ID)
+        snooze_duration = call.data.get(
+            ATTR_SNOOZE_DURATION, DEFAULT_SNOOZE_DURATION_MINUTES
+        )
+
+        if med_id not in hass.data[DOMAIN]:
+            _LOGGER.error("Medication ID %s not found", med_id)
+            return
+
+        entry_data = hass.data[DOMAIN][med_id]
+        store = entry_data["store"]
+        storage_data = entry_data["storage_data"]
+
+        med_data = storage_data["medications"].get(med_id)
+        if not med_data:
+            return
+
+        # Calculate snooze until time
+        now = dt_util.now()
+        snooze_until = now + timedelta(minutes=int(snooze_duration))
+
+        # Store snooze information
+        med_data["snooze_until"] = snooze_until.isoformat()
+
+        await store.async_save(storage_data)
+
+        _LOGGER.info(
+            "Medication %s snoozed for %s minutes until %s",
+            med_data.get(CONF_MEDICATION_NAME),
+            snooze_duration,
+            snooze_until,
+        )
+
     # Register services only once
     if not hass.services.has_service(DOMAIN, SERVICE_TAKE_MEDICATION):
         hass.services.async_register(
@@ -227,6 +343,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if not hass.services.has_service(DOMAIN, SERVICE_REFILL_MEDICATION):
         hass.services.async_register(
             DOMAIN, SERVICE_REFILL_MEDICATION, handle_refill_medication
+        )
+    if not hass.services.has_service(DOMAIN, SERVICE_TEST_NOTIFICATION):
+        hass.services.async_register(
+            DOMAIN, SERVICE_TEST_NOTIFICATION, handle_test_notification
+        )
+    if not hass.services.has_service(DOMAIN, SERVICE_SNOOZE_MEDICATION):
+        hass.services.async_register(
+            DOMAIN, SERVICE_SNOOZE_MEDICATION, handle_snooze_medication
         )
 
     return True
