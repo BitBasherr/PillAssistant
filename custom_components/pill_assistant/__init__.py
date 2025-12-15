@@ -22,6 +22,8 @@ from .const import (
     SERVICE_REFILL_MEDICATION,
     ATTR_MEDICATION_ID,
     CONF_MEDICATION_NAME,
+    CONF_DOSAGE,
+    CONF_DOSAGE_UNIT,
     CONF_REFILL_AMOUNT,
 )
 
@@ -91,10 +93,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         now = dt_util.now()
         med_data["last_taken"] = now.isoformat()
         
-        # Decrease remaining amount
-        dosage = float(med_data.get(CONF_REFILL_AMOUNT, 1))
+        # Decrease remaining amount by 1 dose (not by dosage amount)
         remaining = float(med_data.get("remaining_amount", 0))
-        med_data["remaining_amount"] = max(0, remaining - dosage)
+        med_data["remaining_amount"] = max(0, remaining - 1)
         
         # Add to history
         history_entry = {
@@ -102,8 +103,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             "medication_name": med_data.get(CONF_MEDICATION_NAME, "Unknown"),
             "timestamp": now.isoformat(),
             "action": "taken",
-            "dosage": med_data.get("dosage", ""),
-            "dosage_unit": med_data.get("dosage_unit", ""),
+            "dosage": med_data.get(CONF_DOSAGE, ""),
+            "dosage_unit": med_data.get(CONF_DOSAGE_UNIT, ""),
         }
         storage_data["history"].append(history_entry)
         
@@ -112,7 +113,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         
         # Append to persistent log file
         log_path = hass.config.path(LOG_FILE_NAME)
-        log_line = f"{now.strftime('%Y-%m-%d %H:%M:%S')} - TAKEN - {med_data.get(CONF_MEDICATION_NAME, 'Unknown')} - {med_data.get('dosage', '')} {med_data.get('dosage_unit', '')}\n"
+        log_line = f"{now.strftime('%Y-%m-%d %H:%M:%S')} - TAKEN - {med_data.get(CONF_MEDICATION_NAME, 'Unknown')} - {med_data.get(CONF_DOSAGE, '')} {med_data.get(CONF_DOSAGE_UNIT, '')}\n"
         try:
             with open(log_path, "a", encoding="utf-8") as log_file:
                 log_file.write(log_line)
