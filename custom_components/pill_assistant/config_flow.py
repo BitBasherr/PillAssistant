@@ -93,7 +93,7 @@ def normalize_time_input(time_str: str) -> tuple[str | None, bool]:
             return None, False
     
     # Validate hours and minutes
-    if minutes < 0 or minutes > 59:
+    if minutes < 0 or minutes > 59 or hours < 0 or hours > 23:
         return None, False
     
     # If has AM/PM, convert to 24-hour

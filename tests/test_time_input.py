@@ -102,6 +102,16 @@ def test_normalize_time_invalid():
     assert time is None
     assert not needs_clarification
     
+    # Invalid hours (>23)
+    time, needs_clarification = normalize_time_input("25:00")
+    assert time is None
+    assert not needs_clarification
+    
+    # Invalid hours (negative)
+    time, needs_clarification = normalize_time_input("2500")
+    assert time is None
+    assert not needs_clarification
+    
     # Non-numeric
     time, needs_clarification = normalize_time_input("abc")
     assert time is None

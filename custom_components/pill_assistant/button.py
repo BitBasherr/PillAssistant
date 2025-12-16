@@ -53,11 +53,9 @@ class PillAssistantTestButton(ButtonEntity):
         self._medication_name = medication_name
         self._medication_id = config_entry.entry_id
         
-        # Create entity_id with PA_ prefix
-        safe_name = medication_name.lower().replace(" ", "_")
+        # Set unique_id and name - entity_id will be generated automatically
         self._attr_unique_id = f"{DOMAIN}_test_{config_entry.entry_id}"
         self._attr_name = f"PA_{medication_name}"
-        self.entity_id = f"button.pa_{safe_name}"
         
     @property
     def device_info(self) -> dict[str, Any]:
