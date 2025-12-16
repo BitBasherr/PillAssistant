@@ -135,13 +135,12 @@ async def test_complete_flow(hass: HomeAssistant):
         },
     )
 
-    # Step 4: Refill settings (without test button)
+    # Step 4: Refill settings
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={
             CONF_REFILL_AMOUNT: 90,
             CONF_REFILL_REMINDER_DAYS: 7,
-            "create_test_button": False,
         },
     )
 
@@ -205,7 +204,6 @@ async def test_duplicate_medication_rejected(hass: HomeAssistant):
         user_input={
             CONF_REFILL_AMOUNT: 30,
             CONF_REFILL_REMINDER_DAYS: 7,
-            "create_test_button": False,
         },
     )
 
@@ -214,7 +212,7 @@ async def test_duplicate_medication_rejected(hass: HomeAssistant):
 
 
 async def test_config_flow_with_test_button(hass: HomeAssistant):
-    """Test config flow creates test button when requested."""
+    """Test config flow creates button entity automatically."""
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
     )
@@ -246,16 +244,25 @@ async def test_config_flow_with_test_button(hass: HomeAssistant):
         },
     )
 
-    # Step 4: Refill settings with test button enabled
+    # Step 4: Refill settings
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={
             CONF_REFILL_AMOUNT: 30,
             CONF_REFILL_REMINDER_DAYS: 7,
-            "create_test_button": True,
         },
     )
 
-    # Should succeed even if button creation fails (no input_button integration in tests)
+    # Entry should be created successfully
     assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
     assert result["title"] == "Button Test Med"
+    
+    # Set up the entry to create the button entity
+    entry_id = result["result"].entry_id
+    await hass.async_block_till_done()
+    
+    # Verify button entity is created with PA_ prefix
+    button_entity_id = "button.pa_button_test_med"
+    button_state = hass.states.get(button_entity_id)
+    assert button_state is not None
+    assert button_state.name == "PA_Button Test Med"

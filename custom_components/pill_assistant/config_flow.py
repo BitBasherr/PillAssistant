@@ -23,13 +23,11 @@ from .const import (
     CONF_REFILL_REMINDER_DAYS,
     CONF_NOTES,
     CONF_NOTIFY_SERVICES,
-    CONF_CREATE_TEST_BUTTON,
     CONF_SNOOZE_DURATION_MINUTES,
     DEFAULT_DOSAGE_UNIT,
     DEFAULT_REFILL_REMINDER_DAYS,
     DEFAULT_SCHEDULE_DAYS,
     DEFAULT_SCHEDULE_TYPE,
-    DEFAULT_CREATE_TEST_BUTTON,
     DEFAULT_SNOOZE_DURATION_MINUTES,
     DEFAULT_RELATIVE_OFFSET_HOURS,
     DEFAULT_RELATIVE_OFFSET_MINUTES,
@@ -267,24 +265,11 @@ class PillAssistantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
             self._abort_if_unique_id_configured()
 
-            # Create the entry first
-            entry = self.async_create_entry(
+            # Create the entry - button entity will be automatically created by button platform
+            return self.async_create_entry(
                 title=self._data[CONF_MEDICATION_NAME],
                 data=self._data,
             )
-
-            # If requested, create input_button helper for test notifications
-            if user_input.get(CONF_CREATE_TEST_BUTTON, DEFAULT_CREATE_TEST_BUTTON):
-                try:
-                    await self._create_test_button(self._data[CONF_MEDICATION_NAME])
-                except Exception as e:
-                    # Log error but don't fail the entire setup
-                    import logging
-
-                    _LOGGER = logging.getLogger(__name__)
-                    _LOGGER.warning("Failed to create test button: %s", e)
-
-            return entry
 
         # Get available notification services
         notify_services = self._get_notify_services()
@@ -298,9 +283,6 @@ class PillAssistantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Optional(
                 CONF_SNOOZE_DURATION_MINUTES, default=DEFAULT_SNOOZE_DURATION_MINUTES
             ): vol.Coerce(int),
-            vol.Optional(
-                CONF_CREATE_TEST_BUTTON, default=DEFAULT_CREATE_TEST_BUTTON
-            ): bool,
         }
 
         # Add notification service selector if services are available
@@ -319,21 +301,6 @@ class PillAssistantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="refill",
             data_schema=vol.Schema(schema_dict),
             errors=errors,
-        )
-
-    async def _create_test_button(self, medication_name: str) -> None:
-        """Create an input_button helper for test notifications."""
-        # Sanitize medication name for entity_id
-        button_name = f"test_{medication_name.lower().replace(' ', '_')}_notification"
-
-        # Create input_button using the input_button service
-        await self.hass.services.async_call(
-            "input_button",
-            "create",
-            {
-                "name": f"Test {medication_name} Notification",
-            },
-            blocking=True,
         )
 
     @staticmethod
@@ -369,17 +336,6 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
                 self._config_entry,
                 data={**self._config_entry.data, **user_input},
             )
-
-            # If requested, create input_button helper for test notifications
-            if user_input.get(CONF_CREATE_TEST_BUTTON, False):
-                try:
-                    await self._create_test_button(user_input[CONF_MEDICATION_NAME])
-                except Exception as e:
-                    # Log error but don't fail the entire update
-                    import logging
-
-                    _LOGGER = logging.getLogger(__name__)
-                    _LOGGER.warning("Failed to create test button: %s", e)
 
             return self.async_create_entry(title="", data={})
 
@@ -535,7 +491,6 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
         schema_dict[
             vol.Optional(CONF_NOTES, default=current_data.get(CONF_NOTES, ""))
         ] = str
-        schema_dict[vol.Optional(CONF_CREATE_TEST_BUTTON, default=False)] = bool
 
         # Add notification service selector if services are available
         if notify_options:
@@ -557,19 +512,4 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
         return self.async_show_form(
             step_id="init",
             data_schema=vol.Schema(schema_dict),
-        )
-
-    async def _create_test_button(self, medication_name: str) -> None:
-        """Create an input_button helper for test notifications."""
-        # Sanitize medication name for entity_id
-        button_name = f"test_{medication_name.lower().replace(' ', '_')}_notification"
-
-        # Create input_button using the input_button service
-        await self.hass.services.async_call(
-            "input_button",
-            "create",
-            {
-                "name": f"Test {medication_name} Notification",
-            },
-            blocking=True,
         )

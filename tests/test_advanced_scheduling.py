@@ -58,7 +58,6 @@ async def test_relative_medication_schedule_config(hass: HomeAssistant):
         user_input={
             CONF_REFILL_AMOUNT: 30,
             CONF_REFILL_REMINDER_DAYS: 7,
-            "create_test_button": False,
         },
     )
 
@@ -102,7 +101,6 @@ async def test_relative_medication_schedule_config(hass: HomeAssistant):
         user_input={
             CONF_REFILL_AMOUNT: 30,
             CONF_REFILL_REMINDER_DAYS: 7,
-            "create_test_button": False,
         },
     )
 
@@ -151,7 +149,6 @@ async def test_relative_sensor_schedule_config(hass: HomeAssistant):
         user_input={
             CONF_REFILL_AMOUNT: 30,
             CONF_REFILL_REMINDER_DAYS: 7,
-            "create_test_button": False,
         },
     )
 
