@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import re
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import callback

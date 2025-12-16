@@ -116,10 +116,6 @@ ATTR_MISSED_DOSES = "missed_doses"
 ATTR_SNOOZE_UNTIL = "snooze_until"
 ATTR_SNOOZE_DURATION = "snooze_duration"
 
-# Input button configuration
-CONF_CREATE_TEST_BUTTON = "create_test_button"
-DEFAULT_CREATE_TEST_BUTTON = True
-
 # Snooze configuration
 CONF_SNOOZE_DURATION_MINUTES = "snooze_duration_minutes"
 DEFAULT_SNOOZE_DURATION_MINUTES = 15
