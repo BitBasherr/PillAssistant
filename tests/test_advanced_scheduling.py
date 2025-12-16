@@ -209,7 +209,7 @@ async def test_relative_medication_next_dose_calculation(hass: HomeAssistant):
     await hass.async_block_till_done()
 
     # Get the relative medication sensor
-    entity_id = "sensor.relative_med"
+    entity_id = "sensor.pa_relative_med"
     state = hass.states.get(entity_id)
 
     assert state is not None

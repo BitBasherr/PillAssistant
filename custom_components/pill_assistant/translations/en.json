@@ -13,7 +13,7 @@
       },
       "schedule": {
         "title": "Set Schedule",
-        "description": "Configure when to take this medication. Enter times in HH:MM format (e.g., 08:00, 20:00)",
+        "description": "Configure when to take this medication. Enter times like 1015, 8:00AM, 2030, or 20:30",
         "data": {
           "schedule_times": "Times to Take Medication",
           "schedule_days": "Days of the Week"
@@ -27,10 +27,16 @@
           "refill_reminder_days": "Days Before Refill Reminder",
           "notify_services": "Notification Services (optional)"
         }
+      },
+      "time_clarification": {
+        "title": "Clarify Time",
+        "description": "Please specify if these times are AM or PM",
+        "data": {}
       }
     },
     "error": {
-      "medication_name_required": "Medication name is required"
+      "medication_name_required": "Medication name is required",
+      "invalid_time_format": "Invalid time format. Use formats like 1015, 8:00AM, 2030, or 20:30"
     },
     "abort": {
       "already_configured": "This medication is already configured"
@@ -52,6 +58,11 @@
           "notes": "Notes (optional)",
           "notify_services": "Notification Services (optional)"
         }
+      },
+      "time_clarification_options": {
+        "title": "Clarify Time",
+        "description": "Please specify if these times are AM or PM",
+        "data": {}
       }
     }
   },
