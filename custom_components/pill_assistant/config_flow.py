@@ -34,31 +34,30 @@ from .const import (
     SCHEDULE_TYPE_OPTIONS,
     SELECT_DOSAGE_UNIT,
     SELECT_DAYS,
-    SELECT_TIME,
 )
 
 
 def normalize_time_input(time_str: str) -> tuple[str | None, bool]:
     """
     Normalize time input to HH:MM format.
-    
+
     Returns tuple of (normalized_time, needs_ampm_clarification)
     - If time is unambiguous (uses 24-hour or has AM/PM), returns (time, False)
     - If time needs clarification (e.g., "1015"), returns (time_without_ampm, True)
     - If invalid, returns (None, False)
     """
     time_str = time_str.strip().upper()
-    
+
     # Check if it already has AM/PM
     has_ampm = "AM" in time_str or "PM" in time_str
     is_pm = "PM" in time_str
-    
+
     # Check if it already contains a colon (standard format)
     has_colon = ":" in time_str
-    
+
     # Remove AM/PM for processing
     time_str = time_str.replace("AM", "").replace("PM", "").strip()
-    
+
     # If it has a colon, parse as HH:MM
     if has_colon:
         # Remove any hyphens
@@ -74,11 +73,11 @@ def normalize_time_input(time_str: str) -> tuple[str | None, bool]:
     else:
         # Remove any hyphens or colons
         time_str = time_str.replace("-", "").replace(":", "")
-        
+
         # Try to parse numeric time
         if not time_str.isdigit():
             return None, False
-        
+
         # Handle different length inputs
         if len(time_str) == 3:  # e.g., "915" -> "09:15"
             hours = int(time_str[0])
@@ -91,11 +90,11 @@ def normalize_time_input(time_str: str) -> tuple[str | None, bool]:
             minutes = 0
         else:
             return None, False
-    
+
     # Validate hours and minutes
     if minutes < 0 or minutes > 59 or hours < 0 or hours > 23:
         return None, False
-    
+
     # If has AM/PM, convert to 24-hour
     if has_ampm:
         if hours < 1 or hours > 12:
@@ -105,7 +104,7 @@ def normalize_time_input(time_str: str) -> tuple[str | None, bool]:
         elif not is_pm and hours == 12:
             hours = 0
         return f"{hours:02d}:{minutes:02d}", False
-    
+
     # Check if time is ambiguous (needs AM/PM clarification)
     # If it was already in HH:MM format with leading zero or > 12, it's 24-hour format
     if has_colon and (hours >= 13 or hours == 0):
@@ -220,11 +219,11 @@ class PillAssistantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             schedule_times = user_input.get(CONF_SCHEDULE_TIMES, [])
             if isinstance(schedule_times, str):
                 schedule_times = [schedule_times]
-            
+
             # Normalize and validate time inputs
             normalized_times = []
             ambiguous_times = []
-            
+
             for time_str in schedule_times:
                 normalized, needs_clarification = normalize_time_input(time_str)
                 if normalized is None:
@@ -234,22 +233,22 @@ class PillAssistantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     ambiguous_times.append((time_str, normalized))
                 else:
                     normalized_times.append(normalized)
-            
+
             if not errors:
                 # Store normalized times and other data
                 user_input[CONF_SCHEDULE_TIMES] = normalized_times
-                
+
                 # Ensure schedule_days is set
                 if not user_input.get(CONF_SCHEDULE_DAYS):
                     user_input[CONF_SCHEDULE_DAYS] = DEFAULT_SCHEDULE_DAYS
-                
+
                 self._data.update(user_input)
-                
+
                 # If there are ambiguous times, go to clarification step
                 if ambiguous_times:
                     self._pending_times = ambiguous_times
                     return await self.async_step_time_clarification()
-                
+
                 return await self.async_step_refill()
 
         return self.async_show_form(
@@ -280,39 +279,39 @@ class PillAssistantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_time_clarification(self, user_input=None):
         """Clarify AM/PM for ambiguous times."""
         errors = {}
-        
+
         if user_input is not None:
             # Process the AM/PM choices for each pending time
             clarified_times = []
             for i, (original, normalized) in enumerate(self._pending_times):
                 choice_key = f"time_{i}_ampm"
                 ampm_choice = user_input.get(choice_key, "AM")
-                
+
                 # Parse the normalized time and convert based on AM/PM
                 hours, minutes = map(int, normalized.split(":"))
-                
+
                 if ampm_choice == "PM" and hours != 12:
                     hours += 12
                 elif ampm_choice == "AM" and hours == 12:
                     hours = 0
-                    
+
                 clarified_times.append(f"{hours:02d}:{minutes:02d}")
-            
+
             # Add clarified times to the existing times
             existing_times = self._data.get(CONF_SCHEDULE_TIMES, [])
             self._data[CONF_SCHEDULE_TIMES] = existing_times + clarified_times
             self._pending_times = []
-            
+
             return await self.async_step_refill()
-        
+
         # Build schema for clarification
         schema_dict = {}
         description_lines = ["Please clarify if these times are AM or PM:"]
-        
+
         for i, (original, normalized) in enumerate(self._pending_times):
             choice_key = f"time_{i}_ampm"
             description_lines.append(f"- {original} (entered as {normalized})")
-            
+
             schema_dict[vol.Required(choice_key, default="AM")] = selector(
                 {
                     "select": {
@@ -321,7 +320,7 @@ class PillAssistantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     }
                 }
             )
-        
+
         return self.async_show_form(
             step_id="time_clarification",
             data_schema=vol.Schema(schema_dict),
@@ -497,20 +496,21 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
 
     async def async_step_init(self, user_input=None):
         """Manage the options."""
+        errors = {}
+
         if user_input is not None:
             # If schedule_type is fixed_time, validate and normalize times
             schedule_type = user_input.get(CONF_SCHEDULE_TYPE, DEFAULT_SCHEDULE_TYPE)
-            errors = {}
-            
+
             if schedule_type == "fixed_time":
                 schedule_times = user_input.get(CONF_SCHEDULE_TIMES, [])
                 if isinstance(schedule_times, str):
                     schedule_times = [schedule_times]
-                
+
                 # Normalize and validate time inputs
                 normalized_times = []
                 ambiguous_times = []
-                
+
                 for time_str in schedule_times:
                     normalized, needs_clarification = normalize_time_input(time_str)
                     if normalized is None:
@@ -520,16 +520,16 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
                         ambiguous_times.append((time_str, normalized))
                     else:
                         normalized_times.append(normalized)
-                
+
                 if not errors:
                     user_input[CONF_SCHEDULE_TIMES] = normalized_times
-                    
+
                     # If there are ambiguous times, go to clarification step
                     if ambiguous_times:
                         self._pending_times = ambiguous_times
                         self._temp_user_input = user_input
                         return await self.async_step_time_clarification_options()
-            
+
             if not errors:
                 # Update the config entry with new data
                 self.hass.config_entries.async_update_entry(
@@ -538,9 +538,6 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
                 )
 
                 return self.async_create_entry(title="", data={})
-            else:
-                # Re-show form with errors
-                pass
 
         current_data = self._config_entry.data
         schedule_type = current_data.get(CONF_SCHEDULE_TYPE, DEFAULT_SCHEDULE_TYPE)
@@ -715,50 +712,51 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
         return self.async_show_form(
             step_id="init",
             data_schema=vol.Schema(schema_dict),
+            errors=errors,
         )
 
     async def async_step_time_clarification_options(self, user_input=None):
         """Clarify AM/PM for ambiguous times in options flow."""
         errors = {}
-        
+
         if user_input is not None:
             # Process the AM/PM choices for each pending time
             clarified_times = []
             for i, (original, normalized) in enumerate(self._pending_times):
                 choice_key = f"time_{i}_ampm"
                 ampm_choice = user_input.get(choice_key, "AM")
-                
+
                 # Parse the normalized time and convert based on AM/PM
                 hours, minutes = map(int, normalized.split(":"))
-                
+
                 if ampm_choice == "PM" and hours != 12:
                     hours += 12
                 elif ampm_choice == "AM" and hours == 12:
                     hours = 0
-                    
+
                 clarified_times.append(f"{hours:02d}:{minutes:02d}")
-            
+
             # Add clarified times to the existing times
             existing_times = self._temp_user_input.get(CONF_SCHEDULE_TIMES, [])
             self._temp_user_input[CONF_SCHEDULE_TIMES] = existing_times + clarified_times
             self._pending_times = []
-            
+
             # Update the config entry with new data
             self.hass.config_entries.async_update_entry(
                 self._config_entry,
                 data={**self._config_entry.data, **self._temp_user_input},
             )
-            
+
             return self.async_create_entry(title="", data={})
-        
+
         # Build schema for clarification
         schema_dict = {}
         description_lines = ["Please clarify if these times are AM or PM:"]
-        
+
         for i, (original, normalized) in enumerate(self._pending_times):
             choice_key = f"time_{i}_ampm"
             description_lines.append(f"- {original} (entered as {normalized})")
-            
+
             schema_dict[vol.Required(choice_key, default="AM")] = selector(
                 {
                     "select": {
@@ -767,7 +765,7 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
                     }
                 }
             )
-        
+
         return self.async_show_form(
             step_id="time_clarification_options",
             data_schema=vol.Schema(schema_dict),
