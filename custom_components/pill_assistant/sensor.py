@@ -56,7 +56,8 @@ class PillAssistantSensor(SensorEntity):
         """Initialize the sensor."""
         self.hass = hass
         self._entry = entry
-        self._attr_name = entry.data.get(CONF_MEDICATION_NAME, "Unknown Medication")
+        medication_name = entry.data.get(CONF_MEDICATION_NAME, "Unknown Medication")
+        self._attr_name = f"PA_{medication_name}"
         self._attr_unique_id = f"{DOMAIN}_{entry.entry_id}"
         self._state = "scheduled"
         self._medication_id = entry.entry_id

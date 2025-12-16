@@ -133,7 +133,6 @@ async def test_options_flow_update_refill_settings(
             CONF_REFILL_AMOUNT: 90,  # Changed from 30
             CONF_REFILL_REMINDER_DAYS: 14,  # Changed from 7
             CONF_NOTES: "Updated notes",
-            "create_test_button": False,
         },
     )
 
@@ -149,14 +148,14 @@ async def test_options_flow_update_refill_settings(
 async def test_options_flow_with_test_button(
     hass: HomeAssistant, mock_config_entry: MockConfigEntry
 ):
-    """Test options flow can request test button creation."""
+    """Test options flow - button entity should already exist."""
     mock_config_entry.add_to_hass(hass)
     await hass.config_entries.async_setup(mock_config_entry.entry_id)
     await hass.async_block_till_done()
 
     result = await hass.config_entries.options.async_init(mock_config_entry.entry_id)
 
-    # Update with test button enabled
+    # Update medication settings
     result = await hass.config_entries.options.async_configure(
         result["flow_id"],
         user_input={
@@ -168,9 +167,13 @@ async def test_options_flow_with_test_button(
             CONF_REFILL_AMOUNT: 30,
             CONF_REFILL_REMINDER_DAYS: 7,
             CONF_NOTES: "Test notes",
-            "create_test_button": True,
         },
     )
 
-    # Should succeed even if button creation fails (no input_button integration in tests)
+    # Options flow should complete successfully
     assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
+    
+    # Verify button entity still exists after reconfiguration
+    button_entity_id = "button.pa_test_medication"
+    button_state = hass.states.get(button_entity_id)
+    assert button_state is not None

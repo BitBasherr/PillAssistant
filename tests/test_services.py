@@ -23,7 +23,7 @@ async def test_take_medication_service(
     await hass.async_block_till_done()
 
     # Get initial state
-    entity_id = "sensor.test_medication"
+    entity_id = "sensor.pa_test_medication"
     state = hass.states.get(entity_id)
     initial_remaining = state.attributes.get("remaining_amount")
 
@@ -54,7 +54,7 @@ async def test_take_medication_multiple_times(
     await hass.config_entries.async_setup(mock_config_entry.entry_id)
     await hass.async_block_till_done()
 
-    entity_id = "sensor.test_medication"
+    entity_id = "sensor.pa_test_medication"
     state = hass.states.get(entity_id)
     initial_remaining = state.attributes.get("remaining_amount")
 
@@ -83,7 +83,7 @@ async def test_take_medication_cant_go_negative(
     await hass.config_entries.async_setup(mock_config_entry.entry_id)
     await hass.async_block_till_done()
 
-    entity_id = "sensor.test_medication"
+    entity_id = "sensor.pa_test_medication"
 
     # Take medication more times than available
     for _ in range(35):  # More than the 30 in refill_amount
@@ -110,7 +110,7 @@ async def test_skip_medication_service(
     await hass.config_entries.async_setup(mock_config_entry.entry_id)
     await hass.async_block_till_done()
 
-    entity_id = "sensor.test_medication"
+    entity_id = "sensor.pa_test_medication"
     state = hass.states.get(entity_id)
     initial_remaining = state.attributes.get("remaining_amount")
 
@@ -136,7 +136,7 @@ async def test_refill_medication_service(
     await hass.config_entries.async_setup(mock_config_entry.entry_id)
     await hass.async_block_till_done()
 
-    entity_id = "sensor.test_medication"
+    entity_id = "sensor.pa_test_medication"
 
     # Take some medication first
     for _ in range(10):
@@ -186,7 +186,7 @@ async def test_service_with_invalid_medication_id(
     )
 
     # Service should handle gracefully - verify original state unchanged
-    entity_id = "sensor.test_medication"
+    entity_id = "sensor.pa_test_medication"
     state = hass.states.get(entity_id)
     assert state.attributes.get("remaining_amount") == 30
 

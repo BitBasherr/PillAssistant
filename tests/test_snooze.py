@@ -147,7 +147,7 @@ async def test_snooze_prevents_due_state(hass: HomeAssistant):
     await hass.async_block_till_done()
 
     # Get the sensor entity
-    entity_id = "sensor.test_med_snooze_state"
+    entity_id = "sensor.pa_test_med_snooze_state"
     state = hass.states.get(entity_id)
 
     assert state is not None
