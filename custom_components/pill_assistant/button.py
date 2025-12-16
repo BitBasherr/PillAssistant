@@ -28,13 +28,13 @@ async def async_setup_entry(
     """Set up button entities for Pill Assistant."""
     # Create test notification button for this medication
     medication_name = config_entry.data.get(CONF_MEDICATION_NAME, "Unknown")
-    
+
     button = PillAssistantTestButton(
         hass,
         config_entry,
         medication_name,
     )
-    
+
     async_add_entities([button], True)
 
 
@@ -52,11 +52,11 @@ class PillAssistantTestButton(ButtonEntity):
         self._config_entry = config_entry
         self._medication_name = medication_name
         self._medication_id = config_entry.entry_id
-        
+
         # Set unique_id and name - entity_id will be generated automatically
         self._attr_unique_id = f"{DOMAIN}_test_{config_entry.entry_id}"
         self._attr_name = f"PA_{medication_name}"
-        
+
     @property
     def device_info(self) -> dict[str, Any]:
         """Return device information."""
@@ -66,7 +66,7 @@ class PillAssistantTestButton(ButtonEntity):
             "manufacturer": "Pill Assistant",
             "model": "Medication Tracker",
         }
-    
+
     @property
     def icon(self) -> str:
         """Return the icon for the button."""
@@ -78,7 +78,7 @@ class PillAssistantTestButton(ButtonEntity):
             "Test notification button pressed for medication: %s",
             self._medication_name,
         )
-        
+
         # Call the test notification service
         await self.hass.services.async_call(
             DOMAIN,

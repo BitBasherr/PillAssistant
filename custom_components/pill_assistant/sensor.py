@@ -143,8 +143,6 @@ class PillAssistantSensor(SensorEntity):
         schedule_type = self._entry.data.get(CONF_SCHEDULE_TYPE, DEFAULT_SCHEDULE_TYPE)
         schedule_days = self._entry.data.get(CONF_SCHEDULE_DAYS, [])
 
-        now = dt_util.now()
-
         # Map full day names to 3-letter abbreviations
         day_map = {
             "monday": "mon",
@@ -373,7 +371,6 @@ class PillAssistantSensor(SensorEntity):
         med_data = storage_data["medications"].get(self._medication_id, {})
 
         remaining = med_data.get("remaining_amount", 0)
-        refill_amount = self._entry.data.get(CONF_REFILL_AMOUNT, 0)
         refill_reminder_days = self._entry.data.get(CONF_REFILL_REMINDER_DAYS, 7)
 
         # Check if medication is snoozed

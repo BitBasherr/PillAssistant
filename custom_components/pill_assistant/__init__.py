@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta
-from typing import Any
+from datetime import timedelta
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
@@ -30,7 +29,6 @@ from .const import (
     CONF_DOSAGE_UNIT,
     CONF_REFILL_AMOUNT,
     CONF_NOTIFY_SERVICES,
-    CONF_SNOOZE_DURATION_MINUTES,
     DEFAULT_SNOOZE_DURATION_MINUTES,
 )
 
