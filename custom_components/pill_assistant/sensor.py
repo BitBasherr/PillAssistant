@@ -14,6 +14,7 @@ import homeassistant.util.dt as dt_util
 
 from .const import (
     DOMAIN,
+    LOG_FILE_NAME,
     CONF_MEDICATION_NAME,
     CONF_DOSAGE,
     CONF_DOSAGE_UNIT,
@@ -28,17 +29,16 @@ from .const import (
     CONF_REFILL_REMINDER_DAYS,
     CONF_NOTES,
     DEFAULT_SCHEDULE_TYPE,
-    ATTR_MEDICATION_ID,
+    ATTR_DISPLAY_MEDICATION_ID,
     ATTR_NEXT_DOSE_TIME,
     ATTR_LAST_TAKEN,
     ATTR_REMAINING_AMOUNT,
     ATTR_SCHEDULE,
     ATTR_MISSED_DOSES,
     ATTR_SNOOZE_UNTIL,
-    ATTR_DOSES_TODAY,
+    ATTR_DOSES_TAKEN_TODAY,
     ATTR_TAKEN_SCHEDULED_RATIO,
-    ATTR_LOG_FILE,
-    LOG_FILE_NAME,
+    ATTR_LOG_FILE_LOCATION,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -107,54 +107,135 @@ class PillAssistantSensor(SensorEntity):
 
         schedule_times = self._entry.data.get(CONF_SCHEDULE_TIMES, [])
         schedule_days = self._entry.data.get(CONF_SCHEDULE_DAYS, [])
+        schedule_type = self._entry.data.get(CONF_SCHEDULE_TYPE, DEFAULT_SCHEDULE_TYPE)
 
-        formatted_schedule = self._format_schedule(schedule_times, schedule_days)
-        next_dose = self._calculate_next_dose()
-        doses_today = self._get_today_doses(med_data)
-        scheduled_today = self._scheduled_today_count(schedule_times, schedule_days)
-        ratio = (
-            f"{len(doses_today)}/{scheduled_today}"
-            if scheduled_today
-            else f"{len(doses_today)}/0"
+        # Format schedule as human-readable string
+        schedule_str = self._format_schedule_string(
+            schedule_type, schedule_times, schedule_days
         )
 
+        # Calculate doses taken today and taken/scheduled ratio
+        doses_today = self._get_doses_taken_today()
+        scheduled_today = self._get_scheduled_doses_today()
+        ratio_str = f"{len(doses_today)}/{scheduled_today}"
+
+        # Get log file location
+        log_path = self.hass.config.path(LOG_FILE_NAME)
+
+        # Use human-friendly keys as per requirements but keep backward compatibility
         attributes = {
-            "Medication ID": self._medication_id,
-            "Dosage amount": self._entry.data.get(CONF_DOSAGE, ""),
-            "Dosage unit": self._entry.data.get(CONF_DOSAGE_UNIT, ""),
-            "Schedule": formatted_schedule,
-            ATTR_SCHEDULE: formatted_schedule,
-            "Next dose at": next_dose.isoformat() if next_dose else None,
+            # Human-friendly attribute names
+            ATTR_DISPLAY_MEDICATION_ID: self._medication_id,
+            "Dosage": f"{self._entry.data.get(CONF_DOSAGE, '')} {self._entry.data.get(CONF_DOSAGE_UNIT, '')}",
+            ATTR_SCHEDULE: schedule_str,
             ATTR_REMAINING_AMOUNT: med_data.get("remaining_amount", 0),
-            ATTR_LAST_TAKEN: med_data.get("last_taken"),
-            "Last taken at": med_data.get("last_taken"),
-            ATTR_DOSES_TODAY: doses_today,
-            "Doses today": doses_today,
-            ATTR_TAKEN_SCHEDULED_RATIO: ratio,
-            CONF_REFILL_AMOUNT: self._entry.data.get(CONF_REFILL_AMOUNT, 0),
-            CONF_REFILL_REMINDER_DAYS: self._entry.data.get(
-                CONF_REFILL_REMINDER_DAYS, 0
-            ),
-            CONF_NOTES: self._entry.data.get(CONF_NOTES, ""),
-            ATTR_LOG_FILE: self.hass.config.path(LOG_FILE_NAME),
+            ATTR_LAST_TAKEN: med_data.get("last_taken") or "Never",
+            "Refill amount": self._entry.data.get(CONF_REFILL_AMOUNT, 0),
+            "Refill reminder days": self._entry.data.get(CONF_REFILL_REMINDER_DAYS, 0),
+            ATTR_DOSES_TAKEN_TODAY: doses_today,
+            ATTR_TAKEN_SCHEDULED_RATIO: ratio_str,
+            ATTR_LOG_FILE_LOCATION: log_path,
+            # Keep backward-compatible keys for existing automations
+            "remaining_amount": med_data.get("remaining_amount", 0),
+            "last_taken": med_data.get("last_taken"),
+            "dosage": self._entry.data.get(CONF_DOSAGE, ""),
+            "dosage_unit": self._entry.data.get(CONF_DOSAGE_UNIT, ""),
         }
+
+        # Add notes if present
+        notes = self._entry.data.get(CONF_NOTES, "")
+        if notes:
+            attributes["Notes"] = notes
+            attributes["notes"] = notes
 
         # Add snooze information if snoozed
         snooze_until_str = med_data.get("snooze_until")
         if snooze_until_str:
             attributes[ATTR_SNOOZE_UNTIL] = snooze_until_str
+            attributes["snooze_until"] = snooze_until_str
 
         # Calculate next dose time
         next_dose = self._calculate_next_dose()
         if next_dose:
             attributes[ATTR_NEXT_DOSE_TIME] = next_dose.isoformat()
+            attributes["next_dose_time"] = next_dose.isoformat()
 
         # Get missed doses
         missed_doses = self._get_missed_doses()
         if missed_doses:
             attributes[ATTR_MISSED_DOSES] = missed_doses
+            attributes["missed_doses"] = missed_doses
 
         return attributes
+
+    def _format_schedule_string(
+        self, schedule_type: str, schedule_times: list, schedule_days: list
+    ) -> str:
+        """Format schedule as human-readable string."""
+        if schedule_type == "fixed_time":
+            times_str = ", ".join(schedule_times) if schedule_times else "No times"
+            days_str = ", ".join(schedule_days) if schedule_days else "No days"
+            return f"{times_str} on {days_str}"
+        elif schedule_type == "relative_medication":
+            rel_med_id = self._entry.data.get(CONF_RELATIVE_TO_MEDICATION)
+            offset_hours = self._entry.data.get(CONF_RELATIVE_OFFSET_HOURS, 0)
+            offset_minutes = self._entry.data.get(CONF_RELATIVE_OFFSET_MINUTES, 0)
+            rel_med_name = "unknown medication"
+            if rel_med_id and rel_med_id in self.hass.data.get(DOMAIN, {}):
+                ref_entry_data = self.hass.data[DOMAIN][rel_med_id]
+                ref_entry = ref_entry_data.get("entry")
+                if ref_entry:
+                    rel_med_name = ref_entry.data.get(CONF_MEDICATION_NAME, "unknown")
+            return f"{offset_hours}h {offset_minutes}m after {rel_med_name}"
+        elif schedule_type == "relative_sensor":
+            sensor_id = self._entry.data.get(CONF_RELATIVE_TO_SENSOR, "unknown sensor")
+            offset_hours = self._entry.data.get(CONF_RELATIVE_OFFSET_HOURS, 0)
+            offset_minutes = self._entry.data.get(CONF_RELATIVE_OFFSET_MINUTES, 0)
+            return f"{offset_hours}h {offset_minutes}m after {sensor_id}"
+        return "Unknown schedule type"
+
+    def _get_doses_taken_today(self) -> list:
+        """Get list of dose timestamps taken today."""
+        storage_data = self._store_data["storage_data"]
+        history = storage_data.get("history", [])
+
+        now = dt_util.now()
+        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        doses_today = []
+        for entry in history:
+            if (
+                entry.get("medication_id") == self._medication_id
+                and entry.get("action") == "taken"
+            ):
+                try:
+                    timestamp = datetime.fromisoformat(entry["timestamp"])
+                    if timestamp >= today_start:
+                        doses_today.append(timestamp.strftime("%H:%M"))
+                except (ValueError, KeyError):
+                    continue
+
+        return doses_today
+
+    def _get_scheduled_doses_today(self) -> int:
+        """Get count of scheduled doses for today."""
+        schedule_type = self._entry.data.get(CONF_SCHEDULE_TYPE, DEFAULT_SCHEDULE_TYPE)
+        schedule_times = self._entry.data.get(CONF_SCHEDULE_TIMES, [])
+        schedule_days = self._entry.data.get(CONF_SCHEDULE_DAYS, [])
+
+        now = dt_util.now()
+        today_day = now.strftime("%a").lower()[:3]
+
+        # Check if today is a scheduled day
+        if today_day not in schedule_days:
+            return 0
+
+        # For fixed time schedule, return number of scheduled times
+        if schedule_type == "fixed_time":
+            return len(schedule_times)
+
+        # For relative schedules, return 1 (assuming one dose per day)
+        return 1
 
     def _calculate_next_dose(self) -> datetime | None:
         """Calculate the next dose time based on schedule type."""

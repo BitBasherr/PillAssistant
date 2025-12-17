@@ -9,19 +9,19 @@ Send a notification when a medication is due to be taken.
 
 ```yaml
 automation:
-  - alias: "Medication Due - Aspirin"
-    description: "Send notification when Aspirin is due"
+  - alias: "Medication Due - MedicationA"
+    description: "Send notification when MedicationA is due"
     trigger:
       - platform: state
-        entity_id: sensor.aspirin
+        entity_id: sensor.medication_a
         to: "due"
     action:
       - service: notify.mobile_app_your_phone
         data:
           title: "💊 Medication Reminder"
           message: >
-            Time to take {{ state_attr('sensor.aspirin', 'dosage') }} 
-            {{ state_attr('sensor.aspirin', 'dosage_unit') }} of Aspirin
+            Time to take {{ state_attr('sensor.medication_a', 'dosage') }} 
+            {{ state_attr('sensor.medication_a', 'dosage_unit') }} of MedicationA
           data:
             actions:
               - action: "TAKE_MED"
@@ -35,19 +35,19 @@ Send an alert when a medication dose has been missed.
 
 ```yaml
 automation:
-  - alias: "Medication Overdue - Aspirin"
-    description: "Alert when Aspirin dose is overdue"
+  - alias: "Medication Overdue - MedicationA"
+    description: "Alert when MedicationA dose is overdue"
     trigger:
       - platform: state
-        entity_id: sensor.aspirin
+        entity_id: sensor.medication_a
         to: "overdue"
     action:
       - service: notify.mobile_app_your_phone
         data:
           title: "⚠️ Missed Dose"
-          message: "You have missed your scheduled dose of Aspirin"
+          message: "You have missed your scheduled dose of MedicationA"
           data:
-            tag: "overdue_aspirin"
+            tag: "overdue_medication_a"
             priority: high
 ```
 
@@ -56,23 +56,23 @@ Alert when medication supply is running low.
 
 ```yaml
 automation:
-  - alias: "Refill Reminder - Aspirin"
-    description: "Remind to refill Aspirin"
+  - alias: "Refill Reminder - MedicationA"
+    description: "Remind to refill MedicationA"
     trigger:
       - platform: state
-        entity_id: sensor.aspirin
+        entity_id: sensor.medication_a
         to: "refill_needed"
     condition:
       - condition: template
         value_template: >
-          {{ state_attr('sensor.aspirin', 'remaining_amount') | int <= 
-             state_attr('sensor.aspirin', 'refill_reminder_days') | int }}
+          {{ state_attr('sensor.medication_a', 'remaining_amount') | int <= 
+             state_attr('sensor.medication_a', 'refill_reminder_days') | int }}
     action:
       - service: notify.mobile_app_your_phone
         data:
           title: "📦 Refill Needed"
           message: >
-            Aspirin is running low. Only {{ state_attr('sensor.aspirin', 'remaining_amount') }} 
+            MedicationA is running low. Only {{ state_attr('sensor.medication_a', 'remaining_amount') }} 
             doses remaining. Please refill soon.
 ```
 
@@ -84,24 +84,24 @@ Use an input button to mark medication as taken.
 ```yaml
 # First, create an input button in configuration.yaml:
 input_button:
-  took_aspirin:
-    name: "Took Aspirin"
+  took_medication_a:
+    name: "Took MedicationA"
     icon: mdi:pill
 
 # Then create the automation:
 automation:
-  - alias: "Record Aspirin Taken"
-    description: "Record when Aspirin button is pressed"
+  - alias: "Record MedicationA Taken"
+    description: "Record when MedicationA button is pressed"
     trigger:
       - platform: state
-        entity_id: input_button.took_aspirin
+        entity_id: input_button.took_medication_a
     action:
       - service: pill_assistant.take_medication
         data:
-          medication_id: "{{ state_attr('sensor.aspirin', 'medication_id') }}"
+          medication_id: "{{ state_attr('sensor.medication_a', 'medication_id') }}"
       - service: notify.mobile_app_your_phone
         data:
-          message: "Aspirin dose recorded at {{ now().strftime('%H:%M') }}"
+          message: "MedicationA dose recorded at {{ now().strftime('%H:%M') }}"
 ```
 
 ### 5. Quick Action from Notification
@@ -119,7 +119,7 @@ automation:
     action:
       - service: pill_assistant.take_medication
         data:
-          medication_id: "{{ state_attr('sensor.aspirin', 'medication_id') }}"
+          medication_id: "{{ state_attr('sensor.medication_a', 'medication_id') }}"
 
   - alias: "Handle Skip Medication Action"
     trigger:
@@ -130,7 +130,7 @@ automation:
     action:
       - service: pill_assistant.skip_medication
         data:
-          medication_id: "{{ state_attr('sensor.aspirin', 'medication_id') }}"
+          medication_id: "{{ state_attr('sensor.medication_a', 'medication_id') }}"
 ```
 
 ## Scheduled Reminders
@@ -168,7 +168,7 @@ automation:
     description: "Announce medication time"
     trigger:
       - platform: state
-        entity_id: sensor.aspirin
+        entity_id: sensor.medication_a
         to: "due"
     action:
       - service: tts.google_translate_say
@@ -176,8 +176,8 @@ automation:
           entity_id: media_player.living_room_speaker
           message: >
             It's time to take your medication. Please take 
-            {{ state_attr('sensor.aspirin', 'dosage') }} 
-            {{ state_attr('sensor.aspirin', 'dosage_unit') }} of Aspirin.
+            {{ state_attr('sensor.medication_a', 'dosage') }} 
+            {{ state_attr('sensor.medication_a', 'dosage_unit') }} of MedicationA.
 ```
 
 ## Advanced Examples
@@ -191,7 +191,7 @@ automation:
     description: "Turn light blue when medication is due"
     trigger:
       - platform: state
-        entity_id: sensor.aspirin
+        entity_id: sensor.medication_a
         to: "due"
     action:
       - service: light.turn_on
@@ -214,7 +214,7 @@ Create a Lovelace card to display all medications.
 type: entities
 title: Medication Tracker
 entities:
-  - entity: sensor.aspirin
+  - entity: sensor.medication_a
     secondary_info: last-changed
   - entity: sensor.vitamin_d
     secondary_info: last-changed
@@ -222,7 +222,7 @@ entities:
     label: Actions
   - type: buttons
     entities:
-      - entity: input_button.took_aspirin
+      - entity: input_button.took_medication_a
       - entity: input_button.took_vitamin_d
 ```
 
@@ -235,16 +235,16 @@ automation:
     description: "Log adherence to medication schedule"
     trigger:
       - platform: state
-        entity_id: sensor.aspirin
+        entity_id: sensor.medication_a
         to: "taken"
     action:
       - service: logbook.log
         data:
           name: "Medication Adherence"
           message: >
-            Aspirin taken at {{ now().strftime('%H:%M') }}. 
-            Remaining: {{ state_attr('sensor.aspirin', 'remaining_amount') }}
-          entity_id: sensor.aspirin
+            MedicationA taken at {{ now().strftime('%H:%M') }}. 
+            Remaining: {{ state_attr('sensor.medication_a', 'remaining_amount') }}
+          entity_id: sensor.medication_a
 ```
 
 ### 11. Auto-Refill Reminder Based on Pharmacy Schedule
@@ -259,7 +259,7 @@ automation:
         at: "09:00:00"
     condition:
       - condition: state
-        entity_id: sensor.aspirin
+        entity_id: sensor.medication_a
         state: "refill_needed"
       - condition: time
         weekday:
@@ -270,7 +270,7 @@ automation:
       - service: notify.mobile_app_your_phone
         data:
           title: "📞 Call Pharmacy"
-          message: "Don't forget to call the pharmacy to refill your Aspirin prescription"
+          message: "Don't forget to call the pharmacy to refill your MedicationA prescription"
 ```
 
 ### 12. Medication History Report
@@ -326,7 +326,7 @@ views:
             title: Active Medications
             show_header_toggle: false
             entities:
-              - entity: sensor.aspirin
+              - entity: sensor.medication_a
                 secondary_info: last-changed
                 icon: mdi:pill
               - entity: sensor.vitamin_d
@@ -336,24 +336,24 @@ views:
           - type: glance
             title: Quick Status
             entities:
-              - entity: sensor.aspirin
-                name: Aspirin
+              - entity: sensor.medication_a
+                name: MedicationA
               - entity: sensor.vitamin_d
                 name: Vitamin D
           
           - type: button
-            name: Mark Aspirin Taken
+            name: Mark MedicationA Taken
             tap_action:
               action: call-service
               service: pill_assistant.take_medication
               service_data:
-                medication_id: "{{ state_attr('sensor.aspirin', 'medication_id') }}"
+                medication_id: "{{ state_attr('sensor.medication_a', 'medication_id') }}"
           
           - type: history-graph
             title: Medication History (24h)
             hours_to_show: 24
             entities:
-              - sensor.aspirin
+              - sensor.medication_a
               - sensor.vitamin_d
 ```
 
