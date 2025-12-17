@@ -426,6 +426,60 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         _LOGGER.info(
             "Test notification sent for %s", med_data.get(CONF_MEDICATION_NAME)
         )
+        title = "Medication Reminder (Test)"
+
+        # Send notification to configured services
+        if notify_services:
+            for service_name in notify_services:
+                try:
+                    # Extract domain and service
+                    service_parts = service_name.split(".")
+                    if len(service_parts) == 2:
+                        domain, service = service_parts
+                        await hass.services.async_call(
+                            domain,
+                            service,
+                            {
+                                "title": title,
+                                "message": message,
+                                "data": {
+                                    "tag": f"pill_assistant_{med_id}",
+                                    "actions": [
+                                        {
+                                            "action": f"take_medication_{med_id}",
+                                            "title": "Mark as Taken",
+                                        },
+                                        {
+                                            "action": f"snooze_medication_{med_id}",
+                                            "title": "Snooze",
+                                        },
+                                        {
+                                            "action": f"skip_medication_{med_id}",
+                                            "title": "Skip",
+                                        },
+                                    ],
+                                },
+                            },
+                            blocking=False,
+                        )
+                except Exception as e:
+                    _LOGGER.error(
+                        "Failed to send notification via %s: %s", service_name, e
+                    )
+        else:
+            # Fall back to persistent notification
+            await hass.services.async_call(
+                "persistent_notification",
+                "create",
+                {
+                    "title": title,
+                    "message": message,
+                    "notification_id": f"pill_assistant_test_{med_id}",
+                },
+                blocking=False,
+            )
+
+        _LOGGER.info("Test notification sent for %s", med_name)
 
     async def handle_snooze_medication(call: ServiceCall) -> None:
         """Handle snooze medication service."""
