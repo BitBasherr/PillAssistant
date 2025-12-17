@@ -14,7 +14,6 @@ from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.typing import ConfigType
-from homeassistant.components.frontend import async_register_built_in_panel
 import homeassistant.util.dt as dt_util
 
 from .const import (

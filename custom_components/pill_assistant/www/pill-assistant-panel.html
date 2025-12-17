@@ -227,6 +227,19 @@
             animation: slideIn 0.3s ease-out;
         }
 
+        .error-message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #f44336;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 6px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            z-index: 1000;
+            animation: slideIn 0.3s ease-out;
+        }
+
         @keyframes slideIn {
             from {
                 transform: translateX(400px);
@@ -264,31 +277,25 @@
         let hass = null;
         let medications = [];
 
+        // Get Home Assistant connection
+        function getHassConnection() {
+            if (window.parent && window.parent.document) {
+                const haElement = window.parent.document.querySelector('home-assistant');
+                if (haElement && haElement.hass) {
+                    return haElement.hass;
+                }
+            }
+            return null;
+        }
+
         // Initialize connection to Home Assistant
         function initConnection() {
-            window.addEventListener('message', function(event) {
-                if (event.data.type === 'init') {
-                    console.log('Received init from parent');
-                }
-            });
-
-            // Try to get hass from parent window
-            if (window.parent && window.parent.hassConnection) {
-                hass = window.parent.hassConnection;
+            hass = getHassConnection();
+            if (hass) {
                 loadMedications();
-            } else if (window.parent && window.parent.customElements && window.parent.customElements.get('home-assistant')) {
-                setTimeout(initConnection, 100);
             } else {
-                // Fallback - poll for hass object
-                setTimeout(() => {
-                    if (window.parent && window.parent.document && window.parent.document.querySelector('home-assistant')) {
-                        const haElement = window.parent.document.querySelector('home-assistant');
-                        if (haElement && haElement.hass) {
-                            hass = haElement.hass;
-                            loadMedications();
-                        }
-                    }
-                }, 500);
+                // Retry after a short delay
+                setTimeout(initConnection, 500);
             }
         }
 
@@ -296,10 +303,8 @@
         async function loadMedications() {
             try {
                 if (!hass) {
-                    const haElement = window.parent.document.querySelector('home-assistant');
-                    if (haElement && haElement.hass) {
-                        hass = haElement.hass;
-                    } else {
+                    hass = getHassConnection();
+                    if (!hass) {
                         throw new Error('Home Assistant connection not available');
                     }
                 }
@@ -368,6 +373,9 @@
             const nextDose = attrs['Next dose time'] || 'Unknown';
             const refillAmount = attrs['Refill amount'] || 0;
             const medName = med.entityId.replace('sensor.pa_', '').replace(/_/g, ' ');
+            
+            // Helper to check if decrement button should be disabled
+            const isDecrementDisabled = parseFloat(dosage) <= 0.5;
 
             return `
                 <div class="medication-card">
@@ -398,7 +406,7 @@
                     <div class="dosage-adjuster">
                         <div class="dosage-label">Dosage:</div>
                         <div class="dosage-controls">
-                            <button class="dosage-btn" onclick="adjustDosage('${medId}', -1)" ${parseFloat(dosage) <= 0.5 ? 'disabled' : ''}>−</button>
+                            <button class="dosage-btn" onclick="adjustDosage('${medId}', -1)" ${isDecrementDisabled ? 'disabled' : ''}>−</button>
                             <div class="dosage-value">${dosage} ${dosageUnit}</div>
                             <button class="dosage-btn" onclick="adjustDosage('${medId}', 1)">+</button>
                         </div>
@@ -426,10 +434,8 @@
         async function callService(domain, service, serviceData) {
             try {
                 if (!hass) {
-                    const haElement = window.parent.document.querySelector('home-assistant');
-                    if (haElement && haElement.hass) {
-                        hass = haElement.hass;
-                    } else {
+                    hass = getHassConnection();
+                    if (!hass) {
                         throw new Error('Home Assistant connection not available');
                     }
                 }
@@ -441,8 +447,30 @@
                 setTimeout(loadMedications, 500);
             } catch (error) {
                 console.error('Error calling service:', error);
-                alert(`Error: ${error.message}`);
+                showErrorMessage(`Error: ${error.message}`);
             }
+        }
+
+        // Show success message
+        function showSuccessMessage(message) {
+            showNotification(message, 'success');
+        }
+
+        // Show error message
+        function showErrorMessage(message) {
+            showNotification(message, 'error');
+        }
+
+        // Show notification message
+        function showNotification(message, type = 'success') {
+            const msgEl = document.createElement('div');
+            msgEl.className = type === 'error' ? 'error-message' : 'success-message';
+            msgEl.textContent = message;
+            document.body.appendChild(msgEl);
+
+            setTimeout(() => {
+                msgEl.remove();
+            }, 3000);
         }
 
         // Medication actions
@@ -465,18 +493,6 @@
         async function adjustDosage(medId, change) {
             const service = change > 0 ? 'increment_dosage' : 'decrement_dosage';
             await callService('pill_assistant', service, { medication_id: medId });
-        }
-
-        // Show success message
-        function showSuccessMessage(message) {
-            const msgEl = document.createElement('div');
-            msgEl.className = 'success-message';
-            msgEl.textContent = message;
-            document.body.appendChild(msgEl);
-
-            setTimeout(() => {
-                msgEl.remove();
-            }, 3000);
         }
 
         // Initialize on load

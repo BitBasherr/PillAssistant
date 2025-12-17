@@ -141,8 +141,9 @@ async def test_notification_action_invalid_medication(
     initial_remaining = med_data.get("remaining_amount")
 
     # Simulate notification action event with invalid ID
+    invalid_med_id = "invalid_medication_id_for_testing"
     event_data = {
-        "action": "take_medication_invalid_id_12345",
+        "action": f"take_medication_{invalid_med_id}",
     }
     hass.bus.async_fire("mobile_app_notification_action", event_data)
     await hass.async_block_till_done()

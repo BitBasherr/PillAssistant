@@ -149,6 +149,12 @@ async def test_dosage_adjustment_with_invalid_id(
     await hass.config_entries.async_setup(mock_config_entry.entry_id)
     await hass.async_block_till_done()
 
+    # Get original dosage value from mock config entry
+    entry_data = hass.data[DOMAIN][mock_config_entry.entry_id]
+    storage_data = entry_data["storage_data"]
+    med_data = storage_data["medications"].get(mock_config_entry.entry_id)
+    original_dosage = float(med_data.get(CONF_DOSAGE, 1))
+
     # Try with invalid medication ID (should not crash)
     await hass.services.async_call(
         DOMAIN,
@@ -159,8 +165,6 @@ async def test_dosage_adjustment_with_invalid_id(
     await hass.async_block_till_done()
 
     # Verify original dosage unchanged
-    entry_data = hass.data[DOMAIN][mock_config_entry.entry_id]
-    storage_data = entry_data["storage_data"]
     med_data = storage_data["medications"].get(mock_config_entry.entry_id)
     dosage = float(med_data.get(CONF_DOSAGE, 1))
-    assert dosage == 100.0  # Original dosage from mock_config_entry
+    assert dosage == original_dosage
