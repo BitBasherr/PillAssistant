@@ -21,9 +21,7 @@ async def test_missed_doses_no_duplicates(
     await hass.async_block_till_done()
 
     # Get the sensor entity
-    entity_id = (
-        f"sensor.pa_{mock_config_entry.data['medication_name'].lower().replace(' ', '_')}"
-    )
+    entity_id = f"sensor.pa_{mock_config_entry.data['medication_name'].lower().replace(' ', '_')}"
     state = hass.states.get(entity_id)
 
     assert state is not None
