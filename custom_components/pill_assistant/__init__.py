@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from datetime import timedelta
+import os
 
 import voluptuous as vol
 
@@ -13,6 +14,7 @@ from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.typing import ConfigType
+from homeassistant.components.frontend import async_register_built_in_panel
 import homeassistant.util.dt as dt_util
 
 from .const import (
@@ -25,6 +27,8 @@ from .const import (
     SERVICE_REFILL_MEDICATION,
     SERVICE_TEST_NOTIFICATION,
     SERVICE_SNOOZE_MEDICATION,
+    SERVICE_INCREMENT_DOSAGE,
+    SERVICE_DECREMENT_DOSAGE,
     ATTR_MEDICATION_ID,
     ATTR_SNOOZE_DURATION,
     CONF_MEDICATION_NAME,
@@ -71,10 +75,34 @@ SERVICE_SNOOZE_MEDICATION_SCHEMA = vol.Schema(
     }
 )
 
+SERVICE_INCREMENT_DOSAGE_SCHEMA = vol.Schema(
+    {
+        vol.Required(ATTR_MEDICATION_ID): cv.string,
+    }
+)
+
+SERVICE_DECREMENT_DOSAGE_SCHEMA = vol.Schema(
+    {
+        vol.Required(ATTR_MEDICATION_ID): cv.string,
+    }
+)
+
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up the Pill Assistant component."""
     hass.data.setdefault(DOMAIN, {})
+    
+    # Register the www directory with the http component for static file serving
+    if not hass.data[DOMAIN].get("panel_registered"):
+        www_path = os.path.join(os.path.dirname(__file__), "www")
+        hass.http.register_static_path(
+            f"/{DOMAIN}",
+            www_path,
+            cache_headers=False,
+        )
+        hass.data[DOMAIN]["panel_registered"] = True
+        _LOGGER.info("Pill Assistant panel available at /%s/pill-assistant-panel.html", DOMAIN)
+    
     return True
 
 
@@ -111,6 +139,50 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Set up platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
+    # Register event listener for notification actions
+    async def handle_notification_action(event):
+        """Handle notification action events from mobile_app."""
+        action = event.data.get("action")
+        if not action:
+            return
+
+        # Parse the action to extract medication ID
+        if action.startswith("take_medication_"):
+            med_id = action.replace("take_medication_", "")
+            if med_id in hass.data[DOMAIN]:
+                await hass.services.async_call(
+                    DOMAIN,
+                    SERVICE_TAKE_MEDICATION,
+                    {ATTR_MEDICATION_ID: med_id},
+                    blocking=True,
+                )
+                _LOGGER.info("Medication %s marked as taken via notification action", med_id)
+        elif action.startswith("snooze_medication_"):
+            med_id = action.replace("snooze_medication_", "")
+            if med_id in hass.data[DOMAIN]:
+                await hass.services.async_call(
+                    DOMAIN,
+                    SERVICE_SNOOZE_MEDICATION,
+                    {ATTR_MEDICATION_ID: med_id},
+                    blocking=True,
+                )
+                _LOGGER.info("Medication %s snoozed via notification action", med_id)
+        elif action.startswith("skip_medication_"):
+            med_id = action.replace("skip_medication_", "")
+            if med_id in hass.data[DOMAIN]:
+                await hass.services.async_call(
+                    DOMAIN,
+                    SERVICE_SKIP_MEDICATION,
+                    {ATTR_MEDICATION_ID: med_id},
+                    blocking=True,
+                )
+                _LOGGER.info("Medication %s skipped via notification action", med_id)
+
+    # Listen for mobile_app notification action events
+    hass.bus.async_listen("mobile_app_notification_action", handle_notification_action)
+    # Also listen for ios.notification_action_fired for iOS devices
+    hass.bus.async_listen("ios.notification_action_fired", handle_notification_action)
 
     # Register services
     async def handle_take_medication(call: ServiceCall) -> None:
@@ -368,6 +440,64 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             snooze_until,
         )
 
+    async def handle_increment_dosage(call: ServiceCall) -> None:
+        """Handle increment dosage service."""
+        med_id = call.data.get(ATTR_MEDICATION_ID)
+        if med_id not in hass.data[DOMAIN]:
+            _LOGGER.error("Medication ID %s not found", med_id)
+            return
+
+        entry_data = hass.data[DOMAIN][med_id]
+        store = entry_data["store"]
+        storage_data = entry_data["storage_data"]
+
+        med_data = storage_data["medications"].get(med_id)
+        if not med_data:
+            return
+
+        # Increment dosage by 0.5 (works for pills, tablets, etc.)
+        current_dosage = float(med_data.get(CONF_DOSAGE, 1))
+        new_dosage = current_dosage + 0.5
+        med_data[CONF_DOSAGE] = str(new_dosage)
+
+        await store.async_save(storage_data)
+
+        _LOGGER.info(
+            "Medication %s dosage incremented from %s to %s",
+            med_data.get(CONF_MEDICATION_NAME),
+            current_dosage,
+            new_dosage,
+        )
+
+    async def handle_decrement_dosage(call: ServiceCall) -> None:
+        """Handle decrement dosage service."""
+        med_id = call.data.get(ATTR_MEDICATION_ID)
+        if med_id not in hass.data[DOMAIN]:
+            _LOGGER.error("Medication ID %s not found", med_id)
+            return
+
+        entry_data = hass.data[DOMAIN][med_id]
+        store = entry_data["store"]
+        storage_data = entry_data["storage_data"]
+
+        med_data = storage_data["medications"].get(med_id)
+        if not med_data:
+            return
+
+        # Decrement dosage by 0.5 (works for pills, tablets, etc.), minimum 0.5
+        current_dosage = float(med_data.get(CONF_DOSAGE, 1))
+        new_dosage = max(0.5, current_dosage - 0.5)
+        med_data[CONF_DOSAGE] = str(new_dosage)
+
+        await store.async_save(storage_data)
+
+        _LOGGER.info(
+            "Medication %s dosage decremented from %s to %s",
+            med_data.get(CONF_MEDICATION_NAME),
+            current_dosage,
+            new_dosage,
+        )
+
     # Register services only once
     if not hass.services.has_service(DOMAIN, SERVICE_TAKE_MEDICATION):
         hass.services.async_register(
@@ -403,6 +533,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             SERVICE_SNOOZE_MEDICATION,
             handle_snooze_medication,
             schema=SERVICE_SNOOZE_MEDICATION_SCHEMA,
+        )
+    if not hass.services.has_service(DOMAIN, SERVICE_INCREMENT_DOSAGE):
+        hass.services.async_register(
+            DOMAIN,
+            SERVICE_INCREMENT_DOSAGE,
+            handle_increment_dosage,
+            schema=SERVICE_INCREMENT_DOSAGE_SCHEMA,
+        )
+    if not hass.services.has_service(DOMAIN, SERVICE_DECREMENT_DOSAGE):
+        hass.services.async_register(
+            DOMAIN,
+            SERVICE_DECREMENT_DOSAGE,
+            handle_decrement_dosage,
+            schema=SERVICE_DECREMENT_DOSAGE_SCHEMA,
         )
 
     return True
