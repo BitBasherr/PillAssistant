@@ -90,7 +90,7 @@ SERVICE_DECREMENT_DOSAGE_SCHEMA = vol.Schema(
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up the Pill Assistant component."""
     hass.data.setdefault(DOMAIN, {})
-    
+
     # Register the www directory with the http component for static file serving
     # Only register if http component is available (not in test environment)
     if not hass.data[DOMAIN].get("panel_registered") and hass.http is not None:
@@ -101,8 +101,10 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             cache_headers=False,
         )
         hass.data[DOMAIN]["panel_registered"] = True
-        _LOGGER.info("Pill Assistant panel available at /%s/pill-assistant-panel.html", DOMAIN)
-    
+        _LOGGER.info(
+            "Pill Assistant panel available at /%s/pill-assistant-panel.html", DOMAIN
+        )
+
     return True
 
 
@@ -157,7 +159,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                     {ATTR_MEDICATION_ID: med_id},
                     blocking=True,
                 )
-                _LOGGER.info("Medication %s marked as taken via notification action", med_id)
+                _LOGGER.info(
+                    "Medication %s marked as taken via notification action", med_id
+                )
         elif action.startswith("snooze_medication_"):
             med_id = action.replace("snooze_medication_", "")
             if med_id in hass.data[DOMAIN]:
