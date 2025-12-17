@@ -8,26 +8,62 @@ schedules, and log medication history.
 
 ## Features
 
+### Core Features
 - **Medication Management**: Add and manage multiple  
-  medications through the UI
-- **Flexible Scheduling**: Configure time of day and  
-  days of week for each medication
+  medications through the UI with PA_ entity naming prefix
+- **Flexible Scheduling**: 
+  - Fixed time schedules (specific times on specific days)
+  - Relative scheduling (after another medication)
+  - Sensor-based scheduling (after wake-up sensor, etc.)
+  - Dynamic rebasing: schedules recalculate from actual taken times, not planned times
 - **Dosage Tracking**: Track dosage amounts with various  
-  unit options (pills, mL, mg, etc.)
-- **Refill Reminders**: Automatic alerts when medication  
-  supply is running low
-- **Persistent Logging**: All medication events (taken,  
-  skipped, refilled) are logged to a persistent file
+  unit options (pills, mL, mg, g, tablets, capsules, drops, sprays, puffs)
+- **Refill Management**: 
+  - Automatic alerts when medication supply is running low
+  - Track remaining amount
+  - One-click refill service
 - **Real-time Status**: Sensor entities show current  
-  medication status (scheduled, due, overdue, taken,  
-  refill needed)
+  medication status (scheduled, due, overdue, taken, refill needed)
+
+### Logging and History
+- **Persistent Logging**: All medication events (taken,  
+  skipped, refilled) logged to a permanent CSV-style log file
+- **Daily Tracking**: 
+  - "Doses taken today" - list of timestamps for today's doses
+  - "Taken/Scheduled ratio" - string format like "1/2" showing progress
 - **Database Storage**: All medication data stored in  
-  Home Assistant's database
-- **Service Calls**: Control medications via automations  
-  using service calls
+  Home Assistant's database for real-time queries
+- **Log File Location**: Displayed in sensor attributes for easy access
+
+### Notifications and Actions
+- **Test Notification Button**: Each medication gets a dedicated  
+  test button (input_button helper) to verify notification setup
+- **Actionable Notifications**: Mobile notifications include:
+  - "Mark as Taken" button
+  - "Snooze" button (customizable duration per medication)
+  - "Skip" button
+- **Multiple Notification Services**: Select from available  
+  notify.* services (e.g., mobile_app, telegram, etc.)
+
+### Time Management
+- **Flexible Time Input**: 
+  - Native HA time selectors supported
+  - Compact numeric entry (e.g., "1015" → "10:15")
+  - AM/PM clarification for ambiguous times
+  - Works in both config and options flows
+- **Snooze Feature**:
+  - Global default snooze duration (15 minutes)
+  - Per-medication override available
+  - Delays downstream medications appropriately
+
+### UI and Configuration
 - **UI Configuration**: Easy setup through Home Assistant UI  
   (no YAML required)
 - **Options Flow**: Modify medication settings after creation
+- **Human-Friendly Attributes**: Sensor attributes use readable  
+  names like "Last taken at", "Medication ID", "Schedule"
+- **Backward Compatibility**: Technical attribute keys preserved  
+  for existing automations
 
 ## Installation
 
@@ -87,21 +123,31 @@ Each medication creates a sensor entity with the following possible states:
 
 ## Sensor Attributes
 
-Each sensor provides detailed attributes:
+Each sensor provides detailed attributes with human-friendly names:
 
-- `medication_id`: Unique identifier for the medication
-- `dosage`: Amount to take
-- `dosage_unit`: Unit of measurement
-- `schedule`: Times and days configured
-- `remaining_amount`: Current supply remaining
-- `last_taken`: Timestamp of last dose taken
-- `next_dose_time`: Calculated next scheduled dose
-- `missed_doses`: List of recent missed doses
-- `refill_amount`: Full refill quantity
-- `refill_reminder_days`: Days threshold for refill reminder
-- `notes`: Optional notes about the medication
-- `notify_services`: Configured notification services  
-  (optional)
+### Display Attributes (Human-Friendly)
+- `Medication ID`: Unique identifier for the medication
+- `Dosage`: Combined dosage amount and unit (e.g., "100 mg")
+- `Schedule`: Human-readable schedule string
+  - Fixed time: "08:00, 20:00 on mon, tue, wed, thu, fri, sat, sun"
+  - Relative: "2h 30m after MedicationA"
+  - Sensor-based: "1h 0m after sensor.wake_up_time"
+- `Remaining amount`: Current supply remaining
+- `Last taken at`: Timestamp of last dose taken or "Never"
+- `Next dose time`: Calculated next scheduled dose (ISO format)
+- `Missed doses`: List of recent missed doses (last 5, within 24h)
+- `Refill amount`: Full refill quantity
+- `Refill reminder days`: Days threshold for refill reminder
+- `Doses taken today`: List of times doses were taken today (e.g., ["08:15", "20:30"])
+- `Taken/Scheduled ratio`: String showing daily progress (e.g., "1/2")
+- `Log file location`: Full path to persistent log file
+- `Notes`: Optional notes about the medication (if present)
+- `Snooze until`: Active snooze end time (if snoozed)
+
+### Legacy Attributes (For Backward Compatibility)
+The following technical attribute keys are also available for existing automations:
+- `remaining_amount`, `last_taken`, `dosage`, `dosage_unit`
+- `next_dose_time`, `missed_doses`, `snooze_until`, `notes`
 
 ## Services
 
@@ -138,11 +184,38 @@ data:
   medication_id: "abc123def456"
 ```
 
+### pill_assistant.snooze_medication
+
+Snooze a medication reminder for a specified duration (in minutes).
+
+```yaml
+service: pill_assistant.snooze_medication
+data:
+  medication_id: "abc123def456"
+  snooze_duration: 15  # Optional, uses default if not specified
+```
+
+### pill_assistant.test_notification
+
+Send a test notification for a medication to verify your notification setup.
+
+```yaml
+service: pill_assistant.test_notification
+data:
+  medication_id: "abc123def456"
+```
+
 ## Persistent Logging
 
 All medication events are logged to  
 `pill_assistant_history.log` in your Home Assistant  
-configuration directory. Each line includes:
+configuration directory. 
+
+**Log File Location**: The full path to the log file is displayed  
+in each medication sensor's attributes under "Log file location"  
+for easy access.
+
+Each line in the log includes:
 
 - Timestamp
 - Action (TAKEN, SKIPPED, REFILLED)
@@ -151,10 +224,13 @@ configuration directory. Each line includes:
 
 Example log entries:
 ```
-2025-12-15 08:00:45 - TAKEN - Aspirin - 100 mg
-2025-12-15 20:15:30 - SKIPPED - Vitamin D
-2025-12-15 14:22:10 - REFILLED - Aspirin - 90 units
+2025-12-15 08:00:45 - TAKEN - MedicationA - 100 mg
+2025-12-15 20:15:30 - SKIPPED - Test Med B
+2025-12-15 14:22:10 - REFILLED - MedicationA - 90 units
 ```
+
+This log file is permanent and survives Home Assistant restarts  
+and updates, providing an auditable medication history.
 
 ## Automation Examples
 

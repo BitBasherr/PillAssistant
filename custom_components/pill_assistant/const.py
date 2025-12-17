@@ -106,18 +106,22 @@ SERVICE_REFILL_MEDICATION = "refill_medication"
 SERVICE_TEST_NOTIFICATION = "test_notification"
 SERVICE_SNOOZE_MEDICATION = "snooze_medication"
 
-# Attributes
+# Service parameter keys (for service calls)
 ATTR_MEDICATION_ID = "medication_id"
-ATTR_NEXT_DOSE_TIME = "next_dose_time"
-ATTR_LAST_TAKEN = "last_taken"
-ATTR_DOSES_TODAY = "doses_today"
-ATTR_TAKEN_SCHEDULED_RATIO = "taken_scheduled_ratio"
-ATTR_REMAINING_AMOUNT = "remaining_amount"
-ATTR_SCHEDULE = "schedule"
-ATTR_MISSED_DOSES = "missed_doses"
-ATTR_SNOOZE_UNTIL = "snooze_until"
 ATTR_SNOOZE_DURATION = "snooze_duration"
 ATTR_LOG_FILE = "log_file"
+
+# Display attribute names (for entity state attributes - human-friendly)
+ATTR_DISPLAY_MEDICATION_ID = "Medication ID"
+ATTR_NEXT_DOSE_TIME = "Next dose time"
+ATTR_LAST_TAKEN = "Last taken at"
+ATTR_REMAINING_AMOUNT = "Remaining amount"
+ATTR_SCHEDULE = "Schedule"
+ATTR_MISSED_DOSES = "Missed doses"
+ATTR_SNOOZE_UNTIL = "Snooze until"
+ATTR_DOSES_TAKEN_TODAY = "Doses taken today"
+ATTR_TAKEN_SCHEDULED_RATIO = "Taken/Scheduled ratio"
+ATTR_LOG_FILE_LOCATION = "Log file location"
 
 # Snooze configuration
 CONF_SNOOZE_DURATION_MINUTES = "snooze_duration_minutes"
