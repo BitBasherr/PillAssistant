@@ -5,16 +5,16 @@
 
 # Input buttons for quick medication tracking
 input_button:
-  took_aspirin:
-    name: "Took Aspirin"
+  took_medication_a:
+    name: "Took MedicationA"
     icon: mdi:pill
   
   took_vitamin_d:
     name: "Took Vitamin D"
     icon: mdi:vitamin
   
-  refilled_aspirin:
-    name: "Refilled Aspirin"
+  refilled_medication_a:
+    name: "Refilled MedicationA"
     icon: mdi:package-variant
 
 # Input booleans for tracking states
@@ -49,11 +49,11 @@ template:
           {{ meds | count }}
         icon: mdi:package-variant-closed
       
-      - name: "Aspirin Days Until Refill"
+      - name: "MedicationA Days Until Refill"
         state: >
-          {% set remaining = state_attr('sensor.aspirin', 'remaining_amount') | float(0) %}
-          {% set times = state_attr('sensor.aspirin', 'schedule')['times'] | list %}
-          {% set days = state_attr('sensor.aspirin', 'schedule')['days'] | list %}
+          {% set remaining = state_attr('sensor.medication_a', 'remaining_amount') | float(0) %}
+          {% set times = state_attr('sensor.medication_a', 'schedule')['times'] | list %}
+          {% set days = state_attr('sensor.medication_a', 'schedule')['days'] | list %}
           {% set doses_per_day = (times | count * days | count) / 7 %}
           {{ (remaining / doses_per_day) | round(1) if doses_per_day > 0 else 0 }}
         unit_of_measurement: "days"
@@ -67,7 +67,7 @@ automation:
     trigger:
       - platform: state
         entity_id:
-          - sensor.aspirin
+          - sensor.medication_a
           - sensor.vitamin_d
         to: "due"
     condition:
@@ -81,29 +81,29 @@ automation:
           message: "Time to take {{ trigger.to_state.name }}"
   
   # Record medication from button press
-  - alias: "Record - Aspirin Taken"
-    description: "Record Aspirin when button pressed"
+  - alias: "Record - MedicationA Taken"
+    description: "Record MedicationA when button pressed"
     trigger:
       - platform: state
-        entity_id: input_button.took_aspirin
+        entity_id: input_button.took_medication_a
     action:
       - service: pill_assistant.take_medication
         data:
-          medication_id: "{{ state_attr('sensor.aspirin', 'medication_id') }}"
+          medication_id: "{{ state_attr('sensor.medication_a', 'medication_id') }}"
   
   # Record refill from button press
-  - alias: "Record - Aspirin Refilled"
-    description: "Record Aspirin refill when button pressed"
+  - alias: "Record - MedicationA Refilled"
+    description: "Record MedicationA refill when button pressed"
     trigger:
       - platform: state
-        entity_id: input_button.refilled_aspirin
+        entity_id: input_button.refilled_medication_a
     action:
       - service: pill_assistant.refill_medication
         data:
-          medication_id: "{{ state_attr('sensor.aspirin', 'medication_id') }}"
+          medication_id: "{{ state_attr('sensor.medication_a', 'medication_id') }}"
       - service: notify.mobile_app
         data:
-          message: "Aspirin has been refilled to {{ state_attr('sensor.aspirin', 'refill_amount') }} doses"
+          message: "MedicationA has been refilled to {{ state_attr('sensor.medication_a', 'refill_amount') }} doses"
 
 # Script examples for common actions
 script:
@@ -149,6 +149,6 @@ script:
             Please note that {{ states('sensor.medications_needing_refill') }} 
             medication(s) need to be refilled soon.
 
-# Note: Replace 'sensor.aspirin' and 'sensor.vitamin_d' with your actual medication sensor entity IDs
+# Note: Replace 'sensor.medication_a' and 'sensor.vitamin_d' with your actual medication sensor entity IDs
 # Note: Replace 'mobile_app' with your actual notification service (e.g., 'mobile_app_iphone')
 # Note: Replace media player entity IDs with your actual devices
