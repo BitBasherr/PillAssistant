@@ -5,9 +5,12 @@ from __future__ import annotations
 import logging
 from datetime import timedelta
 
+import voluptuous as vol
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.typing import ConfigType
 import homeassistant.util.dt as dt_util
@@ -35,6 +38,38 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BUTTON]
+
+# Service schemas for validation
+SERVICE_TAKE_MEDICATION_SCHEMA = vol.Schema(
+    {
+        vol.Required(ATTR_MEDICATION_ID): cv.string,
+    }
+)
+
+SERVICE_SKIP_MEDICATION_SCHEMA = vol.Schema(
+    {
+        vol.Required(ATTR_MEDICATION_ID): cv.string,
+    }
+)
+
+SERVICE_REFILL_MEDICATION_SCHEMA = vol.Schema(
+    {
+        vol.Required(ATTR_MEDICATION_ID): cv.string,
+    }
+)
+
+SERVICE_TEST_NOTIFICATION_SCHEMA = vol.Schema(
+    {
+        vol.Required(ATTR_MEDICATION_ID): cv.string,
+    }
+)
+
+SERVICE_SNOOZE_MEDICATION_SCHEMA = vol.Schema(
+    {
+        vol.Required(ATTR_MEDICATION_ID): cv.string,
+        vol.Optional(ATTR_SNOOZE_DURATION): vol.Coerce(int),
+    }
+)
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
@@ -336,23 +371,38 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Register services only once
     if not hass.services.has_service(DOMAIN, SERVICE_TAKE_MEDICATION):
         hass.services.async_register(
-            DOMAIN, SERVICE_TAKE_MEDICATION, handle_take_medication
+            DOMAIN,
+            SERVICE_TAKE_MEDICATION,
+            handle_take_medication,
+            schema=SERVICE_TAKE_MEDICATION_SCHEMA,
         )
     if not hass.services.has_service(DOMAIN, SERVICE_SKIP_MEDICATION):
         hass.services.async_register(
-            DOMAIN, SERVICE_SKIP_MEDICATION, handle_skip_medication
+            DOMAIN,
+            SERVICE_SKIP_MEDICATION,
+            handle_skip_medication,
+            schema=SERVICE_SKIP_MEDICATION_SCHEMA,
         )
     if not hass.services.has_service(DOMAIN, SERVICE_REFILL_MEDICATION):
         hass.services.async_register(
-            DOMAIN, SERVICE_REFILL_MEDICATION, handle_refill_medication
+            DOMAIN,
+            SERVICE_REFILL_MEDICATION,
+            handle_refill_medication,
+            schema=SERVICE_REFILL_MEDICATION_SCHEMA,
         )
     if not hass.services.has_service(DOMAIN, SERVICE_TEST_NOTIFICATION):
         hass.services.async_register(
-            DOMAIN, SERVICE_TEST_NOTIFICATION, handle_test_notification
+            DOMAIN,
+            SERVICE_TEST_NOTIFICATION,
+            handle_test_notification,
+            schema=SERVICE_TEST_NOTIFICATION_SCHEMA,
         )
     if not hass.services.has_service(DOMAIN, SERVICE_SNOOZE_MEDICATION):
         hass.services.async_register(
-            DOMAIN, SERVICE_SNOOZE_MEDICATION, handle_snooze_medication
+            DOMAIN,
+            SERVICE_SNOOZE_MEDICATION,
+            handle_snooze_medication,
+            schema=SERVICE_SNOOZE_MEDICATION_SCHEMA,
         )
 
     return True

@@ -63,7 +63,7 @@ class PillAssistantSensor(SensorEntity):
         medication_name = entry.data.get(CONF_MEDICATION_NAME, "Unknown Medication")
         self._attr_name = f"PA_{medication_name}"
         self._attr_unique_id = f"{DOMAIN}_{entry.entry_id}"
-        self._state = "scheduled"
+        self._attr_native_value = "scheduled"
         self._medication_id = entry.entry_id
 
         # Get storage data
@@ -82,20 +82,15 @@ class PillAssistantSensor(SensorEntity):
         await self._async_update(None)
 
     @property
-    def state(self) -> str:
-        """Return the state of the sensor."""
-        return self._state
-
-    @property
     def icon(self) -> str:
         """Return the icon to use in the frontend."""
-        if self._state == "due":
+        if self._attr_native_value == "due":
             return "mdi:pill"
-        elif self._state == "taken":
+        elif self._attr_native_value == "taken":
             return "mdi:check-circle"
-        elif self._state == "overdue":
+        elif self._attr_native_value == "overdue":
             return "mdi:alert-circle"
-        elif self._state == "refill_needed":
+        elif self._attr_native_value == "refill_needed":
             return "mdi:package-variant"
         return "mdi:calendar-clock"
 
@@ -499,7 +494,7 @@ class PillAssistantSensor(SensorEntity):
         days_remaining = remaining / doses_per_day if doses_per_day > 0 else 0
 
         if days_remaining <= refill_reminder_days:
-            self._state = "refill_needed"
+            self._attr_native_value = "refill_needed"
         else:
             # Check if dose is due (but respect snooze)
             next_dose = self._calculate_next_dose()
@@ -509,13 +504,13 @@ class PillAssistantSensor(SensorEntity):
 
                 # If snoozed, don't mark as due or overdue
                 if is_snoozed:
-                    self._state = "scheduled"
+                    self._attr_native_value = "scheduled"
                 # Due if within 30 minutes
                 elif 0 <= time_to_dose <= 1800:
-                    self._state = "due"
+                    self._attr_native_value = "due"
                 # Overdue if missed by more than 30 minutes
                 elif time_to_dose < 0:
-                    self._state = "overdue"
+                    self._attr_native_value = "overdue"
                 else:
                     # Check last taken
                     last_taken_str = med_data.get("last_taken")
@@ -524,14 +519,14 @@ class PillAssistantSensor(SensorEntity):
                             last_taken = datetime.fromisoformat(last_taken_str)
                             # If taken within last 6 hours, show as taken
                             if (now - last_taken).total_seconds() < 21600:
-                                self._state = "taken"
+                                self._attr_native_value = "taken"
                             else:
-                                self._state = "scheduled"
+                                self._attr_native_value = "scheduled"
                         except (ValueError, TypeError):
-                            self._state = "scheduled"
+                            self._attr_native_value = "scheduled"
                     else:
-                        self._state = "scheduled"
+                        self._attr_native_value = "scheduled"
             else:
-                self._state = "scheduled"
+                self._attr_native_value = "scheduled"
 
         self.async_write_ha_state()
