@@ -68,3 +68,27 @@ snooze_medication:
           min: 1
           max: 1440
           unit_of_measurement: minutes
+
+increment_dosage:
+  name: Increment Dosage
+  description: Increase medication dosage by 0.5 units
+  fields:
+    medication_id:
+      name: Medication ID
+      description: The ID of the medication entry (from entity attributes)
+      required: true
+      example: "abc123def456"
+      selector:
+        text:
+
+decrement_dosage:
+  name: Decrement Dosage
+  description: Decrease medication dosage by 0.5 units (minimum 0.5)
+  fields:
+    medication_id:
+      name: Medication ID
+      description: The ID of the medication entry (from entity attributes)
+      required: true
+      example: "abc123def456"
+      selector:
+        text:

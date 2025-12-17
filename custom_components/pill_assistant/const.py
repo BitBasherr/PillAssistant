@@ -105,6 +105,8 @@ SERVICE_SKIP_MEDICATION = "skip_medication"
 SERVICE_REFILL_MEDICATION = "refill_medication"
 SERVICE_TEST_NOTIFICATION = "test_notification"
 SERVICE_SNOOZE_MEDICATION = "snooze_medication"
+SERVICE_INCREMENT_DOSAGE = "increment_dosage"
+SERVICE_DECREMENT_DOSAGE = "decrement_dosage"
 
 # Service parameter keys (for service calls)
 ATTR_MEDICATION_ID = "medication_id"
