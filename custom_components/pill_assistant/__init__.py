@@ -149,8 +149,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                             blocking=False,
                         )
                 except Exception as exc:  # pragma: no cover - runtime safety
-                    _LOGGER.error(
-                        "Failed to send notification via %s: %s", service_name, exc
+                    _LOGGER.exception(
+                        "Failed to send notification via %s", service_name
                     )
         else:
             await hass.services.async_call(
@@ -163,7 +163,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 },
                 blocking=False,
             )
-
     async def handle_take_medication(call: ServiceCall) -> None:
         """Handle take medication service."""
         med_id = call.data.get(ATTR_MEDICATION_ID)
