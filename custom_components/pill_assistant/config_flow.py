@@ -481,7 +481,9 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
         """Initialize options flow."""
         self._config_entry = config_entry
         self._pending_times = []  # Times waiting for AM/PM clarification
-        self._temp_user_input = {}  # Temporary storage for user input during clarification
+        self._temp_user_input = (
+            {}
+        )  # Temporary storage for user input during clarification
 
     def _get_notify_services(self):
         """Get list of available notify services."""
@@ -738,7 +740,9 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
 
             # Add clarified times to the existing times
             existing_times = self._temp_user_input.get(CONF_SCHEDULE_TIMES, [])
-            self._temp_user_input[CONF_SCHEDULE_TIMES] = existing_times + clarified_times
+            self._temp_user_input[CONF_SCHEDULE_TIMES] = (
+                existing_times + clarified_times
+            )
             self._pending_times = []
 
             # Update the config entry with new data

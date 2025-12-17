@@ -32,7 +32,7 @@ async def test_user_step_medication_details(hass: HomeAssistant):
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={
-            CONF_MEDICATION_NAME: "Aspirin",
+            CONF_MEDICATION_NAME: "Test Med A",
             CONF_DOSAGE: "100",
             CONF_DOSAGE_UNIT: "mg",
             CONF_NOTES: "Test medication",
@@ -74,7 +74,7 @@ async def test_schedule_step(hass: HomeAssistant):
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={
-            CONF_MEDICATION_NAME: "Vitamin D",
+            CONF_MEDICATION_NAME: "Test Med B",
             CONF_DOSAGE: "1000",
             CONF_DOSAGE_UNIT: "mg",
         },
@@ -256,11 +256,11 @@ async def test_config_flow_with_test_button(hass: HomeAssistant):
     # Entry should be created successfully
     assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
     assert result["title"] == "Button Test Med"
-    
+
     # Set up the entry to create the button entity
     entry_id = result["result"].entry_id
     await hass.async_block_till_done()
-    
+
     # Verify button entity is created with PA_ prefix
     button_entity_id = "button.pa_button_test_med"
     button_state = hass.states.get(button_entity_id)

@@ -267,6 +267,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                                             "title": "Mark as Taken",
                                         },
                                         {
+                                            "action": f"snooze_medication_{med_id}",
+                                            "title": "Snooze",
+                                        },
+                                        {
                                             "action": f"skip_medication_{med_id}",
                                             "title": "Skip",
                                         },
