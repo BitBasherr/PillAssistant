@@ -172,7 +172,7 @@ async def test_options_flow_with_test_button(
 
     # Options flow should complete successfully
     assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
-    
+
     # Verify button entity still exists after reconfiguration
     button_entity_id = "button.pa_test_medication"
     button_state = hass.states.get(button_entity_id)

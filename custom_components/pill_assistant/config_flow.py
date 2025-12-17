@@ -5,6 +5,7 @@ from __future__ import annotations
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import callback
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.selector import selector
 
 from .const import (
@@ -34,6 +35,7 @@ from .const import (
     SCHEDULE_TYPE_OPTIONS,
     SELECT_DOSAGE_UNIT,
     SELECT_DAYS,
+    SELECT_TIME,
 )
 
 
@@ -255,15 +257,9 @@ class PillAssistantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="schedule_fixed",
             data_schema=vol.Schema(
                 {
-                    vol.Required(CONF_SCHEDULE_TIMES): selector(
-                        {
-                            "select": {
-                                "options": [],
-                                "custom_value": True,
-                                "multiple": True,
-                                "mode": "dropdown",
-                            }
-                        }
+                    vol.Required(CONF_SCHEDULE_TIMES): vol.All(
+                        cv.ensure_list,
+                        [SELECT_TIME],
                     ),
                     vol.Required(
                         CONF_SCHEDULE_DAYS, default=DEFAULT_SCHEDULE_DAYS
@@ -449,17 +445,17 @@ class PillAssistantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             ): vol.Coerce(int),
         }
 
-        # Add notification service selector if services are available
-        if notify_options:
-            schema_dict[vol.Optional(CONF_NOTIFY_SERVICES, default=[])] = selector(
-                {
-                    "select": {
-                        "options": notify_options,
-                        "multiple": True,
-                        "mode": "dropdown",
-                    }
+        # Allow notification selection even if none discovered to support custom targets
+        schema_dict[vol.Optional(CONF_NOTIFY_SERVICES, default=[])] = selector(
+            {
+                "select": {
+                    "options": notify_options,
+                    "multiple": True,
+                    "custom_value": True,
+                    "mode": "dropdown",
                 }
-            )
+            }
+        )
 
         return self.async_show_form(
             step_id="refill",
@@ -481,7 +477,9 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
         """Initialize options flow."""
         self._config_entry = config_entry
         self._pending_times = []  # Times waiting for AM/PM clarification
-        self._temp_user_input = {}  # Temporary storage for user input during clarification
+        self._temp_user_input = (
+            {}
+        )  # Temporary storage for user input during clarification
 
     def _get_notify_services(self):
         """Get list of available notify services."""
@@ -577,16 +575,7 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
                     CONF_SCHEDULE_TIMES,
                     default=current_data.get(CONF_SCHEDULE_TIMES, []),
                 )
-            ] = selector(
-                {
-                    "select": {
-                        "options": [],
-                        "custom_value": True,
-                        "multiple": True,
-                        "mode": "dropdown",
-                    }
-                }
-            )
+            ] = vol.All(cv.ensure_list, [SELECT_TIME])
         elif schedule_type == "relative_medication":
             # Get list of medications
             existing_meds = []
@@ -692,22 +681,22 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
             vol.Optional(CONF_NOTES, default=current_data.get(CONF_NOTES, ""))
         ] = str
 
-        # Add notification service selector if services are available
-        if notify_options:
-            schema_dict[
-                vol.Optional(
-                    CONF_NOTIFY_SERVICES,
-                    default=current_data.get(CONF_NOTIFY_SERVICES, []),
-                )
-            ] = selector(
-                {
-                    "select": {
-                        "options": notify_options,
-                        "multiple": True,
-                        "mode": "dropdown",
-                    }
-                }
+        # Add notification service selector (allow custom notify.* entries)
+        schema_dict[
+            vol.Optional(
+                CONF_NOTIFY_SERVICES,
+                default=current_data.get(CONF_NOTIFY_SERVICES, []),
             )
+        ] = selector(
+            {
+                "select": {
+                    "options": notify_options,
+                    "multiple": True,
+                    "custom_value": True,
+                    "mode": "dropdown",
+                }
+            }
+        )
 
         return self.async_show_form(
             step_id="init",
@@ -738,7 +727,9 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
 
             # Add clarified times to the existing times
             existing_times = self._temp_user_input.get(CONF_SCHEDULE_TIMES, [])
-            self._temp_user_input[CONF_SCHEDULE_TIMES] = existing_times + clarified_times
+            self._temp_user_input[CONF_SCHEDULE_TIMES] = (
+                existing_times + clarified_times
+            )
             self._pending_times = []
 
             # Update the config entry with new data
