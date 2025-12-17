@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pill-assistant"
+version = "0.1.0"
+description = "Home Assistant Pill Assistant custom component"
+authors = [{ name = "Pill Assistant Maintainers" }]
+requires-python = ">=3.10"
+dependencies = []
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["custom_components*"]
+
+[tool.setuptools.package-data]
+"custom_components.pill_assistant" = ["panel.js"]

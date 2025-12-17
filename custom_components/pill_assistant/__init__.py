@@ -2,9 +2,16 @@
 
 from __future__ import annotations
 
-import logging
+import csv
 from datetime import timedelta
+import logging
+from pathlib import Path
+from typing import Any
 
+from homeassistant.components.panel_custom import (
+    async_register_panel,
+    async_unregister_panel,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, ServiceCall
@@ -30,6 +37,9 @@ from .const import (
     CONF_REFILL_AMOUNT,
     CONF_NOTIFY_SERVICES,
     DEFAULT_SNOOZE_DURATION_MINUTES,
+    ATTR_DOSES_TODAY,
+    ATTR_TAKEN_SCHEDULED_RATIO,
+    ATTR_LOG_FILE,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -46,6 +56,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Pill Assistant from a config entry."""
     hass.data.setdefault(DOMAIN, {})
+    hass.data[DOMAIN].setdefault("panel_registered", False)
 
     # Initialize storage
     store = Store(hass, STORAGE_VERSION, STORAGE_KEY)
@@ -65,6 +76,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             "remaining_amount": entry.data.get(CONF_REFILL_AMOUNT, 0),
             "last_taken": None,
             "missed_doses": [],
+            ATTR_DOSES_TODAY: [],
         }
         await store.async_save(storage_data)
 
@@ -77,7 +89,109 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Set up platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
+    # Register admin-only sidebar panel once
+    if not hass.data[DOMAIN]["panel_registered"]:
+        panel_path = Path(__file__).parent / "panel.js"
+        if hasattr(hass, "http"):
+            hass.http.register_static_path(
+                "/pill_assistant/panel.js",
+                str(panel_path),
+                cache_headers=False,
+            )
+        await async_register_panel(
+            hass,
+            webcomponent_name="ha-panel-pill-assistant",
+            frontend_url_path="pill-assistant",
+            module_url="/pill_assistant/panel.js",
+            sidebar_title="Pill Assistant",
+            sidebar_icon="mdi:pill",
+            require_admin=True,
+            config={"log_path": hass.config.path(LOG_FILE_NAME)},
+        )
+        hass.data[DOMAIN]["panel_registered"] = True
+
+    # Create helper button for testing notification pipeline
+    try:
+        med_name = entry.data.get(CONF_MEDICATION_NAME, "Medication")
+        button_object_id = f"pa_{med_name.lower().replace(' ', '_')}_test"
+        await hass.services.async_call(
+            "input_button",
+            "create",
+            {
+                "name": f"PA_{med_name} Test Notification",
+                "icon": "mdi:bell-alert",
+                "entity_id": f"input_button.{button_object_id}",
+            },
+            blocking=False,
+        )
+    except Exception:  # pragma: no cover - helper may not be available in tests
+        _LOGGER.debug("input_button helper unavailable; skipping helper creation")
+
     # Register services
+    async def _send_notification(
+        med_id: str, med_data: dict[str, Any], *, is_test: bool = False
+    ) -> None:
+        """Send a structured notification for a medication."""
+        med_name = med_data.get(CONF_MEDICATION_NAME, "Unknown")
+        dosage = med_data.get(CONF_DOSAGE, "")
+        dosage_unit = med_data.get(CONF_DOSAGE_UNIT, "")
+        notify_services = med_data.get(CONF_NOTIFY_SERVICES, [])
+
+        message = f"Time to take {dosage} {dosage_unit} of {med_name}".strip()
+        title = "Medication Reminder"
+        if is_test:
+            title += " (Test)"
+
+        payload: dict[str, Any] = {
+            "title": title,
+            "message": message,
+            "data": {
+                "tag": f"pill_assistant_{med_id}",
+                "actions": [
+                    {
+                        "action": f"take_medication_{med_id}",
+                        "title": "Mark as Taken",
+                        "service": f"{DOMAIN}.{SERVICE_TAKE_MEDICATION}",
+                        "service_data": {ATTR_MEDICATION_ID: med_id},
+                    },
+                    {
+                        "action": f"snooze_medication_{med_id}",
+                        "title": "Snooze",
+                        "service": f"{DOMAIN}.{SERVICE_SNOOZE_MEDICATION}",
+                        "service_data": {ATTR_MEDICATION_ID: med_id},
+                    },
+                ],
+            },
+        }
+
+        if notify_services:
+            for service_name in notify_services:
+                try:
+                    service_parts = service_name.split(".")
+                    if len(service_parts) == 2:
+                        domain, service = service_parts
+                        await hass.services.async_call(
+                            domain,
+                            service,
+                            payload,
+                            blocking=False,
+                        )
+                except Exception as exc:  # pragma: no cover - runtime safety
+                    _LOGGER.error(
+                        "Failed to send notification via %s: %s", service_name, exc
+                    )
+        else:
+            await hass.services.async_call(
+                "persistent_notification",
+                "create",
+                {
+                    "title": title,
+                    "message": message,
+                    "notification_id": f"pill_assistant_{med_id}",
+                },
+                blocking=False,
+            )
+
     async def handle_take_medication(call: ServiceCall) -> None:
         """Handle take medication service."""
         med_id = call.data.get(ATTR_MEDICATION_ID)
@@ -102,6 +216,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         remaining = float(med_data.get("remaining_amount", 0))
         med_data["remaining_amount"] = max(0, remaining - 1)
 
+        # Track doses taken today
+        today_prefix = now.date().isoformat()
+        doses_today = [
+            ts
+            for ts in med_data.get(ATTR_DOSES_TODAY, [])
+            if ts.startswith(today_prefix)
+        ]
+        doses_today.append(now.isoformat())
+        med_data[ATTR_DOSES_TODAY] = doses_today
+
         # Add to history
         history_entry = {
             "medication_id": med_id,
@@ -117,11 +241,29 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await store.async_save(storage_data)
 
         # Append to persistent log file
-        log_path = hass.config.path(LOG_FILE_NAME)
-        log_line = f"{now.strftime('%Y-%m-%d %H:%M:%S')} - TAKEN - {med_data.get(CONF_MEDICATION_NAME, 'Unknown')} - {med_data.get(CONF_DOSAGE, '')} {med_data.get(CONF_DOSAGE_UNIT, '')}\n"
+        log_path = Path(hass.config.path(LOG_FILE_NAME))
+        log_line = [
+            now.strftime("%Y-%m-%d %H:%M:%S"),
+            "TAKEN",
+            med_data.get(CONF_MEDICATION_NAME, "Unknown"),
+            med_data.get(CONF_DOSAGE, ""),
+            med_data.get(CONF_DOSAGE_UNIT, ""),
+        ]
         try:
-            with open(log_path, "a", encoding="utf-8") as log_file:
-                log_file.write(log_line)
+            new_file = not log_path.exists()
+            with log_path.open("a", encoding="utf-8", newline="") as log_file:
+                writer = csv.writer(log_file)
+                if new_file:
+                    writer.writerow(
+                        [
+                            "timestamp",
+                            "event",
+                            "medication_name",
+                            "dosage",
+                            "dosage_unit",
+                        ]
+                    )
+                writer.writerow(log_line)
         except Exception as e:
             _LOGGER.error("Failed to write to log file: %s", e)
 
@@ -158,11 +300,29 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await store.async_save(storage_data)
 
         # Append to persistent log file
-        log_path = hass.config.path(LOG_FILE_NAME)
-        log_line = f"{now.strftime('%Y-%m-%d %H:%M:%S')} - SKIPPED - {med_data.get(CONF_MEDICATION_NAME, 'Unknown')}\n"
+        log_path = Path(hass.config.path(LOG_FILE_NAME))
+        log_line = [
+            now.strftime("%Y-%m-%d %H:%M:%S"),
+            "SKIPPED",
+            med_data.get(CONF_MEDICATION_NAME, "Unknown"),
+            "",
+            "",
+        ]
         try:
-            with open(log_path, "a", encoding="utf-8") as log_file:
-                log_file.write(log_line)
+            new_file = not log_path.exists()
+            with log_path.open("a", encoding="utf-8", newline="") as log_file:
+                writer = csv.writer(log_file)
+                if new_file:
+                    writer.writerow(
+                        [
+                            "timestamp",
+                            "event",
+                            "medication_name",
+                            "dosage",
+                            "dosage_unit",
+                        ]
+                    )
+                writer.writerow(log_line)
         except Exception as e:
             _LOGGER.error("Failed to write to log file: %s", e)
 
@@ -204,11 +364,29 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await store.async_save(storage_data)
 
         # Append to persistent log file
-        log_path = hass.config.path(LOG_FILE_NAME)
-        log_line = f"{now.strftime('%Y-%m-%d %H:%M:%S')} - REFILLED - {med_data.get(CONF_MEDICATION_NAME, 'Unknown')} - {refill_amount} units\n"
+        log_path = Path(hass.config.path(LOG_FILE_NAME))
+        log_line = [
+            now.strftime("%Y-%m-%d %H:%M:%S"),
+            "REFILLED",
+            med_data.get(CONF_MEDICATION_NAME, "Unknown"),
+            refill_amount,
+            "units",
+        ]
         try:
-            with open(log_path, "a", encoding="utf-8") as log_file:
-                log_file.write(log_line)
+            new_file = not log_path.exists()
+            with log_path.open("a", encoding="utf-8", newline="") as log_file:
+                writer = csv.writer(log_file)
+                if new_file:
+                    writer.writerow(
+                        [
+                            "timestamp",
+                            "event",
+                            "medication_name",
+                            "dosage",
+                            "dosage_unit",
+                        ]
+                    )
+                writer.writerow(log_line)
         except Exception as e:
             _LOGGER.error("Failed to write to log file: %s", e)
 
@@ -233,66 +411,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         if not med_data:
             return
 
-        # Get medication details
-        med_name = med_data.get(CONF_MEDICATION_NAME, "Unknown")
-        dosage = med_data.get(CONF_DOSAGE, "")
-        dosage_unit = med_data.get(CONF_DOSAGE_UNIT, "")
-        notify_services = med_data.get(CONF_NOTIFY_SERVICES, [])
+        await _send_notification(med_id, med_data, is_test=True)
 
-        # Create notification message
-        message = (
-            f"Test notification: Time to take {dosage} {dosage_unit} of {med_name}"
+        _LOGGER.info(
+            "Test notification sent for %s", med_data.get(CONF_MEDICATION_NAME)
         )
-        title = "Medication Reminder (Test)"
-
-        # Send notification to configured services
-        if notify_services:
-            for service_name in notify_services:
-                try:
-                    # Extract domain and service
-                    service_parts = service_name.split(".")
-                    if len(service_parts) == 2:
-                        domain, service = service_parts
-                        await hass.services.async_call(
-                            domain,
-                            service,
-                            {
-                                "title": title,
-                                "message": message,
-                                "data": {
-                                    "tag": f"pill_assistant_{med_id}",
-                                    "actions": [
-                                        {
-                                            "action": f"take_medication_{med_id}",
-                                            "title": "Mark as Taken",
-                                        },
-                                        {
-                                            "action": f"skip_medication_{med_id}",
-                                            "title": "Skip",
-                                        },
-                                    ],
-                                },
-                            },
-                            blocking=False,
-                        )
-                except Exception as e:
-                    _LOGGER.error(
-                        "Failed to send notification via %s: %s", service_name, e
-                    )
-        else:
-            # Fall back to persistent notification
-            await hass.services.async_call(
-                "persistent_notification",
-                "create",
-                {
-                    "title": title,
-                    "message": message,
-                    "notification_id": f"pill_assistant_test_{med_id}",
-                },
-                blocking=False,
-            )
-
-        _LOGGER.info("Test notification sent for %s", med_name)
 
     async def handle_snooze_medication(call: ServiceCall) -> None:
         """Handle snooze medication service."""
@@ -355,10 +478,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Unload a config entry."""
-    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    """Unload a config entry and tear down the panel when no entries remain."""
 
-    if unload_ok:
-        hass.data[DOMAIN].pop(entry.entry_id, None)
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    hass.data[DOMAIN].pop(entry.entry_id, None)
+
+    if (
+        unload_ok
+        and len(hass.data.get(DOMAIN, {})) <= 1
+        and hass.data[DOMAIN].get("panel_registered")
+    ):
+        await async_unregister_panel(hass, "pill-assistant")
+        hass.data[DOMAIN]["panel_registered"] = False
 
     return unload_ok
