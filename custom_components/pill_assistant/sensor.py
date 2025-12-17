@@ -35,6 +35,10 @@ from .const import (
     ATTR_SCHEDULE,
     ATTR_MISSED_DOSES,
     ATTR_SNOOZE_UNTIL,
+    ATTR_DOSES_TODAY,
+    ATTR_TAKEN_SCHEDULED_RATIO,
+    ATTR_LOG_FILE,
+    LOG_FILE_NAME,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -104,21 +108,35 @@ class PillAssistantSensor(SensorEntity):
         schedule_times = self._entry.data.get(CONF_SCHEDULE_TIMES, [])
         schedule_days = self._entry.data.get(CONF_SCHEDULE_DAYS, [])
 
+        formatted_schedule = self._format_schedule(schedule_times, schedule_days)
+        next_dose = self._calculate_next_dose()
+        doses_today = self._get_today_doses(med_data)
+        scheduled_today = self._scheduled_today_count(schedule_times, schedule_days)
+        ratio = (
+            f"{len(doses_today)}/{scheduled_today}"
+            if scheduled_today
+            else f"{len(doses_today)}/0"
+        )
+
         attributes = {
-            ATTR_MEDICATION_ID: self._medication_id,
-            CONF_DOSAGE: self._entry.data.get(CONF_DOSAGE, ""),
-            CONF_DOSAGE_UNIT: self._entry.data.get(CONF_DOSAGE_UNIT, ""),
-            ATTR_SCHEDULE: {
-                "times": schedule_times,
-                "days": schedule_days,
-            },
+            "Medication ID": self._medication_id,
+            "Dosage amount": self._entry.data.get(CONF_DOSAGE, ""),
+            "Dosage unit": self._entry.data.get(CONF_DOSAGE_UNIT, ""),
+            "Schedule": formatted_schedule,
+            ATTR_SCHEDULE: formatted_schedule,
+            "Next dose at": next_dose.isoformat() if next_dose else None,
             ATTR_REMAINING_AMOUNT: med_data.get("remaining_amount", 0),
             ATTR_LAST_TAKEN: med_data.get("last_taken"),
+            "Last taken at": med_data.get("last_taken"),
+            ATTR_DOSES_TODAY: doses_today,
+            "Doses today": doses_today,
+            ATTR_TAKEN_SCHEDULED_RATIO: ratio,
             CONF_REFILL_AMOUNT: self._entry.data.get(CONF_REFILL_AMOUNT, 0),
             CONF_REFILL_REMINDER_DAYS: self._entry.data.get(
                 CONF_REFILL_REMINDER_DAYS, 0
             ),
             CONF_NOTES: self._entry.data.get(CONF_NOTES, ""),
+            ATTR_LOG_FILE: self.hass.config.path(LOG_FILE_NAME),
         }
 
         # Add snooze information if snoozed
@@ -363,6 +381,36 @@ class PillAssistantSensor(SensorEntity):
                         missed.append(dose_time.isoformat())
 
         return missed[:5]  # Limit to 5 most recent
+
+    def _get_today_doses(self, med_data: dict) -> list:
+        """Return doses taken today."""
+        today_prefix = dt_util.now().date().isoformat()
+        return [
+            ts
+            for ts in med_data.get(ATTR_DOSES_TODAY, [])
+            if ts.startswith(today_prefix)
+        ]
+
+    def _scheduled_today_count(self, schedule_times: list, schedule_days: list) -> int:
+        """Count how many doses are scheduled for the current day."""
+        today = dt_util.now().strftime("%a").lower()[:3]
+        normalized_days = [day.lower() for day in schedule_days]
+        if today not in normalized_days:
+            return 0
+        return len(schedule_times)
+
+    def _format_schedule(self, schedule_times: list, schedule_days: list) -> str:
+        """Return a human-friendly schedule string."""
+        if not schedule_times:
+            return "No times configured"
+
+        days_label = (
+            ",".join(day.title() for day in schedule_days)
+            if schedule_days
+            else "Every day"
+        )
+        times_label = ", ".join(schedule_times)
+        return f"{days_label} at {times_label}"
 
     @callback
     async def _async_update(self, _now=None) -> None:

@@ -256,11 +256,11 @@ async def test_config_flow_with_test_button(hass: HomeAssistant):
     # Entry should be created successfully
     assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
     assert result["title"] == "Button Test Med"
-    
+
     # Set up the entry to create the button entity
     entry_id = result["result"].entry_id
     await hass.async_block_till_done()
-    
+
     # Verify button entity is created with PA_ prefix
     button_entity_id = "button.pa_button_test_med"
     button_state = hass.states.get(button_entity_id)
