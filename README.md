@@ -39,11 +39,28 @@ schedules, and log medication history.
 - **Test Notification Button**: Each medication gets a dedicated  
   test button (input_button helper) to verify notification setup
 - **Actionable Notifications**: Mobile notifications include:
-  - "Mark as Taken" button
+  - "Mark as Taken" button - automatically records medication taken
   - "Snooze" button (customizable duration per medication)
-  - "Skip" button
+  - "Skip" button - logs skipped dose
+  - Works with Home Assistant Companion App (iOS/Android)
 - **Multiple Notification Services**: Select from available  
   notify.* services (e.g., mobile_app, telegram, etc.)
+
+### Dosage Management
+- **Dynamic Dosage Adjustment**: 
+  - Increment/decrement dosage by 0.5 units via services
+  - Adjust through frontend panel with +/- buttons
+  - Update via options flow in UI
+  - Minimum dosage of 0.5 units enforced
+- **Flexible Units**: Support for pills, tablets, mL, mg, g,  
+  capsules, drops, sprays, and puffs
+
+### Frontend Panel
+- **Web-based Control Panel**: Visual medication management interface
+- **Real-time Status**: View all medications with current status
+- **Quick Actions**: Mark taken, skip, refill, test notifications
+- **Dosage Controls**: Increment/decrement with visual buttons
+- **Responsive Design**: Works on desktop and mobile browsers
 
 ### Time Management
 - **Flexible Time Input**: 
@@ -204,6 +221,66 @@ service: pill_assistant.test_notification
 data:
   medication_id: "abc123def456"
 ```
+
+### pill_assistant.increment_dosage
+
+Increase medication dosage by 0.5 units. Useful for adjusting dosages without reconfiguring the medication.
+
+```yaml
+service: pill_assistant.increment_dosage
+data:
+  medication_id: "abc123def456"
+```
+
+### pill_assistant.decrement_dosage
+
+Decrease medication dosage by 0.5 units (minimum 0.5). Useful for adjusting dosages without reconfiguring the medication.
+
+```yaml
+service: pill_assistant.decrement_dosage
+data:
+  medication_id: "abc123def456"
+```
+
+## Frontend Panel
+
+A web-based control panel is available for managing medications visually. Access it at:
+
+```
+http://your-home-assistant:8123/pill_assistant/pill-assistant-panel.html
+```
+
+The panel provides:
+- **Visual medication cards** with status indicators
+- **Quick actions**: Mark as taken, skip, refill, test notification
+- **Dosage adjustment controls**: Increment/decrement dosage with +/- buttons
+- **Real-time updates**: Automatically refreshes medication status
+- **Responsive design**: Works on desktop and mobile devices
+
+### Using the Frontend Panel
+
+1. Navigate to the URL above (replace with your Home Assistant URL)
+2. View all your medications with their current status
+3. Use the **+** and **-** buttons to adjust dosages
+4. Click action buttons to:
+   - **Mark as Taken**: Record that medication was taken
+   - **Skip Dose**: Skip the current dose
+   - **Refill**: Reset medication count to full amount
+   - **Test Notification**: Send a test notification
+
+## Notification Actions
+
+When you receive a medication reminder notification on your mobile device, you can interact with it directly:
+
+- **Mark as Taken**: Automatically calls `pill_assistant.take_medication`
+- **Snooze**: Automatically calls `pill_assistant.snooze_medication`
+- **Skip**: Automatically calls `pill_assistant.skip_medication`
+
+These actions work with:
+- Home Assistant Companion App (iOS and Android)
+- Other notification services that support actionable notifications
+
+The notification actions are automatically set up when you configure notification services for a medication.
 
 ## Persistent Logging
 
