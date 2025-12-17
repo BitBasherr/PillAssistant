@@ -32,7 +32,7 @@ async def test_user_step_medication_details(hass: HomeAssistant):
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={
-            CONF_MEDICATION_NAME: "Aspirin",
+            CONF_MEDICATION_NAME: "Test Med A",
             CONF_DOSAGE: "100",
             CONF_DOSAGE_UNIT: "mg",
             CONF_NOTES: "Test medication",
@@ -74,7 +74,7 @@ async def test_schedule_step(hass: HomeAssistant):
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={
-            CONF_MEDICATION_NAME: "Vitamin D",
+            CONF_MEDICATION_NAME: "Test Med B",
             CONF_DOSAGE: "1000",
             CONF_DOSAGE_UNIT: "mg",
         },
