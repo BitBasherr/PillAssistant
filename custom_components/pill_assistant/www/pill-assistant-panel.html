@@ -339,8 +339,35 @@
     </div>
 
     <script>
+        // Configuration constants
+        const SUBSCRIPTION_MAX_ATTEMPTS = 10;
+        const SUBSCRIPTION_BASE_DELAY_MS = 1000;
+        const SUBSCRIPTION_MAX_DELAY_MS = 5000;
+        const RELOAD_DELAY_MS = 100;
+        const POLL_INTERVAL_MS = 30000;
+
         let hass = null;
         let medications = [];
+
+        // Helper function to find medication card by ID
+        function findMedicationCard(medId) {
+            const cards = document.querySelectorAll('[data-entity-id]');
+            for (const card of cards) {
+                const entityId = card.getAttribute('data-entity-id');
+                if (entityId && entityId.includes(medId)) {
+                    // Verify it's an exact match by checking if it's the full entity ID
+                    // Note: We check both 'Medication ID' (human-friendly display name) and 
+                    // 'medication_id' (legacy technical name) for backward compatibility
+                    const medication = medications.find(m => 
+                        (m.attributes['Medication ID'] === medId || m.attributes['medication_id'] === medId)
+                    );
+                    if (medication && entityId === medication.entityId) {
+                        return card;
+                    }
+                }
+            }
+            return null;
+        }
 
         // Format time to local 12-hour format with AM/PM
         function formatTimeToLocal(timeStr) {
@@ -598,19 +625,7 @@
 
                 // Mark card as updating using exact entity ID match
                 const medId = serviceData.medication_id;
-                const cards = document.querySelectorAll('[data-entity-id]');
-                let targetCard = null;
-                for (const card of cards) {
-                    const entityId = card.getAttribute('data-entity-id');
-                    if (entityId && entityId.includes(medId)) {
-                        // Verify it's an exact match by checking if it's the full entity ID
-                        const medication = medications.find(m => m.attributes['Medication ID'] === medId || m.attributes['medication_id'] === medId);
-                        if (medication && entityId === medication.entityId) {
-                            targetCard = card;
-                            break;
-                        }
-                    }
-                }
+                const targetCard = findMedicationCard(medId);
                 
                 if (targetCard) {
                     targetCard.classList.add('updating');
@@ -632,16 +647,9 @@
                 
                 // Remove updating class on error
                 const medId = serviceData.medication_id;
-                const cards = document.querySelectorAll('[data-entity-id]');
-                for (const card of cards) {
-                    const entityId = card.getAttribute('data-entity-id');
-                    if (entityId && entityId.includes(medId)) {
-                        const medication = medications.find(m => m.attributes['Medication ID'] === medId || m.attributes['medication_id'] === medId);
-                        if (medication && entityId === medication.entityId) {
-                            card.classList.remove('updating');
-                            break;
-                        }
-                    }
+                const errorCard = findMedicationCard(medId);
+                if (errorCard) {
+                    errorCard.classList.remove('updating');
                 }
             }
         }
@@ -727,15 +735,19 @@
         // Try to subscribe with retry logic
         let subscribeAttempts = 0;
         function attemptSubscription() {
-            if (subscribeAttempts >= 10) {
-                console.warn('Failed to subscribe to state changes after 10 attempts');
+            if (subscribeAttempts >= SUBSCRIPTION_MAX_ATTEMPTS) {
+                console.warn(`Failed to subscribe to state changes after ${SUBSCRIPTION_MAX_ATTEMPTS} attempts`);
                 return;
             }
             
             subscribeAttempts++;
             if (!subscribeToStateChanges()) {
                 // Retry with exponential backoff
-                setTimeout(attemptSubscription, Math.min(1000 * subscribeAttempts, 5000));
+                const delay = Math.min(
+                    SUBSCRIPTION_BASE_DELAY_MS * subscribeAttempts, 
+                    SUBSCRIPTION_MAX_DELAY_MS
+                );
+                setTimeout(attemptSubscription, delay);
             } else {
                 console.log('Successfully subscribed to state changes');
             }
@@ -749,7 +761,7 @@
             if (hass) {
                 loadMedications();
             }
-        }, 30000);
+        }, POLL_INTERVAL_MS);
     </script>
 </body>
 </html>
