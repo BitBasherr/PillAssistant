@@ -8,7 +8,6 @@ from datetime import timedelta
 
 import voluptuous as vol
 
-from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, ServiceCall
@@ -16,6 +15,11 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.typing import ConfigType
 import homeassistant.util.dt as dt_util
+
+try:  # HA version compatibility: StaticPathConfig may not exist in tests
+    from homeassistant.components.http import StaticPathConfig
+except ImportError:  # pragma: no cover - older HA / test env without StaticPathConfig
+    StaticPathConfig = None  # type: ignore[assignment]
 
 from .const import (
     ATTR_MEDICATION_ID,
@@ -88,23 +92,67 @@ SERVICE_DECREMENT_DOSAGE_SCHEMA = vol.Schema(
 )
 
 
+async def _register_panel_static_path(hass: HomeAssistant) -> None:
+    """Register static path for the Pill Assistant panel.
+
+    This is written to be compatible with multiple HA versions:
+    - New API: async_register_static_paths([StaticPathConfig(...), ...])
+    - Older API: async_register_static_paths(path, directory)
+    - Fallback:  register_static_path(path, directory)
+    """
+    if getattr(hass, "http", None) is None:
+        return
+
+    www_path = os.path.join(os.path.dirname(__file__), "www")
+    base_path = f"/{DOMAIN}"
+
+    # Preferred: new-style API with StaticPathConfig
+    if StaticPathConfig is not None and hasattr(
+        hass.http,
+        "async_register_static_paths",
+    ):
+        await hass.http.async_register_static_paths(
+            [
+                StaticPathConfig(
+                    base_path,
+                    www_path,
+                    False,
+                ),
+            ],
+        )
+        return
+
+    # Fallback: older async_register_static_paths(path, directory)
+    if hasattr(hass.http, "async_register_static_paths"):
+        result = hass.http.async_register_static_paths(
+            base_path,
+            www_path,
+        )
+        # If this returned a coroutine/awaitable, await it; otherwise just return
+        if hasattr(result, "__await__"):
+            await result
+        return
+
+    # Last resort: very old sync register_static_path(path, directory)
+    if hasattr(hass.http, "register_static_path"):
+        hass.http.register_static_path(
+            base_path,
+            www_path,
+        )
+
+
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up the Pill Assistant component."""
     hass.data.setdefault(DOMAIN, {})
 
     # Register the www directory with the http component for static file serving
     # Only register if http component is available (not in test environment)
-    if not hass.data[DOMAIN].get("panel_registered") and hass.http is not None:
-        www_path = os.path.join(os.path.dirname(__file__), "www")
-        await hass.http.async_register_static_paths(
-            [
-                StaticPathConfig(
-                    f"/{DOMAIN}",
-                    www_path,
-                    False,
-                ),
-            ],
-        )
+    if not hass.data[DOMAIN].get("panel_registered") and getattr(
+        hass,
+        "http",
+        None,
+    ):
+        await _register_panel_static_path(hass)
         hass.data[DOMAIN]["panel_registered"] = True
         _LOGGER.info(
             "Pill Assistant panel available at /%s/pill-assistant-panel.html",
@@ -257,7 +305,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         try:
             with open(log_path, "a", encoding="utf-8") as log_file:
                 log_file.write(log_line)
-        except Exception as err:
+        except Exception as err:  # pragma: no cover - file IO failure
             _LOGGER.error("Failed to write to log file: %s", err)
 
         _LOGGER.info(
@@ -303,7 +351,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         try:
             with open(log_path, "a", encoding="utf-8") as log_file:
                 log_file.write(log_line)
-        except Exception as err:
+        except Exception as err:  # pragma: no cover - file IO failure
             _LOGGER.error("Failed to write to log file: %s", err)
 
         _LOGGER.info(
@@ -355,7 +403,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         try:
             with open(log_path, "a", encoding="utf-8") as log_file:
                 log_file.write(log_line)
-        except Exception as err:
+        except Exception as err:  # pragma: no cover - file IO failure
             _LOGGER.error("Failed to write to log file: %s", err)
 
         _LOGGER.info(
@@ -425,7 +473,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                             },
                             blocking=False,
                         )
-                except Exception as err:
+                except Exception as err:  # pragma: no cover - notify failure
                     _LOGGER.error(
                         "Failed to send notification via %s: %s",
                         service_name,
