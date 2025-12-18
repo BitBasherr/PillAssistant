@@ -101,5 +101,9 @@ async def async_log_event(
     global_path = get_global_log_path(hass)
     med_path = get_medication_log_path(hass, medication_name)
 
-    await hass.async_add_executor_job(_append_csv_row, global_path, GLOBAL_LOG_COLUMNS, row)
-    await hass.async_add_executor_job(_append_csv_row, med_path, GLOBAL_LOG_COLUMNS, row)
+    await hass.async_add_executor_job(
+        _append_csv_row, global_path, GLOBAL_LOG_COLUMNS, row
+    )
+    await hass.async_add_executor_job(
+        _append_csv_row, med_path, GLOBAL_LOG_COLUMNS, row
+    )
