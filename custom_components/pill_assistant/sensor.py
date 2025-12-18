@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 import logging
+from typing import Any
 
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
@@ -60,8 +61,10 @@ class PillAssistantSensor(SensorEntity):
         """Initialize the sensor."""
         self.hass = hass
         self._entry = entry
-        medication_name = entry.data.get(CONF_MEDICATION_NAME, "Unknown Medication")
-        self._attr_name = f"PA_{medication_name}"
+        self._medication_name = entry.data.get(
+            CONF_MEDICATION_NAME, "Unknown Medication"
+        )
+        self._attr_name = f"PA_{self._medication_name}"
         self._attr_unique_id = f"{DOMAIN}_{entry.entry_id}"
         self._attr_native_value = "scheduled"
         self._medication_id = entry.entry_id
@@ -93,6 +96,16 @@ class PillAssistantSensor(SensorEntity):
         elif self._attr_native_value == "refill_needed":
             return "mdi:package-variant"
         return "mdi:calendar-clock"
+
+    @property
+    def device_info(self) -> dict[str, Any]:
+        """Return device information."""
+        return {
+            "identifiers": {(DOMAIN, self._medication_id)},
+            "name": f"Pill Assistant - {self._medication_name}",
+            "manufacturer": "Pill Assistant",
+            "model": "Medication Tracker",
+        }
 
     @property
     def extra_state_attributes(self) -> dict:
