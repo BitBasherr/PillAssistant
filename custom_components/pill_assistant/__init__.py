@@ -12,6 +12,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.typing import ConfigType
 import homeassistant.util.dt as dt_util
@@ -42,10 +43,14 @@ from .const import (
     STORAGE_KEY,
     STORAGE_VERSION,
 )
+from . import log_utils
 
 _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BUTTON]
+
+# Dispatcher signal for sensor updates
+SIGNAL_MEDICATION_UPDATED = f"{DOMAIN}_medication_updated"
 
 # Service schemas for validation
 SERVICE_TAKE_MEDICATION_SCHEMA = vol.Schema(
@@ -145,6 +150,13 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up the Pill Assistant component."""
     hass.data.setdefault(DOMAIN, {})
 
+    # Ensure logs directory exists
+    def ensure_logs_dir():
+        logs_dir = log_utils.get_logs_dir(hass)
+        os.makedirs(logs_dir, exist_ok=True)
+
+    await hass.async_add_executor_job(ensure_logs_dir)
+
     # Register the www directory with the http component for static file serving
     # Only register if http component is available (not in test environment)
     if not hass.data[DOMAIN].get("panel_registered") and getattr(
@@ -158,6 +170,24 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             "Pill Assistant panel available at /%s/pill-assistant-panel.html",
             DOMAIN,
         )
+
+    # Register sidebar iframe panel automatically
+    if not hass.data[DOMAIN].get("sidebar_registered"):
+        try:
+            # Use HA frontend component to register iframe panel
+            if "frontend" in hass.config.components:
+                hass.components.frontend.async_register_built_in_panel(
+                    "iframe",
+                    "Pill Assistant",
+                    "mdi:pill",
+                    DOMAIN,
+                    {"url": f"/{DOMAIN}/pill-assistant-panel.html"},
+                    require_admin=True,
+                )
+                hass.data[DOMAIN]["sidebar_registered"] = True
+                _LOGGER.info("Pill Assistant sidebar panel registered")
+        except Exception as err:  # pragma: no cover - panel registration failure
+            _LOGGER.warning("Failed to register sidebar panel: %s", err)
 
     return True
 
@@ -294,19 +324,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         # Save to storage
         await _store.async_save(_storage_data)
 
-        # Append to persistent log file
-        log_path = hass.config.path(LOG_FILE_NAME)
-        log_line = (
-            f"{now.strftime('%Y-%m-%d %H:%M:%S')} - TAKEN - "
-            f"{med_data.get(CONF_MEDICATION_NAME, 'Unknown')} - "
-            f"{med_data.get(CONF_DOSAGE, '')} "
-            f"{med_data.get(CONF_DOSAGE_UNIT, '')}\n"
+        # Write to CSV log files
+        await log_utils.async_log_event(
+            hass,
+            action="taken",
+            medication_id=_med_id,
+            medication_name=med_data.get(CONF_MEDICATION_NAME, "Unknown"),
+            dosage=med_data.get(CONF_DOSAGE),
+            dosage_unit=med_data.get(CONF_DOSAGE_UNIT),
+            remaining_amount=med_data.get("remaining_amount"),
+            refill_amount=med_data.get(CONF_REFILL_AMOUNT),
+            snooze_until=None,
+            details={"timestamp": now.isoformat()},
         )
-        try:
-            with open(log_path, "a", encoding="utf-8") as log_file:
-                log_file.write(log_line)
-        except Exception as err:  # pragma: no cover - file IO failure
-            _LOGGER.error("Failed to write to log file: %s", err)
+
+        # Fire dispatcher signal for immediate sensor update
+        async_dispatcher_send(hass, f"{SIGNAL_MEDICATION_UPDATED}_{_med_id}")
 
         _LOGGER.info(
             "Medication %s taken at %s",
@@ -342,17 +375,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         await _store.async_save(_storage_data)
 
-        # Append to persistent log file
-        log_path = hass.config.path(LOG_FILE_NAME)
-        log_line = (
-            f"{now.strftime('%Y-%m-%d %H:%M:%S')} - SKIPPED - "
-            f"{med_data.get(CONF_MEDICATION_NAME, 'Unknown')}\n"
+        # Write to CSV log files
+        await log_utils.async_log_event(
+            hass,
+            action="skipped",
+            medication_id=_med_id,
+            medication_name=med_data.get(CONF_MEDICATION_NAME, "Unknown"),
+            dosage=med_data.get(CONF_DOSAGE),
+            dosage_unit=med_data.get(CONF_DOSAGE_UNIT),
+            remaining_amount=med_data.get("remaining_amount"),
+            refill_amount=med_data.get(CONF_REFILL_AMOUNT),
+            snooze_until=None,
+            details={"timestamp": now.isoformat()},
         )
-        try:
-            with open(log_path, "a", encoding="utf-8") as log_file:
-                log_file.write(log_line)
-        except Exception as err:  # pragma: no cover - file IO failure
-            _LOGGER.error("Failed to write to log file: %s", err)
+
+        # Fire dispatcher signal for immediate sensor update
+        async_dispatcher_send(hass, f"{SIGNAL_MEDICATION_UPDATED}_{_med_id}")
 
         _LOGGER.info(
             "Medication %s skipped at %s",
@@ -393,18 +431,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         await _store.async_save(_storage_data)
 
-        # Append to persistent log file
-        log_path = hass.config.path(LOG_FILE_NAME)
-        log_line = (
-            f"{now.strftime('%Y-%m-%d %H:%M:%S')} - REFILLED - "
-            f"{med_data.get(CONF_MEDICATION_NAME, 'Unknown')} - "
-            f"{refill_amount} units\n"
+        # Write to CSV log files
+        await log_utils.async_log_event(
+            hass,
+            action="refilled",
+            medication_id=_med_id,
+            medication_name=med_data.get(CONF_MEDICATION_NAME, "Unknown"),
+            dosage=med_data.get(CONF_DOSAGE),
+            dosage_unit=med_data.get(CONF_DOSAGE_UNIT),
+            remaining_amount=refill_amount,
+            refill_amount=refill_amount,
+            snooze_until=None,
+            details={"timestamp": now.isoformat(), "amount": refill_amount},
         )
-        try:
-            with open(log_path, "a", encoding="utf-8") as log_file:
-                log_file.write(log_line)
-        except Exception as err:  # pragma: no cover - file IO failure
-            _LOGGER.error("Failed to write to log file: %s", err)
+
+        # Fire dispatcher signal for immediate sensor update
+        async_dispatcher_send(hass, f"{SIGNAL_MEDICATION_UPDATED}_{_med_id}")
 
         _LOGGER.info(
             "Medication %s refilled to %s at %s",
@@ -523,6 +565,26 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         await _store.async_save(_storage_data)
 
+        # Write to CSV log files
+        await log_utils.async_log_event(
+            hass,
+            action="snoozed",
+            medication_id=_med_id,
+            medication_name=med_data.get(CONF_MEDICATION_NAME, "Unknown"),
+            dosage=med_data.get(CONF_DOSAGE),
+            dosage_unit=med_data.get(CONF_DOSAGE_UNIT),
+            remaining_amount=med_data.get("remaining_amount"),
+            refill_amount=med_data.get(CONF_REFILL_AMOUNT),
+            snooze_until=snooze_until.isoformat(),
+            details={
+                "timestamp": now.isoformat(),
+                "snooze_duration_minutes": snooze_duration,
+            },
+        )
+
+        # Fire dispatcher signal for immediate sensor update
+        async_dispatcher_send(hass, f"{SIGNAL_MEDICATION_UPDATED}_{_med_id}")
+
         _LOGGER.info(
             "Medication %s snoozed for %s minutes until %s",
             med_data.get(CONF_MEDICATION_NAME),
@@ -552,6 +614,31 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         await _store.async_save(_storage_data)
 
+        # Get timestamp
+        now = dt_util.now()
+
+        # Write to CSV log files
+        await log_utils.async_log_event(
+            hass,
+            action="dosage_changed",
+            medication_id=_med_id,
+            medication_name=med_data.get(CONF_MEDICATION_NAME, "Unknown"),
+            dosage=new_dosage,
+            dosage_unit=med_data.get(CONF_DOSAGE_UNIT),
+            remaining_amount=med_data.get("remaining_amount"),
+            refill_amount=med_data.get(CONF_REFILL_AMOUNT),
+            snooze_until=None,
+            details={
+                "timestamp": now.isoformat(),
+                "old_dosage": current_dosage,
+                "new_dosage": new_dosage,
+                "change": "increment",
+            },
+        )
+
+        # Fire dispatcher signal for immediate sensor update
+        async_dispatcher_send(hass, f"{SIGNAL_MEDICATION_UPDATED}_{_med_id}")
+
         _LOGGER.info(
             "Medication %s dosage incremented from %s to %s",
             med_data.get(CONF_MEDICATION_NAME),
@@ -580,6 +667,31 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         med_data[CONF_DOSAGE] = str(new_dosage)
 
         await _store.async_save(_storage_data)
+
+        # Get timestamp
+        now = dt_util.now()
+
+        # Write to CSV log files
+        await log_utils.async_log_event(
+            hass,
+            action="dosage_changed",
+            medication_id=_med_id,
+            medication_name=med_data.get(CONF_MEDICATION_NAME, "Unknown"),
+            dosage=new_dosage,
+            dosage_unit=med_data.get(CONF_DOSAGE_UNIT),
+            remaining_amount=med_data.get("remaining_amount"),
+            refill_amount=med_data.get(CONF_REFILL_AMOUNT),
+            snooze_until=None,
+            details={
+                "timestamp": now.isoformat(),
+                "old_dosage": current_dosage,
+                "new_dosage": new_dosage,
+                "change": "decrement",
+            },
+        )
+
+        # Fire dispatcher signal for immediate sensor update
+        async_dispatcher_send(hass, f"{SIGNAL_MEDICATION_UPDATED}_{_med_id}")
 
         _LOGGER.info(
             "Medication %s dosage decremented from %s to %s",

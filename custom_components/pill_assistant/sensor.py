@@ -9,6 +9,7 @@ from typing import Any
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_time_interval
 import homeassistant.util.dt as dt_util
@@ -41,6 +42,7 @@ from .const import (
     ATTR_TAKEN_SCHEDULED_RATIO,
     ATTR_LOG_FILE_LOCATION,
 )
+from . import log_utils
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -74,6 +76,15 @@ class PillAssistantSensor(SensorEntity):
 
     async def async_added_to_hass(self) -> None:
         """Run when entity about to be added to hass."""
+        # Subscribe to dispatcher signal for immediate updates
+        self.async_on_remove(
+            async_dispatcher_connect(
+                self.hass,
+                f"pill_assistant_medication_updated_{self._medication_id}",
+                self._async_update,
+            )
+        )
+
         # Update every minute to check for missed doses
         self.async_on_remove(
             async_track_time_interval(
@@ -127,14 +138,23 @@ class PillAssistantSensor(SensorEntity):
         scheduled_today = self._get_scheduled_doses_today()
         ratio_str = f"{len(doses_today)}/{scheduled_today}"
 
-        # Get log file location
-        log_path = self.hass.config.path(LOG_FILE_NAME)
+        # Get log file paths - both global and per-medication
+        global_log_path = log_utils.get_global_log_path(self.hass)
+        med_log_path = log_utils.get_medication_log_path(
+            self.hass, self._medication_name
+        )
+
+        # Use med_data for dosage so increment/decrement reflects in UI
+        dosage = med_data.get(CONF_DOSAGE, self._entry.data.get(CONF_DOSAGE, ""))
+        dosage_unit = med_data.get(
+            CONF_DOSAGE_UNIT, self._entry.data.get(CONF_DOSAGE_UNIT, "")
+        )
 
         # Use human-friendly keys as per requirements but keep backward compatibility
         attributes = {
             # Human-friendly attribute names
             ATTR_DISPLAY_MEDICATION_ID: self._medication_id,
-            "Dosage": f"{self._entry.data.get(CONF_DOSAGE, '')} {self._entry.data.get(CONF_DOSAGE_UNIT, '')}",
+            "Dosage": f"{dosage} {dosage_unit}",
             ATTR_SCHEDULE: schedule_str,
             ATTR_REMAINING_AMOUNT: med_data.get("remaining_amount", 0),
             ATTR_LAST_TAKEN: med_data.get("last_taken") or "Never",
@@ -142,12 +162,14 @@ class PillAssistantSensor(SensorEntity):
             "Refill reminder days": self._entry.data.get(CONF_REFILL_REMINDER_DAYS, 0),
             ATTR_DOSES_TAKEN_TODAY: doses_today,
             ATTR_TAKEN_SCHEDULED_RATIO: ratio_str,
-            ATTR_LOG_FILE_LOCATION: log_path,
+            "Global log path": global_log_path,
+            "Medication log path": med_log_path,
             # Keep backward-compatible keys for existing automations
             "remaining_amount": med_data.get("remaining_amount", 0),
             "last_taken": med_data.get("last_taken"),
-            "dosage": self._entry.data.get(CONF_DOSAGE, ""),
-            "dosage_unit": self._entry.data.get(CONF_DOSAGE_UNIT, ""),
+            "dosage": dosage,
+            "dosage_unit": dosage_unit,
+            "log_file_location": global_log_path,  # Backward compatibility
         }
 
         # Add notes if present

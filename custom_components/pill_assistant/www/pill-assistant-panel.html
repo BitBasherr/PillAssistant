@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Pill Assistant</title>
+    <link rel="icon" href="data:,">
     <style>
         * {
             box-sizing: border-box;
@@ -289,13 +290,34 @@
         }
 
         // Initialize connection to Home Assistant
+        let retryCount = 0;
         function initConnection() {
             hass = getHassConnection();
             if (hass) {
                 loadMedications();
             } else {
-                // Retry after a short delay
-                setTimeout(initConnection, 500);
+                retryCount++;
+                if (retryCount < 10) {
+                    // Retry after a short delay
+                    setTimeout(initConnection, 500);
+                } else {
+                    // Show message if not embedded in HA frontend
+                    document.getElementById('content').innerHTML = `
+                        <div style="text-align: center; padding: 60px 20px; color: var(--secondary-text-color, #757575);">
+                            <h2 style="margin-bottom: 20px;">⚠️ Not Embedded in Home Assistant</h2>
+                            <p style="margin-bottom: 15px;">This panel should be accessed via the Home Assistant sidebar.</p>
+                            <p style="margin-bottom: 15px;">To add it to the sidebar:</p>
+                            <ol style="text-align: left; max-width: 500px; margin: 0 auto;">
+                                <li style="margin-bottom: 10px;">Go to <strong>Settings → Dashboards</strong></li>
+                                <li style="margin-bottom: 10px;">Click <strong>Add Dashboard</strong></li>
+                                <li style="margin-bottom: 10px;">Select <strong>Panel (sidebar)</strong></li>
+                                <li style="margin-bottom: 10px;">Set URL to <code>/pill_assistant/pill-assistant-panel.html</code></li>
+                                <li style="margin-bottom: 10px;">Set title to <strong>Pill Assistant</strong></li>
+                                <li style="margin-bottom: 10px;">Set icon to <strong>mdi:pill</strong></li>
+                            </ol>
+                        </div>
+                    `;
+                }
             }
         }
 

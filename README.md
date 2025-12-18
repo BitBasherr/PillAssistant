@@ -244,11 +244,19 @@ data:
 
 ## Frontend Panel
 
-A web-based control panel is available for managing medications visually. Access it at:
+A web-based control panel is available for managing medications visually.
+
+### Accessing the Panel
+
+The panel is **automatically registered** in your Home Assistant sidebar after installation. Look for the "Pill Assistant" menu item with a pill icon (🔵) in your sidebar.
+
+Alternatively, you can access it directly at:
 
 ```
 http://your-home-assistant:8123/pill_assistant/pill-assistant-panel.html
 ```
+
+**Note**: The panel must be accessed from within Home Assistant (via sidebar or the URL above) to function properly. Direct browser access without the Home Assistant context will show a message with setup instructions.
 
 The panel provides:
 - **Visual medication cards** with status indicators
@@ -259,7 +267,7 @@ The panel provides:
 
 ### Using the Frontend Panel
 
-1. Navigate to the URL above (replace with your Home Assistant URL)
+1. Click on **Pill Assistant** in your Home Assistant sidebar (or navigate to the URL above)
 2. View all your medications with their current status
 3. Use the **+** and **-** buttons to adjust dosages
 4. Click action buttons to:
@@ -284,30 +292,44 @@ The notification actions are automatically set up when you configure notificatio
 
 ## Persistent Logging
 
-All medication events are logged to  
-`pill_assistant_history.log` in your Home Assistant  
-configuration directory. 
+All medication events are logged to **CSV files** in your Home Assistant configuration directory for easy analysis and record-keeping.
 
-**Log File Location**: The full path to the log file is displayed  
-in each medication sensor's attributes under "Log file location"  
-for easy access.
+### Log File Locations
 
-Each line in the log includes:
+Logs are stored in: `config/Pill Assistant/Logs/`
 
-- Timestamp
-- Action (TAKEN, SKIPPED, REFILLED)
-- Medication name
-- Dosage information (for taken events)
+- **Global log**: `pill_assistant_all_medications_log.csv` - Contains all events for all medications
+- **Per-medication logs**: `{MedicationName}_log.csv` - Individual log file for each medication
 
-Example log entries:
+**Finding Log Paths**: The full paths to both global and per-medication log files are displayed in each medication sensor's attributes:
+- `Global log path`: Path to the combined log file
+- `Medication log path`: Path to the medication-specific log file
+
+### CSV Log Format
+
+Each CSV log file contains the following columns:
+
+- `timestamp`: When the event occurred (ISO format)
+- `action`: Type of event (taken, skipped, refilled, snoozed, dosage_changed)
+- `medication_id`: Unique identifier for the medication
+- `medication_name`: Name of the medication
+- `dosage`: Current dosage amount
+- `dosage_unit`: Unit of measurement
+- `remaining_amount`: Amount remaining after the event
+- `refill_amount`: Total refill amount
+- `snooze_until`: Snooze end time (if applicable)
+- `details_json`: Additional event details in JSON format
+
+### Example CSV Log Entries
+
+```csv
+timestamp,action,medication_id,medication_name,dosage,dosage_unit,remaining_amount,refill_amount,snooze_until,details_json
+2025-12-15T08:00:45,taken,abc123,Aspirin,100,mg,89,90,,"{""timestamp"":""2025-12-15T08:00:45""}"
+2025-12-15T20:15:30,skipped,def456,Vitamin D,2,pill(s),60,60,,"{""timestamp"":""2025-12-15T20:15:30""}"
+2025-12-15T14:22:10,refilled,abc123,Aspirin,100,mg,90,90,,"{""timestamp"":""2025-12-15T14:22:10"",""amount"":90}"
 ```
-2025-12-15 08:00:45 - TAKEN - MedicationA - 100 mg
-2025-12-15 20:15:30 - SKIPPED - Test Med B
-2025-12-15 14:22:10 - REFILLED - MedicationA - 90 units
-```
 
-This log file is permanent and survives Home Assistant restarts  
-and updates, providing an auditable medication history.
+These log files are permanent and survive Home Assistant restarts and updates, providing a complete auditable medication history. You can open them in Excel, Google Sheets, or any spreadsheet application for analysis.
 
 ## Automation Examples
 
@@ -382,8 +404,10 @@ storage API, which persists across restarts.
 
 - **Database**: Medication configurations and history  
   are stored in `.storage/pill_assistant.medications.json`
-- **Log File**: Persistent text log stored in  
-  `pill_assistant_history.log`
+- **CSV Logs**: Persistent CSV log files stored in  
+  `config/Pill Assistant/Logs/`
+  - Global log: `pill_assistant_all_medications_log.csv`
+  - Per-medication logs: `{MedicationName}_log.csv`
 
 ## Support
 
