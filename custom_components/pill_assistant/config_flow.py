@@ -500,10 +500,36 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
         """Manage the options."""
         errors = {}
 
-        if user_input is not None:
-            # If schedule_type is fixed_time, validate and normalize times
-            schedule_type = user_input.get(CONF_SCHEDULE_TYPE, DEFAULT_SCHEDULE_TYPE)
+        # Determine which schedule_type to use for the form
+        # If user_input is provided, check if schedule_type was changed
+        current_data = self._config_entry.data
+        schedule_type_changed = False
 
+        if user_input is not None:
+            new_schedule_type = user_input.get(
+                CONF_SCHEDULE_TYPE, DEFAULT_SCHEDULE_TYPE
+            )
+            old_schedule_type = current_data.get(
+                CONF_SCHEDULE_TYPE, DEFAULT_SCHEDULE_TYPE
+            )
+            schedule_type_changed = new_schedule_type != old_schedule_type
+
+            # If schedule type was changed, re-render the form with new fields
+            # Don't save yet - let user fill in the new schedule-specific fields
+            if schedule_type_changed:
+                # Update current_data with the new schedule_type for form rendering
+                current_data = {**current_data, **user_input}
+                schedule_type = new_schedule_type
+                user_input = None  # Reset to trigger form re-render
+            else:
+                schedule_type = new_schedule_type
+        else:
+            schedule_type = current_data.get(CONF_SCHEDULE_TYPE, DEFAULT_SCHEDULE_TYPE)
+
+        if user_input is not None:
+            # Process the form submission (schedule_type was not changed)
+
+            # If schedule_type is fixed_time, validate and normalize times
             if schedule_type == "fixed_time":
                 schedule_times = user_input.get(CONF_SCHEDULE_TIMES, [])
                 if isinstance(schedule_times, str):
@@ -540,9 +566,6 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
                 )
 
                 return self.async_create_entry(title="", data={})
-
-        current_data = self._config_entry.data
-        schedule_type = current_data.get(CONF_SCHEDULE_TYPE, DEFAULT_SCHEDULE_TYPE)
 
         # Get available notification services
         notify_services = self._get_notify_services()
