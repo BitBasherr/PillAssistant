@@ -596,11 +596,24 @@
                     }
                 }
 
-                // Mark card as updating
+                // Mark card as updating using exact entity ID match
                 const medId = serviceData.medication_id;
-                const card = document.querySelector(`[data-entity-id*="${medId}"]`);
-                if (card) {
-                    card.classList.add('updating');
+                const cards = document.querySelectorAll('[data-entity-id]');
+                let targetCard = null;
+                for (const card of cards) {
+                    const entityId = card.getAttribute('data-entity-id');
+                    if (entityId && entityId.includes(medId)) {
+                        // Verify it's an exact match by checking if it's the full entity ID
+                        const medication = medications.find(m => m.attributes['Medication ID'] === medId || m.attributes['medication_id'] === medId);
+                        if (medication && entityId === medication.entityId) {
+                            targetCard = card;
+                            break;
+                        }
+                    }
+                }
+                
+                if (targetCard) {
+                    targetCard.classList.add('updating');
                 }
 
                 await hass.callService(domain, service, serviceData);
@@ -610,8 +623,8 @@
                 await loadMedications();
                 
                 // Remove updating class
-                if (card) {
-                    card.classList.remove('updating');
+                if (targetCard) {
+                    targetCard.classList.remove('updating');
                 }
             } catch (error) {
                 console.error('Error calling service:', error);
@@ -619,9 +632,16 @@
                 
                 // Remove updating class on error
                 const medId = serviceData.medication_id;
-                const card = document.querySelector(`[data-entity-id*="${medId}"]`);
-                if (card) {
-                    card.classList.remove('updating');
+                const cards = document.querySelectorAll('[data-entity-id]');
+                for (const card of cards) {
+                    const entityId = card.getAttribute('data-entity-id');
+                    if (entityId && entityId.includes(medId)) {
+                        const medication = medications.find(m => m.attributes['Medication ID'] === medId || m.attributes['medication_id'] === medId);
+                        if (medication && entityId === medication.entityId) {
+                            card.classList.remove('updating');
+                            break;
+                        }
+                    }
                 }
             }
         }
@@ -681,7 +701,7 @@
         // Subscribe to Home Assistant state changes for real-time updates
         function subscribeToStateChanges() {
             if (!hass) {
-                return;
+                return false;
             }
 
             // Subscribe to state changes using hass connection
@@ -699,13 +719,30 @@
                 ).catch(err => {
                     console.warn('Failed to subscribe to state changes:', err);
                 });
+                return true;
             }
+            return false;
         }
 
-        // Try to subscribe after connection is established
-        setTimeout(() => {
-            subscribeToStateChanges();
-        }, 1000);
+        // Try to subscribe with retry logic
+        let subscribeAttempts = 0;
+        function attemptSubscription() {
+            if (subscribeAttempts >= 10) {
+                console.warn('Failed to subscribe to state changes after 10 attempts');
+                return;
+            }
+            
+            subscribeAttempts++;
+            if (!subscribeToStateChanges()) {
+                // Retry with exponential backoff
+                setTimeout(attemptSubscription, Math.min(1000 * subscribeAttempts, 5000));
+            } else {
+                console.log('Successfully subscribed to state changes');
+            }
+        }
+        
+        // Start subscription attempts after connection is ready
+        attemptSubscription();
 
         // Refresh medications every 30 seconds as fallback
         setInterval(() => {
