@@ -15,6 +15,7 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.typing import ConfigType
 import homeassistant.util.dt as dt_util
+from homeassistant.components.http import StaticPathConfig
 
 from .const import (
     DOMAIN,
@@ -95,10 +96,14 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     # Only register if http component is available (not in test environment)
     if not hass.data[DOMAIN].get("panel_registered") and hass.http is not None:
         www_path = os.path.join(os.path.dirname(__file__), "www")
-        hass.http.async_register_static_paths(
-            f"/{DOMAIN}",
-            www_path,
-            cache_headers=False,
+        await hass.http.async_register_static_paths(
+            [
+                StaticPathConfig(
+                f"/{DOMAIN}",
+                www_path,
+                False,
+                )
+            ]
         )
         hass.data[DOMAIN]["panel_registered"] = True
         _LOGGER.info(
