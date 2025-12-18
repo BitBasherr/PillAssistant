@@ -34,7 +34,9 @@ from .const import (
     DOMAIN,
     LOG_FILE_NAME,
     SERVICE_DECREMENT_DOSAGE,
+    SERVICE_DECREMENT_REMAINING,
     SERVICE_INCREMENT_DOSAGE,
+    SERVICE_INCREMENT_REMAINING,
     SERVICE_REFILL_MEDICATION,
     SERVICE_SKIP_MEDICATION,
     SERVICE_SNOOZE_MEDICATION,
@@ -91,6 +93,18 @@ SERVICE_INCREMENT_DOSAGE_SCHEMA = vol.Schema(
 )
 
 SERVICE_DECREMENT_DOSAGE_SCHEMA = vol.Schema(
+    {
+        vol.Required(ATTR_MEDICATION_ID): cv.string,
+    },
+)
+
+SERVICE_INCREMENT_REMAINING_SCHEMA = vol.Schema(
+    {
+        vol.Required(ATTR_MEDICATION_ID): cv.string,
+    },
+)
+
+SERVICE_DECREMENT_REMAINING_SCHEMA = vol.Schema(
     {
         vol.Required(ATTR_MEDICATION_ID): cv.string,
     },
@@ -700,6 +714,116 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             new_dosage,
         )
 
+    async def handle_increment_remaining(call: ServiceCall) -> None:
+        """Handle increment remaining amount service."""
+        _med_id = call.data.get(ATTR_MEDICATION_ID)
+        if _med_id not in hass.data[DOMAIN]:
+            _LOGGER.error("Medication ID %s not found", _med_id)
+            return
+
+        entry_data = hass.data[DOMAIN][_med_id]
+        _store = entry_data["store"]
+        _storage_data = entry_data["storage_data"]
+
+        med_data = _storage_data["medications"].get(_med_id)
+        if not med_data:
+            return
+
+        # Increment remaining amount by dosage amount
+        current_dosage = float(med_data.get(CONF_DOSAGE, 1))
+        current_remaining = float(med_data.get("remaining_amount", 0))
+        new_remaining = current_remaining + current_dosage
+        med_data["remaining_amount"] = new_remaining
+
+        await _store.async_save(_storage_data)
+
+        # Get timestamp
+        now = dt_util.now()
+
+        # Write to CSV log files
+        await log_utils.async_log_event(
+            hass,
+            action="remaining_changed",
+            medication_id=_med_id,
+            medication_name=med_data.get(CONF_MEDICATION_NAME, "Unknown"),
+            dosage=med_data.get(CONF_DOSAGE),
+            dosage_unit=med_data.get(CONF_DOSAGE_UNIT),
+            remaining_amount=new_remaining,
+            refill_amount=med_data.get(CONF_REFILL_AMOUNT),
+            snooze_until=None,
+            details={
+                "timestamp": now.isoformat(),
+                "old_remaining": current_remaining,
+                "new_remaining": new_remaining,
+                "change": "increment",
+            },
+        )
+
+        # Fire dispatcher signal for immediate sensor update
+        async_dispatcher_send(hass, f"{SIGNAL_MEDICATION_UPDATED}_{_med_id}")
+
+        _LOGGER.info(
+            "Medication %s remaining amount incremented from %s to %s",
+            med_data.get(CONF_MEDICATION_NAME),
+            current_remaining,
+            new_remaining,
+        )
+
+    async def handle_decrement_remaining(call: ServiceCall) -> None:
+        """Handle decrement remaining amount service."""
+        _med_id = call.data.get(ATTR_MEDICATION_ID)
+        if _med_id not in hass.data[DOMAIN]:
+            _LOGGER.error("Medication ID %s not found", _med_id)
+            return
+
+        entry_data = hass.data[DOMAIN][_med_id]
+        _store = entry_data["store"]
+        _storage_data = entry_data["storage_data"]
+
+        med_data = _storage_data["medications"].get(_med_id)
+        if not med_data:
+            return
+
+        # Decrement remaining amount by dosage amount, minimum 0
+        current_dosage = float(med_data.get(CONF_DOSAGE, 1))
+        current_remaining = float(med_data.get("remaining_amount", 0))
+        new_remaining = max(0, current_remaining - current_dosage)
+        med_data["remaining_amount"] = new_remaining
+
+        await _store.async_save(_storage_data)
+
+        # Get timestamp
+        now = dt_util.now()
+
+        # Write to CSV log files
+        await log_utils.async_log_event(
+            hass,
+            action="remaining_changed",
+            medication_id=_med_id,
+            medication_name=med_data.get(CONF_MEDICATION_NAME, "Unknown"),
+            dosage=med_data.get(CONF_DOSAGE),
+            dosage_unit=med_data.get(CONF_DOSAGE_UNIT),
+            remaining_amount=new_remaining,
+            refill_amount=med_data.get(CONF_REFILL_AMOUNT),
+            snooze_until=None,
+            details={
+                "timestamp": now.isoformat(),
+                "old_remaining": current_remaining,
+                "new_remaining": new_remaining,
+                "change": "decrement",
+            },
+        )
+
+        # Fire dispatcher signal for immediate sensor update
+        async_dispatcher_send(hass, f"{SIGNAL_MEDICATION_UPDATED}_{_med_id}")
+
+        _LOGGER.info(
+            "Medication %s remaining amount decremented from %s to %s",
+            med_data.get(CONF_MEDICATION_NAME),
+            current_remaining,
+            new_remaining,
+        )
+
     # Register services only once
     if not hass.services.has_service(DOMAIN, SERVICE_TAKE_MEDICATION):
         hass.services.async_register(
@@ -749,6 +873,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             SERVICE_DECREMENT_DOSAGE,
             handle_decrement_dosage,
             schema=SERVICE_DECREMENT_DOSAGE_SCHEMA,
+        )
+    if not hass.services.has_service(DOMAIN, SERVICE_INCREMENT_REMAINING):
+        hass.services.async_register(
+            DOMAIN,
+            SERVICE_INCREMENT_REMAINING,
+            handle_increment_remaining,
+            schema=SERVICE_INCREMENT_REMAINING_SCHEMA,
+        )
+    if not hass.services.has_service(DOMAIN, SERVICE_DECREMENT_REMAINING):
+        hass.services.async_register(
+            DOMAIN,
+            SERVICE_DECREMENT_REMAINING,
+            handle_decrement_remaining,
+            schema=SERVICE_DECREMENT_REMAINING_SCHEMA,
         )
 
     return True
