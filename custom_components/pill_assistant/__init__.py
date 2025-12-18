@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import logging
-from datetime import timedelta
 import os
+from datetime import timedelta
 
 import voluptuous as vol
 
+from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, ServiceCall
@@ -15,28 +16,27 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.typing import ConfigType
 import homeassistant.util.dt as dt_util
-from homeassistant.components.http import StaticPathConfig
 
 from .const import (
-    DOMAIN,
-    STORAGE_VERSION,
-    STORAGE_KEY,
-    LOG_FILE_NAME,
-    SERVICE_TAKE_MEDICATION,
-    SERVICE_SKIP_MEDICATION,
-    SERVICE_REFILL_MEDICATION,
-    SERVICE_TEST_NOTIFICATION,
-    SERVICE_SNOOZE_MEDICATION,
-    SERVICE_INCREMENT_DOSAGE,
-    SERVICE_DECREMENT_DOSAGE,
     ATTR_MEDICATION_ID,
     ATTR_SNOOZE_DURATION,
-    CONF_MEDICATION_NAME,
     CONF_DOSAGE,
     CONF_DOSAGE_UNIT,
-    CONF_REFILL_AMOUNT,
+    CONF_MEDICATION_NAME,
     CONF_NOTIFY_SERVICES,
+    CONF_REFILL_AMOUNT,
     DEFAULT_SNOOZE_DURATION_MINUTES,
+    DOMAIN,
+    LOG_FILE_NAME,
+    SERVICE_DECREMENT_DOSAGE,
+    SERVICE_INCREMENT_DOSAGE,
+    SERVICE_REFILL_MEDICATION,
+    SERVICE_SKIP_MEDICATION,
+    SERVICE_SNOOZE_MEDICATION,
+    SERVICE_TAKE_MEDICATION,
+    SERVICE_TEST_NOTIFICATION,
+    STORAGE_KEY,
+    STORAGE_VERSION,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -47,44 +47,44 @@ PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BUTTON]
 SERVICE_TAKE_MEDICATION_SCHEMA = vol.Schema(
     {
         vol.Required(ATTR_MEDICATION_ID): cv.string,
-    }
+    },
 )
 
 SERVICE_SKIP_MEDICATION_SCHEMA = vol.Schema(
     {
         vol.Required(ATTR_MEDICATION_ID): cv.string,
-    }
+    },
 )
 
 SERVICE_REFILL_MEDICATION_SCHEMA = vol.Schema(
     {
         vol.Required(ATTR_MEDICATION_ID): cv.string,
-    }
+    },
 )
 
 SERVICE_TEST_NOTIFICATION_SCHEMA = vol.Schema(
     {
         vol.Required(ATTR_MEDICATION_ID): cv.string,
-    }
+    },
 )
 
 SERVICE_SNOOZE_MEDICATION_SCHEMA = vol.Schema(
     {
         vol.Required(ATTR_MEDICATION_ID): cv.string,
         vol.Optional(ATTR_SNOOZE_DURATION): vol.Coerce(int),
-    }
+    },
 )
 
 SERVICE_INCREMENT_DOSAGE_SCHEMA = vol.Schema(
     {
         vol.Required(ATTR_MEDICATION_ID): cv.string,
-    }
+    },
 )
 
 SERVICE_DECREMENT_DOSAGE_SCHEMA = vol.Schema(
     {
         vol.Required(ATTR_MEDICATION_ID): cv.string,
-    }
+    },
 )
 
 
@@ -99,15 +99,16 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         await hass.http.async_register_static_paths(
             [
                 StaticPathConfig(
-                f"/{DOMAIN}",
-                www_path,
-                False,
-                )
-            ]
+                    f"/{DOMAIN}",
+                    www_path,
+                    False,
+                ),
+            ],
         )
         hass.data[DOMAIN]["panel_registered"] = True
         _LOGGER.info(
-            "Pill Assistant panel available at /%s/pill-assistant-panel.html", DOMAIN
+            "Pill Assistant panel available at /%s/pill-assistant-panel.html",
+            DOMAIN,
         )
 
     return True
@@ -148,7 +149,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     # Register event listener for notification actions
-    async def handle_notification_action(event):
+    async def handle_notification_action(event) -> None:
         """Handle notification action events from mobile_app."""
         action = event.data.get("action")
         if not action:
@@ -156,58 +157,71 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         # Parse the action to extract medication ID
         if action.startswith("take_medication_"):
-            med_id = action.replace("take_medication_", "")
-            if med_id in hass.data[DOMAIN]:
+            _med_id = action.replace("take_medication_", "")
+            if _med_id in hass.data[DOMAIN]:
                 await hass.services.async_call(
                     DOMAIN,
                     SERVICE_TAKE_MEDICATION,
-                    {ATTR_MEDICATION_ID: med_id},
+                    {ATTR_MEDICATION_ID: _med_id},
                     blocking=True,
                 )
                 _LOGGER.info(
-                    "Medication %s marked as taken via notification action", med_id
+                    "Medication %s marked as taken via notification action",
+                    _med_id,
                 )
         elif action.startswith("snooze_medication_"):
-            med_id = action.replace("snooze_medication_", "")
-            if med_id in hass.data[DOMAIN]:
+            _med_id = action.replace("snooze_medication_", "")
+            if _med_id in hass.data[DOMAIN]:
                 await hass.services.async_call(
                     DOMAIN,
                     SERVICE_SNOOZE_MEDICATION,
-                    {ATTR_MEDICATION_ID: med_id},
+                    {ATTR_MEDICATION_ID: _med_id},
                     blocking=True,
                 )
-                _LOGGER.info("Medication %s snoozed via notification action", med_id)
+                _LOGGER.info(
+                    "Medication %s snoozed via notification action",
+                    _med_id,
+                )
         elif action.startswith("skip_medication_"):
-            med_id = action.replace("skip_medication_", "")
-            if med_id in hass.data[DOMAIN]:
+            _med_id = action.replace("skip_medication_", "")
+            if _med_id in hass.data[DOMAIN]:
                 await hass.services.async_call(
                     DOMAIN,
                     SERVICE_SKIP_MEDICATION,
-                    {ATTR_MEDICATION_ID: med_id},
+                    {ATTR_MEDICATION_ID: _med_id},
                     blocking=True,
                 )
-                _LOGGER.info("Medication %s skipped via notification action", med_id)
+                _LOGGER.info(
+                    "Medication %s skipped via notification action",
+                    _med_id,
+                )
 
     # Listen for mobile_app notification action events
-    hass.bus.async_listen("mobile_app_notification_action", handle_notification_action)
+    hass.bus.async_listen(
+        "mobile_app_notification_action",
+        handle_notification_action,
+    )
     # Also listen for ios.notification_action_fired for iOS devices
-    hass.bus.async_listen("ios.notification_action_fired", handle_notification_action)
+    hass.bus.async_listen(
+        "ios.notification_action_fired",
+        handle_notification_action,
+    )
 
     # Register services
     async def handle_take_medication(call: ServiceCall) -> None:
         """Handle take medication service."""
-        med_id = call.data.get(ATTR_MEDICATION_ID)
-        if med_id not in hass.data[DOMAIN]:
-            _LOGGER.error("Medication ID %s not found", med_id)
+        _med_id = call.data.get(ATTR_MEDICATION_ID)
+        if _med_id not in hass.data[DOMAIN]:
+            _LOGGER.error("Medication ID %s not found", _med_id)
             return
 
-        entry_data = hass.data[DOMAIN][med_id]
-        store = entry_data["store"]
-        storage_data = entry_data["storage_data"]
+        entry_data = hass.data[DOMAIN][_med_id]
+        _store = entry_data["store"]
+        _storage_data = entry_data["storage_data"]
 
-        med_data = storage_data["medications"].get(med_id)
+        med_data = _storage_data["medications"].get(_med_id)
         if not med_data:
-            _LOGGER.error("Medication data for %s not found", med_id)
+            _LOGGER.error("Medication data for %s not found", _med_id)
             return
 
         # Update last taken time
@@ -220,43 +234,50 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         # Add to history
         history_entry = {
-            "medication_id": med_id,
+            "medication_id": _med_id,
             "medication_name": med_data.get(CONF_MEDICATION_NAME, "Unknown"),
             "timestamp": now.isoformat(),
             "action": "taken",
             "dosage": med_data.get(CONF_DOSAGE, ""),
             "dosage_unit": med_data.get(CONF_DOSAGE_UNIT, ""),
         }
-        storage_data["history"].append(history_entry)
+        _storage_data["history"].append(history_entry)
 
         # Save to storage
-        await store.async_save(storage_data)
+        await _store.async_save(_storage_data)
 
         # Append to persistent log file
         log_path = hass.config.path(LOG_FILE_NAME)
-        log_line = f"{now.strftime('%Y-%m-%d %H:%M:%S')} - TAKEN - {med_data.get(CONF_MEDICATION_NAME, 'Unknown')} - {med_data.get(CONF_DOSAGE, '')} {med_data.get(CONF_DOSAGE_UNIT, '')}\n"
+        log_line = (
+            f"{now.strftime('%Y-%m-%d %H:%M:%S')} - TAKEN - "
+            f"{med_data.get(CONF_MEDICATION_NAME, 'Unknown')} - "
+            f"{med_data.get(CONF_DOSAGE, '')} "
+            f"{med_data.get(CONF_DOSAGE_UNIT, '')}\n"
+        )
         try:
             with open(log_path, "a", encoding="utf-8") as log_file:
                 log_file.write(log_line)
-        except Exception as e:
-            _LOGGER.error("Failed to write to log file: %s", e)
+        except Exception as err:
+            _LOGGER.error("Failed to write to log file: %s", err)
 
         _LOGGER.info(
-            "Medication %s taken at %s", med_data.get(CONF_MEDICATION_NAME), now
+            "Medication %s taken at %s",
+            med_data.get(CONF_MEDICATION_NAME),
+            now,
         )
 
     async def handle_skip_medication(call: ServiceCall) -> None:
         """Handle skip medication service."""
-        med_id = call.data.get(ATTR_MEDICATION_ID)
-        if med_id not in hass.data[DOMAIN]:
-            _LOGGER.error("Medication ID %s not found", med_id)
+        _med_id = call.data.get(ATTR_MEDICATION_ID)
+        if _med_id not in hass.data[DOMAIN]:
+            _LOGGER.error("Medication ID %s not found", _med_id)
             return
 
-        entry_data = hass.data[DOMAIN][med_id]
-        store = entry_data["store"]
-        storage_data = entry_data["storage_data"]
+        entry_data = hass.data[DOMAIN][_med_id]
+        _store = entry_data["store"]
+        _storage_data = entry_data["storage_data"]
 
-        med_data = storage_data["medications"].get(med_id)
+        med_data = _storage_data["medications"].get(_med_id)
         if not med_data:
             return
 
@@ -264,40 +285,45 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         # Add to history
         history_entry = {
-            "medication_id": med_id,
+            "medication_id": _med_id,
             "medication_name": med_data.get(CONF_MEDICATION_NAME, "Unknown"),
             "timestamp": now.isoformat(),
             "action": "skipped",
         }
-        storage_data["history"].append(history_entry)
+        _storage_data["history"].append(history_entry)
 
-        await store.async_save(storage_data)
+        await _store.async_save(_storage_data)
 
         # Append to persistent log file
         log_path = hass.config.path(LOG_FILE_NAME)
-        log_line = f"{now.strftime('%Y-%m-%d %H:%M:%S')} - SKIPPED - {med_data.get(CONF_MEDICATION_NAME, 'Unknown')}\n"
+        log_line = (
+            f"{now.strftime('%Y-%m-%d %H:%M:%S')} - SKIPPED - "
+            f"{med_data.get(CONF_MEDICATION_NAME, 'Unknown')}\n"
+        )
         try:
             with open(log_path, "a", encoding="utf-8") as log_file:
                 log_file.write(log_line)
-        except Exception as e:
-            _LOGGER.error("Failed to write to log file: %s", e)
+        except Exception as err:
+            _LOGGER.error("Failed to write to log file: %s", err)
 
         _LOGGER.info(
-            "Medication %s skipped at %s", med_data.get(CONF_MEDICATION_NAME), now
+            "Medication %s skipped at %s",
+            med_data.get(CONF_MEDICATION_NAME),
+            now,
         )
 
     async def handle_refill_medication(call: ServiceCall) -> None:
         """Handle refill medication service."""
-        med_id = call.data.get(ATTR_MEDICATION_ID)
-        if med_id not in hass.data[DOMAIN]:
-            _LOGGER.error("Medication ID %s not found", med_id)
+        _med_id = call.data.get(ATTR_MEDICATION_ID)
+        if _med_id not in hass.data[DOMAIN]:
+            _LOGGER.error("Medication ID %s not found", _med_id)
             return
 
-        entry_data = hass.data[DOMAIN][med_id]
-        store = entry_data["store"]
-        storage_data = entry_data["storage_data"]
+        entry_data = hass.data[DOMAIN][_med_id]
+        _store = entry_data["store"]
+        _storage_data = entry_data["storage_data"]
 
-        med_data = storage_data["medications"].get(med_id)
+        med_data = _storage_data["medications"].get(_med_id)
         if not med_data:
             return
 
@@ -309,24 +335,28 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         # Add to history
         history_entry = {
-            "medication_id": med_id,
+            "medication_id": _med_id,
             "medication_name": med_data.get(CONF_MEDICATION_NAME, "Unknown"),
             "timestamp": now.isoformat(),
             "action": "refilled",
             "amount": refill_amount,
         }
-        storage_data["history"].append(history_entry)
+        _storage_data["history"].append(history_entry)
 
-        await store.async_save(storage_data)
+        await _store.async_save(_storage_data)
 
         # Append to persistent log file
         log_path = hass.config.path(LOG_FILE_NAME)
-        log_line = f"{now.strftime('%Y-%m-%d %H:%M:%S')} - REFILLED - {med_data.get(CONF_MEDICATION_NAME, 'Unknown')} - {refill_amount} units\n"
+        log_line = (
+            f"{now.strftime('%Y-%m-%d %H:%M:%S')} - REFILLED - "
+            f"{med_data.get(CONF_MEDICATION_NAME, 'Unknown')} - "
+            f"{refill_amount} units\n"
+        )
         try:
             with open(log_path, "a", encoding="utf-8") as log_file:
                 log_file.write(log_line)
-        except Exception as e:
-            _LOGGER.error("Failed to write to log file: %s", e)
+        except Exception as err:
+            _LOGGER.error("Failed to write to log file: %s", err)
 
         _LOGGER.info(
             "Medication %s refilled to %s at %s",
@@ -337,15 +367,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     async def handle_test_notification(call: ServiceCall) -> None:
         """Handle test notification service."""
-        med_id = call.data.get(ATTR_MEDICATION_ID)
-        if med_id not in hass.data[DOMAIN]:
-            _LOGGER.error("Medication ID %s not found", med_id)
+        _med_id = call.data.get(ATTR_MEDICATION_ID)
+        if _med_id not in hass.data[DOMAIN]:
+            _LOGGER.error("Medication ID %s not found", _med_id)
             return
 
-        entry_data = hass.data[DOMAIN][med_id]
-        storage_data = entry_data["storage_data"]
+        entry_data = hass.data[DOMAIN][_med_id]
+        _storage_data = entry_data["storage_data"]
 
-        med_data = storage_data["medications"].get(med_id)
+        med_data = _storage_data["medications"].get(_med_id)
         if not med_data:
             return
 
@@ -376,18 +406,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                                 "title": title,
                                 "message": message,
                                 "data": {
-                                    "tag": f"pill_assistant_{med_id}",
+                                    "tag": f"pill_assistant_{_med_id}",
                                     "actions": [
                                         {
-                                            "action": f"take_medication_{med_id}",
+                                            "action": f"take_medication_{_med_id}",
                                             "title": "Mark as Taken",
                                         },
                                         {
-                                            "action": f"snooze_medication_{med_id}",
+                                            "action": f"snooze_medication_{_med_id}",
                                             "title": "Snooze",
                                         },
                                         {
-                                            "action": f"skip_medication_{med_id}",
+                                            "action": f"skip_medication_{_med_id}",
                                             "title": "Skip",
                                         },
                                     ],
@@ -395,9 +425,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                             },
                             blocking=False,
                         )
-                except Exception as e:
+                except Exception as err:
                     _LOGGER.error(
-                        "Failed to send notification via %s: %s", service_name, e
+                        "Failed to send notification via %s: %s",
+                        service_name,
+                        err,
                     )
         else:
             # Fall back to persistent notification
@@ -407,7 +439,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 {
                     "title": title,
                     "message": message,
-                    "notification_id": f"pill_assistant_test_{med_id}",
+                    "notification_id": f"pill_assistant_test_{_med_id}",
                 },
                 blocking=False,
             )
@@ -416,20 +448,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     async def handle_snooze_medication(call: ServiceCall) -> None:
         """Handle snooze medication service."""
-        med_id = call.data.get(ATTR_MEDICATION_ID)
+        _med_id = call.data.get(ATTR_MEDICATION_ID)
         snooze_duration = call.data.get(
-            ATTR_SNOOZE_DURATION, DEFAULT_SNOOZE_DURATION_MINUTES
+            ATTR_SNOOZE_DURATION,
+            DEFAULT_SNOOZE_DURATION_MINUTES,
         )
 
-        if med_id not in hass.data[DOMAIN]:
-            _LOGGER.error("Medication ID %s not found", med_id)
+        if _med_id not in hass.data[DOMAIN]:
+            _LOGGER.error("Medication ID %s not found", _med_id)
             return
 
-        entry_data = hass.data[DOMAIN][med_id]
-        store = entry_data["store"]
-        storage_data = entry_data["storage_data"]
+        entry_data = hass.data[DOMAIN][_med_id]
+        _store = entry_data["store"]
+        _storage_data = entry_data["storage_data"]
 
-        med_data = storage_data["medications"].get(med_id)
+        med_data = _storage_data["medications"].get(_med_id)
         if not med_data:
             return
 
@@ -440,7 +473,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         # Store snooze information
         med_data["snooze_until"] = snooze_until.isoformat()
 
-        await store.async_save(storage_data)
+        await _store.async_save(_storage_data)
 
         _LOGGER.info(
             "Medication %s snoozed for %s minutes until %s",
@@ -451,16 +484,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     async def handle_increment_dosage(call: ServiceCall) -> None:
         """Handle increment dosage service."""
-        med_id = call.data.get(ATTR_MEDICATION_ID)
-        if med_id not in hass.data[DOMAIN]:
-            _LOGGER.error("Medication ID %s not found", med_id)
+        _med_id = call.data.get(ATTR_MEDICATION_ID)
+        if _med_id not in hass.data[DOMAIN]:
+            _LOGGER.error("Medication ID %s not found", _med_id)
             return
 
-        entry_data = hass.data[DOMAIN][med_id]
-        store = entry_data["store"]
-        storage_data = entry_data["storage_data"]
+        entry_data = hass.data[DOMAIN][_med_id]
+        _store = entry_data["store"]
+        _storage_data = entry_data["storage_data"]
 
-        med_data = storage_data["medications"].get(med_id)
+        med_data = _storage_data["medications"].get(_med_id)
         if not med_data:
             return
 
@@ -469,7 +502,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         new_dosage = current_dosage + 0.5
         med_data[CONF_DOSAGE] = str(new_dosage)
 
-        await store.async_save(storage_data)
+        await _store.async_save(_storage_data)
 
         _LOGGER.info(
             "Medication %s dosage incremented from %s to %s",
@@ -480,16 +513,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     async def handle_decrement_dosage(call: ServiceCall) -> None:
         """Handle decrement dosage service."""
-        med_id = call.data.get(ATTR_MEDICATION_ID)
-        if med_id not in hass.data[DOMAIN]:
-            _LOGGER.error("Medication ID %s not found", med_id)
+        _med_id = call.data.get(ATTR_MEDICATION_ID)
+        if _med_id not in hass.data[DOMAIN]:
+            _LOGGER.error("Medication ID %s not found", _med_id)
             return
 
-        entry_data = hass.data[DOMAIN][med_id]
-        store = entry_data["store"]
-        storage_data = entry_data["storage_data"]
+        entry_data = hass.data[DOMAIN][_med_id]
+        _store = entry_data["store"]
+        _storage_data = entry_data["storage_data"]
 
-        med_data = storage_data["medications"].get(med_id)
+        med_data = _storage_data["medications"].get(_med_id)
         if not med_data:
             return
 
@@ -498,7 +531,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         new_dosage = max(0.5, current_dosage - 0.5)
         med_data[CONF_DOSAGE] = str(new_dosage)
 
-        await store.async_save(storage_data)
+        await _store.async_save(_storage_data)
 
         _LOGGER.info(
             "Medication %s dosage decremented from %s to %s",
