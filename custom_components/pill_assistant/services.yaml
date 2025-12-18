@@ -92,3 +92,27 @@ decrement_dosage:
       example: "abc123def456"
       selector:
         text:
+
+increment_remaining:
+  name: Increment Remaining
+  description: Increase remaining medication amount by dosage amount
+  fields:
+    medication_id:
+      name: Medication ID
+      description: The ID of the medication entry (from entity attributes)
+      required: true
+      example: "abc123def456"
+      selector:
+        text:
+
+decrement_remaining:
+  name: Decrement Remaining
+  description: Decrease remaining medication amount by dosage amount (minimum 0)
+  fields:
+    medication_id:
+      name: Medication ID
+      description: The ID of the medication entry (from entity attributes)
+      required: true
+      example: "abc123def456"
+      selector:
+        text:
