@@ -484,6 +484,7 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
         self._temp_user_input = (
             {}
         )  # Temporary storage for user input during clarification
+        self._temp_schedule_type = None  # Track schedule_type changes during flow
 
     def _get_notify_services(self):
         """Get list of available notify services."""
@@ -501,7 +502,7 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
         errors = {}
 
         # Determine which schedule_type to use for the form
-        # If user_input is provided, check if schedule_type was changed
+        # Use temp_schedule_type if set (user changed it), otherwise use config entry
         current_data = self._config_entry.data
         schedule_type_changed = False
 
@@ -509,14 +510,19 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
             new_schedule_type = user_input.get(
                 CONF_SCHEDULE_TYPE, DEFAULT_SCHEDULE_TYPE
             )
-            old_schedule_type = current_data.get(
-                CONF_SCHEDULE_TYPE, DEFAULT_SCHEDULE_TYPE
+            # Use temp schedule type if available, otherwise use config entry
+            old_schedule_type = (
+                self._temp_schedule_type
+                if self._temp_schedule_type is not None
+                else current_data.get(CONF_SCHEDULE_TYPE, DEFAULT_SCHEDULE_TYPE)
             )
             schedule_type_changed = new_schedule_type != old_schedule_type
 
             # If schedule type was changed, re-render the form with new fields
             # Don't save yet - let user fill in the new schedule-specific fields
             if schedule_type_changed:
+                # Store the new schedule type for subsequent form renders
+                self._temp_schedule_type = new_schedule_type
                 # Update current_data with the new schedule_type for form rendering
                 current_data = {**current_data, **user_input}
                 schedule_type = new_schedule_type
@@ -524,7 +530,18 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
             else:
                 schedule_type = new_schedule_type
         else:
-            schedule_type = current_data.get(CONF_SCHEDULE_TYPE, DEFAULT_SCHEDULE_TYPE)
+            # Use temp schedule type if available (after a schedule type change)
+            schedule_type = (
+                self._temp_schedule_type
+                if self._temp_schedule_type is not None
+                else current_data.get(CONF_SCHEDULE_TYPE, DEFAULT_SCHEDULE_TYPE)
+            )
+            # If we're using temp_schedule_type, update current_data to reflect it
+            if self._temp_schedule_type is not None:
+                current_data = {
+                    **current_data,
+                    CONF_SCHEDULE_TYPE: self._temp_schedule_type,
+                }
 
         if user_input is not None:
             # Process the form submission (schedule_type was not changed)
@@ -560,6 +577,8 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
 
             if not errors:
                 # Update the config entry with new data
+                # Clear temp schedule type since we're saving now
+                self._temp_schedule_type = None
                 self.hass.config_entries.async_update_entry(
                     self._config_entry,
                     data={**self._config_entry.data, **user_input},

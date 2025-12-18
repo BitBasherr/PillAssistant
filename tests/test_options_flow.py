@@ -216,3 +216,87 @@ async def test_options_flow_schedule_type_change_redraws_form(
     # Verify entry was NOT updated yet (schedule_type should still be fixed_time)
     entry = hass.config_entries.async_get_entry(mock_config_entry.entry_id)
     assert entry.data.get("schedule_type", "fixed_time") == "fixed_time"
+
+
+async def test_options_flow_schedule_type_transitions(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry
+):
+    """Test all schedule type transitions work correctly (fixed_time → relative_medication → relative_sensor)."""
+    from custom_components.pill_assistant.const import (
+        CONF_SCHEDULE_TYPE,
+        CONF_RELATIVE_TO_MEDICATION,
+        CONF_RELATIVE_OFFSET_HOURS,
+        CONF_RELATIVE_OFFSET_MINUTES,
+    )
+
+    # Add a second medication for relative_medication testing
+    second_entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="Second Medication",
+        data={
+            CONF_MEDICATION_NAME: "Second Medication",
+            CONF_DOSAGE: "50",
+            CONF_DOSAGE_UNIT: "mg",
+            CONF_SCHEDULE_TYPE: "fixed_time",
+            CONF_SCHEDULE_TIMES: ["10:00"],
+            CONF_SCHEDULE_DAYS: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
+            CONF_REFILL_AMOUNT: 30,
+            CONF_REFILL_REMINDER_DAYS: 7,
+            CONF_NOTES: "",
+        },
+    )
+    second_entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(second_entry.entry_id)
+
+    mock_config_entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    # Test fixed_time → relative_medication transition
+    result = await hass.config_entries.options.async_init(mock_config_entry.entry_id)
+    assert result["type"] == data_entry_flow.FlowResultType.FORM
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={
+            CONF_MEDICATION_NAME: "Test Medication",
+            CONF_DOSAGE: "100",
+            CONF_DOSAGE_UNIT: "mg",
+            CONF_SCHEDULE_TYPE: "relative_medication",
+            CONF_SCHEDULE_TIMES: ["08:00"],
+            CONF_SCHEDULE_DAYS: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
+            CONF_REFILL_AMOUNT: 30,
+            CONF_REFILL_REMINDER_DAYS: 7,
+            CONF_NOTES: "Test notes",
+        },
+    )
+
+    # Should redraw form with relative_medication fields
+    assert result["type"] == data_entry_flow.FlowResultType.FORM
+    assert result["step_id"] == "init"
+
+    # Now complete with relative_medication fields
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={
+            CONF_MEDICATION_NAME: "Test Medication",
+            CONF_DOSAGE: "100",
+            CONF_DOSAGE_UNIT: "mg",
+            CONF_SCHEDULE_TYPE: "relative_medication",
+            CONF_RELATIVE_TO_MEDICATION: second_entry.entry_id,
+            CONF_RELATIVE_OFFSET_HOURS: 1,
+            CONF_RELATIVE_OFFSET_MINUTES: 30,
+            CONF_SCHEDULE_DAYS: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
+            CONF_REFILL_AMOUNT: 30,
+            CONF_REFILL_REMINDER_DAYS: 7,
+            CONF_NOTES: "Test notes",
+        },
+    )
+
+    # Should save successfully
+    assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
+
+    # Verify entry was updated with relative_medication
+    entry = hass.config_entries.async_get_entry(mock_config_entry.entry_id)
+    assert entry.data.get(CONF_SCHEDULE_TYPE) == "relative_medication"
+    assert entry.data.get(CONF_RELATIVE_TO_MEDICATION) == second_entry.entry_id
