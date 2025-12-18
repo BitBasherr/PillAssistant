@@ -37,10 +37,23 @@
             margin-bottom: 20px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             transition: all 0.3s ease;
+            position: relative;
         }
 
         .medication-card.updating {
             opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .medication-card.updating::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
         }
 
         .medication-header {
@@ -98,26 +111,33 @@
         }
 
         .dosage-adjuster {
-            display: flex;
+            display: inline-flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
             background: var(--secondary-background-color, #f5f5f5);
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 15px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            margin-right: 10px;
         }
 
         .dosage-label {
             font-weight: 500;
-            min-width: 80px;
+            font-size: 0.9em;
+            margin-right: 4px;
+        }
+
+        .adjusters-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 15px;
         }
 
         .dosage-controls {
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 8px;
-            flex: 1;
+            gap: 6px;
         }
 
         .dosage-btn {
@@ -125,14 +145,15 @@
             color: white;
             border: none;
             border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            font-size: 1.2em;
+            width: 24px;
+            height: 24px;
+            font-size: 1em;
             cursor: pointer;
             transition: background 0.3s;
             display: flex;
             align-items: center;
             justify-content: center;
+            flex-shrink: 0;
         }
 
         .dosage-btn:hover {
@@ -145,9 +166,9 @@
         }
 
         .dosage-value {
-            font-size: 1.3em;
+            font-size: 1.1em;
             font-weight: 500;
-            min-width: 60px;
+            min-width: 80px;
             text-align: center;
         }
 
@@ -270,6 +291,43 @@
             opacity: 0.5;
             margin-bottom: 20px;
         }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            h1 {
+                font-size: 1.5em;
+                margin-bottom: 15px;
+            }
+
+            .medication-card {
+                padding: 15px;
+            }
+
+            .medication-details {
+                grid-template-columns: 1fr;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .action-btn {
+                min-width: 100%;
+            }
+
+            .adjusters-container {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .dosage-adjuster {
+                width: 100%;
+                margin-right: 0;
+            }
+        }
     </style>
 </head>
 <body>
@@ -281,8 +339,35 @@
     </div>
 
     <script>
+        // Configuration constants
+        const SUBSCRIPTION_MAX_ATTEMPTS = 10;
+        const SUBSCRIPTION_BASE_DELAY_MS = 1000;
+        const SUBSCRIPTION_MAX_DELAY_MS = 5000;
+        const RELOAD_DELAY_MS = 100;
+        const POLL_INTERVAL_MS = 30000;
+
         let hass = null;
         let medications = [];
+
+        // Helper function to find medication card by ID
+        function findMedicationCard(medId) {
+            const cards = document.querySelectorAll('[data-entity-id]');
+            for (const card of cards) {
+                const entityId = card.getAttribute('data-entity-id');
+                if (entityId && entityId.includes(medId)) {
+                    // Verify it's an exact match by checking if it's the full entity ID
+                    // Note: We check both 'Medication ID' (human-friendly display name) and 
+                    // 'medication_id' (legacy technical name) for backward compatibility
+                    const medication = medications.find(m => 
+                        (m.attributes['Medication ID'] === medId || m.attributes['medication_id'] === medId)
+                    );
+                    if (medication && entityId === medication.entityId) {
+                        return card;
+                    }
+                }
+            }
+            return null;
+        }
 
         // Format time to local 12-hour format with AM/PM
         function formatTimeToLocal(timeStr) {
@@ -490,21 +575,23 @@
                         </div>
                     </div>
 
-                    <div class="dosage-adjuster">
-                        <div class="dosage-label">Dosage:</div>
-                        <div class="dosage-controls">
-                            <button class="dosage-btn" onclick="adjustDosage('${medId}', -1)" ${isDecrementDisabled ? 'disabled' : ''}>−</button>
-                            <div class="dosage-value">${dosage} ${dosageUnit}</div>
-                            <button class="dosage-btn" onclick="adjustDosage('${medId}', 1)">+</button>
+                    <div class="adjusters-container">
+                        <div class="dosage-adjuster">
+                            <div class="dosage-label">Dosage:</div>
+                            <div class="dosage-controls">
+                                <button class="dosage-btn" onclick="adjustDosage('${medId}', -1)" ${isDecrementDisabled ? 'disabled' : ''}>−</button>
+                                <div class="dosage-value">${dosage} ${dosageUnit}</div>
+                                <button class="dosage-btn" onclick="adjustDosage('${medId}', 1)">+</button>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="dosage-adjuster">
-                        <div class="dosage-label">Remaining:</div>
-                        <div class="dosage-controls">
-                            <button class="dosage-btn" onclick="adjustRemaining('${medId}', -1)" ${isRemainingDecrementDisabled ? 'disabled' : ''}>−</button>
-                            <div class="dosage-value">${remaining} ${dosageUnit}</div>
-                            <button class="dosage-btn" onclick="adjustRemaining('${medId}', 1)">+</button>
+                        <div class="dosage-adjuster">
+                            <div class="dosage-label">Remaining:</div>
+                            <div class="dosage-controls">
+                                <button class="dosage-btn" onclick="adjustRemaining('${medId}', -1)" ${isRemainingDecrementDisabled ? 'disabled' : ''}>−</button>
+                                <div class="dosage-value">${remaining} ${dosageUnit}</div>
+                                <button class="dosage-btn" onclick="adjustRemaining('${medId}', 1)">+</button>
+                            </div>
                         </div>
                     </div>
 
@@ -536,14 +623,34 @@
                     }
                 }
 
+                // Mark card as updating using exact entity ID match
+                const medId = serviceData.medication_id;
+                const targetCard = findMedicationCard(medId);
+                
+                if (targetCard) {
+                    targetCard.classList.add('updating');
+                }
+
                 await hass.callService(domain, service, serviceData);
                 showSuccessMessage(`Action completed successfully!`);
                 
                 // Immediately reload medications for instant feedback
-                setTimeout(loadMedications, 100);
+                await loadMedications();
+                
+                // Remove updating class
+                if (targetCard) {
+                    targetCard.classList.remove('updating');
+                }
             } catch (error) {
                 console.error('Error calling service:', error);
                 showErrorMessage(`Error: ${error.message}`);
+                
+                // Remove updating class on error
+                const medId = serviceData.medication_id;
+                const errorCard = findMedicationCard(medId);
+                if (errorCard) {
+                    errorCard.classList.remove('updating');
+                }
             }
         }
 
@@ -599,38 +706,62 @@
         // Initialize on load
         initConnection();
 
-        // Refresh medications every 30 seconds
+        // Subscribe to Home Assistant state changes for real-time updates
+        function subscribeToStateChanges() {
+            if (!hass) {
+                return false;
+            }
+
+            // Subscribe to state changes using hass connection
+            if (hass.connection && hass.connection.subscribeEvents) {
+                hass.connection.subscribeEvents(
+                    (event) => {
+                        // Check if the changed entity is a pill assistant sensor
+                        if (event.data && event.data.entity_id && 
+                            event.data.entity_id.startsWith('sensor.pa_')) {
+                            console.log('Pill Assistant state changed:', event.data.entity_id);
+                            loadMedications();
+                        }
+                    },
+                    'state_changed'
+                ).catch(err => {
+                    console.warn('Failed to subscribe to state changes:', err);
+                });
+                return true;
+            }
+            return false;
+        }
+
+        // Try to subscribe with retry logic
+        let subscribeAttempts = 0;
+        function attemptSubscription() {
+            if (subscribeAttempts >= SUBSCRIPTION_MAX_ATTEMPTS) {
+                console.warn(`Failed to subscribe to state changes after ${SUBSCRIPTION_MAX_ATTEMPTS} attempts`);
+                return;
+            }
+            
+            subscribeAttempts++;
+            if (!subscribeToStateChanges()) {
+                // Retry with exponential backoff
+                const delay = Math.min(
+                    SUBSCRIPTION_BASE_DELAY_MS * subscribeAttempts, 
+                    SUBSCRIPTION_MAX_DELAY_MS
+                );
+                setTimeout(attemptSubscription, delay);
+            } else {
+                console.log('Successfully subscribed to state changes');
+            }
+        }
+        
+        // Start subscription attempts after connection is ready
+        attemptSubscription();
+
+        // Refresh medications every 30 seconds as fallback
         setInterval(() => {
             if (hass) {
                 loadMedications();
             }
-        }, 30000);
-
-        // Subscribe to state changes for immediate updates
-        window.addEventListener('message', (event) => {
-            if (event.data && event.data.type === 'ha-state-changed') {
-                // Check if it's a pill assistant entity that changed
-                if (event.data.entityId && event.data.entityId.startsWith('sensor.pa_')) {
-                    loadMedications();
-                }
-            }
-        });
-
-        // Listen for custom events from Home Assistant
-        if (window.parent) {
-            const checkForStateUpdates = () => {
-                const haElement = window.parent.document?.querySelector('home-assistant');
-                if (haElement) {
-                    haElement.addEventListener('hass-state-changed', (event) => {
-                        if (event.detail && event.detail.entityId && event.detail.entityId.startsWith('sensor.pa_')) {
-                            loadMedications();
-                        }
-                    });
-                }
-            };
-            // Wait for parent document to be ready before attaching event listener
-            setTimeout(checkForStateUpdates, 1000);
-        }
+        }, POLL_INTERVAL_MS);
     </script>
 </body>
 </html>
