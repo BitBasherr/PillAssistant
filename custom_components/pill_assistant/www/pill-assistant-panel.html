@@ -398,6 +398,7 @@
             
             // Helper to check if decrement button should be disabled
             const isDecrementDisabled = parseFloat(dosage) <= 0.5;
+            const isRemainingDecrementDisabled = parseFloat(remaining) <= 0;
 
             return `
                 <div class="medication-card">
@@ -431,6 +432,15 @@
                             <button class="dosage-btn" onclick="adjustDosage('${medId}', -1)" ${isDecrementDisabled ? 'disabled' : ''}>−</button>
                             <div class="dosage-value">${dosage} ${dosageUnit}</div>
                             <button class="dosage-btn" onclick="adjustDosage('${medId}', 1)">+</button>
+                        </div>
+                    </div>
+
+                    <div class="dosage-adjuster">
+                        <div class="dosage-label">Remaining:</div>
+                        <div class="dosage-controls">
+                            <button class="dosage-btn" onclick="adjustRemaining('${medId}', -1)" ${isRemainingDecrementDisabled ? 'disabled' : ''}>−</button>
+                            <div class="dosage-value">${remaining} ${dosageUnit}</div>
+                            <button class="dosage-btn" onclick="adjustRemaining('${medId}', 1)">+</button>
                         </div>
                     </div>
 
@@ -514,6 +524,11 @@
 
         async function adjustDosage(medId, change) {
             const service = change > 0 ? 'increment_dosage' : 'decrement_dosage';
+            await callService('pill_assistant', service, { medication_id: medId });
+        }
+
+        async function adjustRemaining(medId, change) {
+            const service = change > 0 ? 'increment_remaining' : 'decrement_remaining';
             await callService('pill_assistant', service, { medication_id: medId });
         }
 

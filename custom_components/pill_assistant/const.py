@@ -55,9 +55,12 @@ DOSAGE_UNIT_OPTIONS = [
     {"label": "g", "value": "g"},
     {"label": "Tablet(s)", "value": "tablet(s)"},
     {"label": "Capsule(s)", "value": "capsule(s)"},
+    {"label": "Gelatin Capsule(s)", "value": "gelatin_capsule(s)"},
+    {"label": "Gummy/Gummies", "value": "gummy/gummies"},
     {"label": "Drop(s)", "value": "drop(s)"},
     {"label": "Spray(s)", "value": "spray(s)"},
     {"label": "Puff(s)", "value": "puff(s)"},
+    {"label": "Syrup (mL)", "value": "syrup_mL"},
 ]
 
 # Days of week options
@@ -107,6 +110,8 @@ SERVICE_TEST_NOTIFICATION = "test_notification"
 SERVICE_SNOOZE_MEDICATION = "snooze_medication"
 SERVICE_INCREMENT_DOSAGE = "increment_dosage"
 SERVICE_DECREMENT_DOSAGE = "decrement_dosage"
+SERVICE_INCREMENT_REMAINING = "increment_remaining"
+SERVICE_DECREMENT_REMAINING = "decrement_remaining"
 
 # Service parameter keys (for service calls)
 ATTR_MEDICATION_ID = "medication_id"
