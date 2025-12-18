@@ -17,10 +17,12 @@ schedules, and log medication history.
   - Sensor-based scheduling (after wake-up sensor, etc.)
   - Dynamic rebasing: schedules recalculate from actual taken times, not planned times
 - **Dosage Tracking**: Track dosage amounts with various  
-  unit options (pills, mL, mg, g, tablets, capsules, drops, sprays, puffs)
+  unit options (pills, mL, mg, g, tablets, capsules, gelatin capsules, gummies, drops, sprays, puffs, syrup)
 - **Refill Management**: 
   - Automatic alerts when medication supply is running low
   - Track remaining amount
+  - Increment/decrement remaining amount via services
+  - Adjust remaining doses through frontend panel with +/- buttons
   - One-click refill service
 - **Real-time Status**: Sensor entities show current  
   medication status (scheduled, due, overdue, taken, refill needed)
@@ -52,8 +54,12 @@ schedules, and log medication history.
   - Adjust through frontend panel with +/- buttons
   - Update via options flow in UI
   - Minimum dosage of 0.5 units enforced
-- **Flexible Units**: Support for pills, tablets, mL, mg, g,  
-  capsules, drops, sprays, and puffs
+- **Dynamic Remaining Amount Adjustment**:
+  - Increment/decrement remaining amount by dosage amount via services
+  - Adjust through frontend panel with +/- buttons
+  - Minimum remaining amount of 0 enforced
+- **Flexible Units**: Support for pills, tablets, capsules, gelatin capsules, gummies, mL, mg, g,  
+  drops, sprays, puffs, and syrup
 
 ### Frontend Panel
 - **Web-based Control Panel**: Visual medication management interface
@@ -238,6 +244,26 @@ Decrease medication dosage by 0.5 units (minimum 0.5). Useful for adjusting dosa
 
 ```yaml
 service: pill_assistant.decrement_dosage
+data:
+  medication_id: "abc123def456"
+```
+
+### pill_assistant.increment_remaining
+
+Increase remaining medication amount by dosage amount. Useful for adjusting remaining supply without performing a full refill.
+
+```yaml
+service: pill_assistant.increment_remaining
+data:
+  medication_id: "abc123def456"
+```
+
+### pill_assistant.decrement_remaining
+
+Decrease remaining medication amount by dosage amount (minimum 0). Useful for manually adjusting remaining supply.
+
+```yaml
+service: pill_assistant.decrement_remaining
 data:
   medication_id: "abc123def456"
 ```
