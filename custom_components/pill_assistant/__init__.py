@@ -95,7 +95,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     # Only register if http component is available (not in test environment)
     if not hass.data[DOMAIN].get("panel_registered") and hass.http is not None:
         www_path = os.path.join(os.path.dirname(__file__), "www")
-        hass.http.register_static_path(
+        hass.http.async_register_static_paths(
             f"/{DOMAIN}",
             www_path,
             cache_headers=False,
