@@ -36,6 +36,11 @@
             padding: 20px;
             margin-bottom: 20px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .medication-card.updating {
+            opacity: 0.7;
         }
 
         .medication-header {
@@ -97,9 +102,9 @@
             align-items: center;
             gap: 10px;
             background: var(--secondary-background-color, #f5f5f5);
-            padding: 15px;
+            padding: 12px;
             border-radius: 8px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
 
         .dosage-label {
@@ -110,7 +115,8 @@
         .dosage-controls {
             display: flex;
             align-items: center;
-            gap: 10px;
+            justify-content: center;
+            gap: 8px;
             flex: 1;
         }
 
@@ -119,9 +125,9 @@
             color: white;
             border: none;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            font-size: 1.5em;
+            width: 30px;
+            height: 30px;
+            font-size: 1.2em;
             cursor: pointer;
             transition: background 0.3s;
             display: flex;
@@ -278,6 +284,64 @@
         let hass = null;
         let medications = [];
 
+        // Format time to local 12-hour format with AM/PM
+        function formatTimeToLocal(timeStr) {
+            if (!timeStr || timeStr === 'Never' || timeStr === 'Unknown' || timeStr === 'Not scheduled') {
+                return timeStr;
+            }
+            
+            try {
+                // Try to parse as ISO datetime string
+                let date = new Date(timeStr);
+                
+                // Check if it's a valid date
+                if (isNaN(date.getTime())) {
+                    // Try parsing HH:MM format
+                    const timeMatch = timeStr.match(/(\d{1,2}):(\d{2})/);
+                    if (timeMatch) {
+                        const hours = parseInt(timeMatch[1]);
+                        const minutes = parseInt(timeMatch[2]);
+                        const period = hours >= 12 ? 'PM' : 'AM';
+                        const displayHours = hours % 12 || 12;
+                        return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+                    }
+                    return timeStr; // Return as-is if can't parse
+                }
+                
+                // Format to local 12-hour time with AM/PM
+                return date.toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                });
+            } catch (e) {
+                console.warn('Error formatting time:', timeStr, e);
+                return timeStr;
+            }
+        }
+
+        // Format schedule to show times in local format
+        function formatSchedule(schedule) {
+            if (!schedule || schedule === 'Not scheduled') {
+                return schedule;
+            }
+            
+            // Parse times from schedule string (e.g., "08:00, 20:00 on mon, tue, wed, thu, fri, sat, sun")
+            const timePattern = /(\d{1,2}:\d{2})/g;
+            const times = schedule.match(timePattern);
+            
+            if (times && times.length > 0) {
+                const formattedTimes = times.map(time => formatTimeToLocal(time));
+                let result = schedule;
+                times.forEach((time, i) => {
+                    result = result.replace(time, formattedTimes[i]);
+                });
+                return result;
+            }
+            
+            return schedule;
+        }
+
         // Get Home Assistant connection
         function getHassConnection() {
             if (window.parent && window.parent.document) {
@@ -390,9 +454,9 @@
             const dosage = attrs['dosage'] || attrs['Dosage'] || '1';
             const dosageUnit = attrs['dosage_unit'] || attrs['Dosage unit'] || 'pill(s)';
             const remaining = attrs['remaining_amount'] || attrs['Remaining amount'] || 0;
-            const lastTaken = attrs['Last taken at'] || attrs['last_taken'] || 'Never';
-            const schedule = attrs['Schedule'] || 'Not scheduled';
-            const nextDose = attrs['Next dose time'] || 'Unknown';
+            const lastTaken = formatTimeToLocal(attrs['Last taken at'] || attrs['last_taken'] || 'Never');
+            const schedule = formatSchedule(attrs['Schedule'] || 'Not scheduled');
+            const nextDose = formatTimeToLocal(attrs['Next dose time'] || 'Unknown');
             const refillAmount = attrs['Refill amount'] || 0;
             const medName = med.entityId.replace('sensor.pa_', '').replace(/_/g, ' ');
             
@@ -401,7 +465,7 @@
             const isRemainingDecrementDisabled = parseFloat(remaining) <= 0;
 
             return `
-                <div class="medication-card">
+                <div class="medication-card" data-entity-id="${med.entityId}">
                     <div class="medication-header">
                         <div class="medication-name">${medName}</div>
                         <div class="medication-status status-${med.state}">${med.state}</div>
@@ -475,8 +539,8 @@
                 await hass.callService(domain, service, serviceData);
                 showSuccessMessage(`Action completed successfully!`);
                 
-                // Reload medications after a short delay
-                setTimeout(loadMedications, 500);
+                // Immediately reload medications for instant feedback
+                setTimeout(loadMedications, 100);
             } catch (error) {
                 console.error('Error calling service:', error);
                 showErrorMessage(`Error: ${error.message}`);
@@ -541,6 +605,32 @@
                 loadMedications();
             }
         }, 30000);
+
+        // Subscribe to state changes for immediate updates
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'ha-state-changed') {
+                // Check if it's a pill assistant entity that changed
+                if (event.data.entityId && event.data.entityId.startsWith('sensor.pa_')) {
+                    loadMedications();
+                }
+            }
+        });
+
+        // Listen for custom events from Home Assistant
+        if (window.parent) {
+            const checkForStateUpdates = () => {
+                const haElement = window.parent.document?.querySelector('home-assistant');
+                if (haElement) {
+                    haElement.addEventListener('hass-state-changed', (event) => {
+                        if (event.detail && event.detail.entityId && event.detail.entityId.startsWith('sensor.pa_')) {
+                            loadMedications();
+                        }
+                    });
+                }
+            };
+            // Wait for parent document to be ready before attaching event listener
+            setTimeout(checkForStateUpdates, 1000);
+        }
     </script>
 </body>
 </html>
