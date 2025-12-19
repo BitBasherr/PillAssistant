@@ -819,25 +819,11 @@
                 // Navigate to the config flow for adding a new medication
                 const domain = 'pill_assistant';
                 
-                // Use Home Assistant's showConfigFlowDialog method if available
-                if (window.parent && window.parent.document) {
-                    const haElement = window.parent.document.querySelector('home-assistant');
-                    if (haElement && haElement.provideHass) {
-                        // Fire an event to open the config flow
-                        window.parent.dispatchEvent(new CustomEvent('hass-more-info', {
-                            detail: { 
-                                action: 'show-dialog',
-                                dialogTag: 'dialog-add-integration',
-                                dialogImport: () => import('@/dialogs/config-flow/show-dialog-data-entry-flow'),
-                                dialogParams: {
-                                    domain: domain,
-                                }
-                            }
-                        }));
-                        
-                        // Alternative: navigate to integrations page
-                        window.parent.location.href = `/config/integrations/dashboard/add?domain=${domain}`;
-                    }
+                // Navigate to integrations page to add new medication
+                if (window.parent) {
+                    window.parent.location.href = `/config/integrations/dashboard/add?domain=${domain}`;
+                } else {
+                    throw new Error('Cannot navigate - not embedded in Home Assistant');
                 }
             } catch (error) {
                 console.error('Error adding medication:', error);
@@ -852,10 +838,13 @@
                     throw new Error('Home Assistant connection not available');
                 }
 
-                // Navigate to the options flow for this medication
+                // Note: medId is the config entry ID (entry_id from Home Assistant)
+                // Each medication is a separate config entry, so medId === entry_id
+                // Navigate to the options flow for this medication config entry
                 if (window.parent) {
-                    // Navigate to the config entry options page
                     window.parent.location.href = `/config/integrations/integration/pill_assistant/entry/${medId}`;
+                } else {
+                    throw new Error('Cannot navigate - not embedded in Home Assistant');
                 }
             } catch (error) {
                 console.error('Error editing medication:', error);
@@ -875,7 +864,8 @@
                     return;
                 }
 
-                // Call the config_entries.remove service
+                // Note: medId is the config entry ID (entry_id)
+                // Call the config_entries.remove service to delete the medication
                 await hass.callService('config_entries', 'remove', {
                     entry_id: medId
                 });
