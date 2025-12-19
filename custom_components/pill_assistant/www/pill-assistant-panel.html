@@ -19,14 +19,30 @@
 
         body {
             font-family: 'Roboto', sans-serif;
-            background-color: var(--primary-background-color, #fafafa);
-            color: var(--primary-text-color, #212121);
             padding: 20px;
             overflow-y: auto;
             overflow-x: hidden;
             -webkit-overflow-scrolling: touch;
             min-height: 100vh;
             position: relative;
+        }
+
+        /* Light theme (default) */
+        body.theme-light {
+            background-color: #fafafa;
+            color: #212121;
+        }
+
+        /* Dark theme */
+        body.theme-dark {
+            background-color: #121212;
+            color: #e0e0e0;
+        }
+
+        /* Auto theme - will be set by JavaScript based on system preference */
+        body.theme-auto {
+            background-color: var(--primary-background-color, #fafafa);
+            color: var(--primary-text-color, #212121);
         }
 
         .container {
@@ -322,6 +338,85 @@
             height: 18px;
         }
 
+        .theme-switcher {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .theme-switcher-label {
+            font-size: 0.9em;
+            margin-right: 4px;
+        }
+
+        .theme-option {
+            position: relative;
+        }
+
+        .theme-option input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .theme-option label {
+            display: inline-block;
+            padding: 6px 14px;
+            border: 2px solid var(--divider-color, #e0e0e0);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            user-select: none;
+            background: var(--card-background-color, #ffffff);
+            color: var(--primary-text-color, #212121);
+        }
+
+        .theme-option input[type="radio"]:checked + label {
+            background: var(--primary-color, #03a9f4);
+            color: white;
+            border-color: var(--primary-color, #03a9f4);
+        }
+
+        .theme-option input[type="radio"]:disabled + label {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .theme-option label:hover {
+            border-color: var(--primary-color, #03a9f4);
+        }
+
+        .theme-option input[type="radio"]:checked + label:hover {
+            background: var(--dark-primary-color, #0288d1);
+        }
+
+        /* Theme-specific card backgrounds */
+        body.theme-dark .medication-card {
+            background: #1e1e1e;
+        }
+
+        body.theme-dark .detail-item {
+            background: #2a2a2a;
+        }
+
+        body.theme-dark .dosage-adjuster {
+            background: #2a2a2a;
+        }
+
+        body.theme-dark .theme-option label {
+            background: #2a2a2a;
+            color: #e0e0e0;
+            border-color: #444;
+        }
+
+        body.theme-dark .theme-option input[type="radio"]:checked + label {
+            background: var(--primary-color, #03a9f4);
+            color: white;
+            border-color: var(--primary-color, #03a9f4);
+        }
+
         .loading {
             text-align: center;
             padding: 40px;
@@ -434,6 +529,18 @@
                 right: 10px;
                 top: 10px;
             }
+
+            .header-section > div {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .theme-switcher {
+                order: -1;
+                width: 100%;
+                justify-content: center;
+                margin-bottom: 10px;
+            }
         }
     </style>
 </head>
@@ -441,7 +548,22 @@
     <div class="container">
         <div class="header-section">
             <h1>💊 Pill Assistant</h1>
-            <div style="display: flex; gap: 15px; align-items: center;">
+            <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                <div class="theme-switcher">
+                    <span class="theme-switcher-label">Theme:</span>
+                    <div class="theme-option">
+                        <input type="radio" id="theme-light" name="theme" value="light" onchange="setTheme('light')">
+                        <label for="theme-light">☀️ Light</label>
+                    </div>
+                    <div class="theme-option">
+                        <input type="radio" id="theme-dark" name="theme" value="dark" onchange="setTheme('dark')">
+                        <label for="theme-dark">🌙 Dark</label>
+                    </div>
+                    <div class="theme-option">
+                        <input type="radio" id="theme-auto" name="theme" value="auto" onchange="setTheme('auto')" checked>
+                        <label for="theme-auto">🔄 Auto</label>
+                    </div>
+                </div>
                 <label class="settings-checkbox">
                     <input type="checkbox" id="showConfirmationBanner" checked onchange="toggleConfirmationBanner()">
                     <span>Display Confirmation Banner</span>
@@ -468,7 +590,66 @@
         let hass = null;
         let medications = [];
         let showConfirmationBanner = true;
+        let currentTheme = 'auto'; // Default theme
         let nextScheduleCache = {}; // Cache for next scheduled times
+        let darkModeMediaQuery = null; // Media query for system dark mode
+
+        // Theme management functions
+        function initTheme() {
+            // Load saved theme preference
+            const saved = localStorage.getItem('pillAssistantTheme');
+            currentTheme = saved || 'auto';
+            
+            // Set up media query listener for auto mode
+            darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+            darkModeMediaQuery.addEventListener('change', handleSystemThemeChange);
+            
+            // Apply initial theme
+            applyTheme(currentTheme);
+            
+            // Update radio button state
+            const radio = document.getElementById(`theme-${currentTheme}`);
+            if (radio) {
+                radio.checked = true;
+            }
+        }
+
+        function handleSystemThemeChange(e) {
+            // Only apply if we're in auto mode
+            if (currentTheme === 'auto') {
+                applyAutoTheme();
+            }
+        }
+
+        function setTheme(theme) {
+            currentTheme = theme;
+            localStorage.setItem('pillAssistantTheme', theme);
+            applyTheme(theme);
+        }
+
+        function applyTheme(theme) {
+            // Remove all theme classes
+            document.body.classList.remove('theme-light', 'theme-dark', 'theme-auto');
+            
+            if (theme === 'auto') {
+                document.body.classList.add('theme-auto');
+                applyAutoTheme();
+            } else if (theme === 'light') {
+                document.body.classList.add('theme-light');
+            } else if (theme === 'dark') {
+                document.body.classList.add('theme-dark');
+            }
+        }
+
+        function applyAutoTheme() {
+            // Check system preference and apply appropriate theme class
+            // Note: theme-auto class is already set in applyTheme()
+            if (darkModeMediaQuery && darkModeMediaQuery.matches) {
+                document.body.classList.add('theme-dark');
+            } else {
+                document.body.classList.add('theme-light');
+            }
+        }
 
         // Load settings from localStorage
         function loadSettings() {
@@ -632,7 +813,10 @@
         // Initialize connection to Home Assistant
         let retryCount = 0;
         function initConnection() {
-            // Load settings first
+            // Initialize theme first
+            initTheme();
+            
+            // Load settings
             loadSettings();
             loadNextScheduleCache();
             
@@ -1051,10 +1235,10 @@
                     throw new Error('Home Assistant connection not available');
                 }
 
-                // Note: medId is the config entry ID (entry_id from Home Assistant)
-                // Each medication is a separate config entry, so medId === entry_id
-                // Navigate to the options flow for this medication config entry
-                const path = `/config/integrations/integration/pill_assistant/entry/${medId}`;
+                // Note: medId is the medication_id attribute, which is actually the entry_id
+                // We need to navigate to the config entry's options flow
+                // The correct URL format is: /config/integrations/config_entry/{entry_id}
+                const path = `/config/integrations/config_entry/${medId}`;
                 
                 // Navigate using Home Assistant's navigation pattern
                 if (window.parent && window.parent.history) {
