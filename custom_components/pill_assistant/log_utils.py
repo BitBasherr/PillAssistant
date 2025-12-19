@@ -198,7 +198,7 @@ async def async_get_statistics(
         CONF_ON_TIME_WINDOW_MINUTES,
         DEFAULT_ON_TIME_WINDOW_MINUTES,
     )
-    
+
     med_configs = {}
     if hasattr(hass, "data") and DOMAIN in hass.data:
         for med_id, entry_data in hass.data[DOMAIN].items():
@@ -240,10 +240,10 @@ async def async_get_statistics(
             }
 
         stats["medications"][med_id]["total_count"] += 1
-        
+
         if action == "taken":
             stats["medications"][med_id]["taken_count"] += 1
-            
+
             # Calculate if taken on time
             if med_id in med_configs and timestamp_str:
                 try:
@@ -252,14 +252,14 @@ async def async_get_statistics(
                     schedule_times = config["schedule_times"]
                     schedule_days = config["schedule_days"]
                     on_time_window = config["on_time_window"]
-                    
+
                     # Check if taken on a scheduled day
                     day_abbr = taken_time.strftime("%a").lower()[:3]
                     if day_abbr in schedule_days:
                         # Find closest scheduled time
                         taken_minutes = taken_time.hour * 60 + taken_time.minute
-                        closest_diff = float('inf')
-                        
+                        closest_diff = float("inf")
+
                         for time_str in schedule_times:
                             try:
                                 if isinstance(time_str, list):
@@ -270,7 +270,7 @@ async def async_get_statistics(
                                 closest_diff = min(closest_diff, diff)
                             except (ValueError, AttributeError):
                                 continue
-                        
+
                         # Check if within on-time window
                         if closest_diff <= on_time_window:
                             stats["medications"][med_id]["taken_on_time_count"] += 1
@@ -282,7 +282,7 @@ async def async_get_statistics(
                 except (ValueError, TypeError):
                     # If we can't parse, don't count as on-time or late
                     pass
-                    
+
         elif action == "skipped":
             stats["medications"][med_id]["skipped_count"] += 1
         elif action == "refilled":

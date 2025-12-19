@@ -224,7 +224,8 @@ class PillAssistantSensor(SensorEntity):
             "Global log path": global_log_path,
             "Medication log path": med_log_path,
             "Automatic notifications enabled": self._entry.data.get(
-                CONF_ENABLE_AUTOMATIC_NOTIFICATIONS, DEFAULT_ENABLE_AUTOMATIC_NOTIFICATIONS
+                CONF_ENABLE_AUTOMATIC_NOTIFICATIONS,
+                DEFAULT_ENABLE_AUTOMATIC_NOTIFICATIONS,
             ),
             "On-time window (minutes)": self._entry.data.get(
                 CONF_ON_TIME_WINDOW_MINUTES, DEFAULT_ON_TIME_WINDOW_MINUTES
@@ -586,7 +587,7 @@ class PillAssistantSensor(SensorEntity):
         # Get medication details from storage
         storage_data = self._store_data["storage_data"]
         med_data = storage_data["medications"].get(self._medication_id, {})
-        
+
         med_name = med_data.get(CONF_MEDICATION_NAME, self._medication_name)
         dosage = med_data.get(CONF_DOSAGE, self._entry.data.get(CONF_DOSAGE, ""))
         dosage_unit = med_data.get(

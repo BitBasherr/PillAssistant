@@ -141,7 +141,7 @@ async def test_multiple_medications_different_windows(hass: HomeAssistant):
     config_entry1.add_to_hass(hass)
     await hass.config_entries.async_setup(config_entry1.entry_id)
     await hass.async_block_till_done()
-    
+
     config_entry2.add_to_hass(hass)
     await hass.config_entries.async_setup(config_entry2.entry_id)
     await hass.async_block_till_done()
@@ -202,4 +202,3 @@ async def test_on_time_window_large_value(hass: HomeAssistant):
     sensor_state = hass.states.get(f"sensor.pa_flexible_schedule")
     assert sensor_state is not None
     assert sensor_state.attributes.get("On-time window (minutes)") == 180
-

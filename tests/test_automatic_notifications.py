@@ -58,7 +58,9 @@ async def test_automatic_notification_config_defaults(hass: HomeAssistant):
     assert sensor_state.attributes.get("On-time window (minutes)") == 30
 
 
-async def test_automatic_notification_disabled(hass: HomeAssistant, mock_notify_service):
+async def test_automatic_notification_disabled(
+    hass: HomeAssistant, mock_notify_service
+):
     """Test that automatic notifications can be disabled."""
     config_entry = MockConfigEntry(
         domain=DOMAIN,
