@@ -417,6 +417,35 @@
             border-color: var(--primary-color, #03a9f4);
         }
 
+        /* Theme-specific text colors */
+        body.theme-dark .medication-name {
+            color: #ffffff;
+        }
+
+        body.theme-dark .detail-label {
+            color: #b0b0b0;
+        }
+
+        body.theme-dark .detail-value {
+            color: #ffffff;
+        }
+
+        body.theme-dark .dosage-label {
+            color: #e0e0e0;
+        }
+
+        body.theme-dark .dosage-value {
+            color: #ffffff;
+        }
+
+        body.theme-dark .theme-switcher-label {
+            color: #e0e0e0;
+        }
+
+        body.theme-dark .settings-checkbox {
+            color: #e0e0e0;
+        }
+
         .loading {
             text-align: center;
             padding: 40px;
@@ -1240,19 +1269,42 @@
                 // The correct URL format is: /config/integrations/config_entry/{entry_id}
                 const path = `/config/integrations/config_entry/${medId}`;
                 
-                // Navigate using Home Assistant's navigation pattern
-                if (window.parent && window.parent.history) {
+                // Try multiple navigation methods for better compatibility with side panel
+                let navigationSuccess = false;
+                
+                // Method 1: Try using hass.navigate if available (preferred for panels)
+                if (hass && typeof hass.navigate === 'function') {
                     try {
-                        window.parent.history.pushState(null, '', path);
-                        window.parent.dispatchEvent(new CustomEvent('location-changed', {
-                            detail: { replace: false }
-                        }));
+                        hass.navigate(path);
+                        navigationSuccess = true;
                     } catch (navError) {
-                        console.error('Navigation error:', navError);
-                        throw new Error('Cannot navigate - not embedded in Home Assistant');
+                        console.warn('hass.navigate failed:', navError);
                     }
-                } else {
-                    throw new Error('Cannot navigate - not embedded in Home Assistant');
+                }
+                
+                // Method 2: Try using parent window navigation
+                if (!navigationSuccess && window.parent && window.parent !== window) {
+                    try {
+                        // Try to access the Home Assistant main element for navigation
+                        const haElement = window.parent.document.querySelector('home-assistant');
+                        if (haElement && haElement.hass && typeof haElement.hass.navigate === 'function') {
+                            haElement.hass.navigate(path);
+                            navigationSuccess = true;
+                        } else if (window.parent.history) {
+                            // Fallback to direct history manipulation
+                            window.parent.history.pushState(null, '', path);
+                            window.parent.dispatchEvent(new CustomEvent('location-changed', {
+                                detail: { replace: false }
+                            }));
+                            navigationSuccess = true;
+                        }
+                    } catch (navError) {
+                        console.warn('Parent window navigation failed:', navError);
+                    }
+                }
+                
+                if (!navigationSuccess) {
+                    throw new Error('Cannot navigate - not embedded in Home Assistant or navigation unavailable');
                 }
             } catch (error) {
                 console.error('Error editing medication:', error);
