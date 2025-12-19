@@ -1,9 +1,19 @@
 # Example configuration.yaml entries for Pill Assistant
 
-# While Pill Assistant uses UI configuration primarily, 
-# you can add helper entities to enhance functionality
+# ⚠️ IMPORTANT: These examples are OPTIONAL and for ADVANCED USERS ONLY!
+# 
+# Pill Assistant is designed to work entirely through the UI.
+# You can add, edit, and delete medications from:
+#   1. The Frontend Panel (pill-assistant-panel.html in the sidebar)
+#   2. Settings → Devices & Services → Pill Assistant
+#
+# NO YAML CONFIGURATION IS REQUIRED FOR BASIC OPERATION!
+#
+# The examples below show how you can OPTIONALLY extend functionality
+# with custom helper entities and automations for advanced use cases.
 
-# Input buttons for quick medication tracking
+# Optional: Input buttons for quick medication tracking via dashboard cards
+# (Not required - you can use the Frontend Panel or Services instead)
 input_button:
   took_medication_a:
     name: "Took MedicationA"
@@ -17,20 +27,23 @@ input_button:
     name: "Refilled MedicationA"
     icon: mdi:package-variant
 
-# Input booleans for tracking states
+# Optional: Input booleans for tracking states
+# (Not required - for advanced dashboard/automation use only)
 input_boolean:
   medication_reminders_enabled:
     name: "Enable Medication Reminders"
     icon: mdi:bell-ring
 
-# Input datetime for custom scheduling
+# Optional: Input datetime for custom scheduling
+# (Not required - medications have built-in scheduling through config flow)
 input_datetime:
   next_pharmacy_visit:
     name: "Next Pharmacy Visit"
     has_date: true
     has_time: false
 
-# Template sensors for additional tracking
+# Optional: Template sensors for additional tracking
+# (Not required - sensor entities already provide comprehensive attributes)
 template:
   - sensor:
       - name: "Medications Due Today"
@@ -59,7 +72,8 @@ template:
         unit_of_measurement: "days"
         icon: mdi:calendar-range
 
-# Automation examples
+# Optional: Automation examples
+# (Not required - these show advanced automation patterns)
 automation:
   # Basic notification when medication is due
   - alias: "Notify - Medication Due"
@@ -105,7 +119,8 @@ automation:
         data:
           message: "MedicationA has been refilled to {{ state_attr('sensor.medication_a', 'refill_amount') }} doses"
 
-# Script examples for common actions
+# Optional: Script examples for common actions
+# (Not required - all actions available in Frontend Panel)
 script:
   take_all_due_medications:
     alias: "Take All Due Medications"
@@ -148,6 +163,26 @@ script:
           message: >
             Please note that {{ states('sensor.medications_needing_refill') }} 
             medication(s) need to be refilled soon.
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# REMINDER: All of the above is OPTIONAL!
+# ═══════════════════════════════════════════════════════════════════════════════
+# 
+# You can manage medications entirely through the UI:
+#   1. Frontend Panel: Click "Pill Assistant" in your sidebar
+#      - Add medications with "Add Medication" button
+#      - Edit medications with "Edit" button on each card
+#      - Delete medications with "Delete" button on each card
+#   
+#   2. Settings → Devices & Services → Pill Assistant
+#      - Add Integration for new medications
+#      - Configure for editing medications
+#      - Delete for removing medications
+#
+# These YAML examples are provided for advanced users who want to create
+# custom automations and helper entities beyond the core integration features.
+#
+# ═══════════════════════════════════════════════════════════════════════════════
 
 # Note: Replace 'sensor.medication_a' and 'sensor.vitamin_d' with your actual medication sensor entity IDs
 # Note: Replace 'mobile_app' with your actual notification service (e.g., 'mobile_app_iphone')

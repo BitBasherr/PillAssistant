@@ -6,11 +6,17 @@ schedules, and log medication history.
 
 > **Note**: This README is optimized for both desktop and mobile viewing.
 
+> **🎉 NEW**: Complete UI-based medication management! Add, edit, and delete medications directly from the frontend panel - **no YAML configuration required!**
+
 ## Features
 
 ### Core Features
-- **Medication Management**: Add and manage multiple  
-  medications through the UI with PA_ entity naming prefix
+- **Complete UI Management**: Add, edit, and delete medications from the frontend panel or Settings
+  - ➕ **Add** medications with the "Add Medication" button
+  - ✏️ **Edit** medications with the "Edit" button on each card
+  - 🗑️ **Delete** medications with confirmation dialog
+  - 🚫 **No YAML required** for any core functionality
+- **Medication Management**: Manage multiple medications through the UI with PA_ entity naming prefix
 - **Flexible Scheduling**: 
   - Fixed time schedules (specific times on specific days)
   - Relative scheduling (after another medication)
@@ -270,7 +276,7 @@ data:
 
 ## Frontend Panel
 
-A web-based control panel is available for managing medications visually.
+A web-based control panel is available for **complete medication management** - no YAML configuration required!
 
 ### Accessing the Panel
 
@@ -284,7 +290,10 @@ http://your-home-assistant:8123/pill_assistant/pill-assistant-panel.html
 
 **Note**: The panel must be accessed from within Home Assistant (via sidebar or the URL above) to function properly. Direct browser access without the Home Assistant context will show a message with setup instructions.
 
-The panel provides:
+The panel provides **full medication management**:
+- **Add medications**: Click "Add Medication" button to create new medications
+- **Edit medications**: Click "Edit" on any medication card to modify settings
+- **Delete medications**: Click "Delete" on any medication card to remove medications
 - **Visual medication cards** with status indicators
 - **Quick actions**: Mark as taken, skip, refill, test notification
 - **Dosage adjustment controls**: Increment/decrement dosage with +/- buttons
@@ -294,13 +303,18 @@ The panel provides:
 ### Using the Frontend Panel
 
 1. Click on **Pill Assistant** in your Home Assistant sidebar (or navigate to the URL above)
-2. View all your medications with their current status
-3. Use the **+** and **-** buttons to adjust dosages
-4. Click action buttons to:
+2. **Add medications**: Click the "Add Medication" button at the top
+3. **View all medications** with their current status
+4. **Edit medications**: Click the "Edit" button on any medication card
+5. **Delete medications**: Click the "Delete" button on any medication card (with confirmation)
+6. Use the **+** and **-** buttons to adjust dosages and remaining amounts
+7. Click action buttons to:
    - **Mark as Taken**: Record that medication was taken
    - **Skip Dose**: Skip the current dose
    - **Refill**: Reset medication count to full amount
    - **Test Notification**: Send a test notification
+
+**Everything can be managed from the panel - no Settings menu or YAML required!**
 
 ## Notification Actions
 
@@ -419,12 +433,28 @@ automation:
             ) }} remaining.
 ```
 
-## YAML Configuration (Optional)
+## YAML Configuration (Optional - Advanced Users Only)
 
-While the integration is designed for UI configuration,  
-you can also access medication data programmatically.  
-The integration stores all data using Home Assistant's  
-storage API, which persists across restarts.
+**Important**: This integration is designed to be **completely UI-driven**. You can add, edit, and delete medications entirely from the UI (Frontend Panel or Settings → Devices & Services). **No YAML configuration is required for any core functionality.**
+
+The YAML examples in the `examples/` directory are provided for **advanced users** who want to extend functionality with custom automations, helper entities, or template sensors. These are completely optional and not needed for the integration to work.
+
+### What You Can Do Without YAML
+- ✅ Add medications (Frontend Panel or Settings → Devices & Services)
+- ✅ Edit medications (Frontend Panel or Settings → Devices & Services)
+- ✅ Delete medications (Frontend Panel or Settings → Devices & Services)
+- ✅ Take/Skip/Refill medications (Frontend Panel or Services)
+- ✅ Adjust dosages (Frontend Panel)
+- ✅ Test notifications (Frontend Panel)
+- ✅ View medication status and history (Frontend Panel or Entity attributes)
+
+### When You Might Want YAML (Optional)
+- Creating custom automations for notifications
+- Adding template sensors for advanced tracking
+- Creating helper entities (input_button, input_boolean) for dashboard cards
+- Setting up advanced Home Assistant automations
+
+All medication data is stored using Home Assistant's storage API and persists across restarts. You can access medication data programmatically through entity attributes and service calls.
 
 ## Storage
 
