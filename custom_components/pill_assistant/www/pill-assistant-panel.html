@@ -307,6 +307,21 @@
             border-top: 1px solid var(--divider-color, #e0e0e0);
         }
 
+        .settings-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9em;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .settings-checkbox input[type="checkbox"] {
+            cursor: pointer;
+            width: 18px;
+            height: 18px;
+        }
+
         .loading {
             text-align: center;
             padding: 40px;
@@ -426,9 +441,15 @@
     <div class="container">
         <div class="header-section">
             <h1>💊 Pill Assistant</h1>
-            <button class="add-medication-btn" onclick="addMedication()">
-                ➕ Add Medication
-            </button>
+            <div style="display: flex; gap: 15px; align-items: center;">
+                <label class="settings-checkbox">
+                    <input type="checkbox" id="showConfirmationBanner" checked onchange="toggleConfirmationBanner()">
+                    <span>Display Confirmation Banner</span>
+                </label>
+                <button class="add-medication-btn" onclick="addMedication()">
+                    ➕ Add Medication
+                </button>
+            </div>
         </div>
         <div id="content">
             <div class="loading">Loading medications...</div>
@@ -446,6 +467,69 @@
 
         let hass = null;
         let medications = [];
+        let showConfirmationBanner = true;
+        let nextScheduleCache = {}; // Cache for next scheduled times
+
+        // Load settings from localStorage
+        function loadSettings() {
+            const saved = localStorage.getItem('pillAssistantSettings');
+            if (saved) {
+                try {
+                    const settings = JSON.parse(saved);
+                    showConfirmationBanner = settings.showConfirmationBanner !== false;
+                } catch (e) {
+                    console.error('Error loading settings:', e);
+                }
+            }
+            
+            // Update checkbox state
+            const checkbox = document.getElementById('showConfirmationBanner');
+            if (checkbox) {
+                checkbox.checked = showConfirmationBanner;
+            }
+        }
+
+        // Save settings to localStorage
+        function saveSettings() {
+            localStorage.setItem('pillAssistantSettings', JSON.stringify({
+                showConfirmationBanner: showConfirmationBanner
+            }));
+        }
+
+        // Toggle confirmation banner setting
+        function toggleConfirmationBanner() {
+            showConfirmationBanner = document.getElementById('showConfirmationBanner').checked;
+            saveSettings();
+        }
+
+        // Load next schedule cache from localStorage
+        function loadNextScheduleCache() {
+            const saved = localStorage.getItem('pillAssistantNextScheduleCache');
+            if (saved) {
+                try {
+                    nextScheduleCache = JSON.parse(saved);
+                } catch (e) {
+                    console.error('Error loading next schedule cache:', e);
+                    nextScheduleCache = {};
+                }
+            }
+        }
+
+        // Save next schedule cache to localStorage
+        function saveNextScheduleCache() {
+            localStorage.setItem('pillAssistantNextScheduleCache', JSON.stringify(nextScheduleCache));
+        }
+
+        // Update next schedule cache for a medication
+        function updateNextScheduleCache(medId, nextDoseTime) {
+            nextScheduleCache[medId] = nextDoseTime;
+            saveNextScheduleCache();
+        }
+
+        // Get cached next schedule for a medication
+        function getCachedNextSchedule(medId) {
+            return nextScheduleCache[medId];
+        }
 
         // Helper function to refresh hass connection
         function refreshHassConnection() {
@@ -548,6 +632,10 @@
         // Initialize connection to Home Assistant
         let retryCount = 0;
         function initConnection() {
+            // Load settings first
+            loadSettings();
+            loadNextScheduleCache();
+            
             hass = getHassConnection();
             if (hass) {
                 loadMedications();
@@ -600,6 +688,13 @@
                             state: entity.state,
                             attributes: entity.attributes
                         });
+                        
+                        // Cache next schedule time
+                        const medId = entity.attributes['Medication ID'] || entity.attributes['medication_id'];
+                        const nextDose = entity.attributes['Next dose time'] || entity.attributes['next_dose_time'];
+                        if (medId && nextDose) {
+                            updateNextScheduleCache(medId, nextDose);
+                        }
                     }
                 }
 
@@ -648,7 +743,15 @@
             const remaining = attrs['remaining_amount'] || attrs['Remaining amount'] || 0;
             const lastTaken = formatTimeToLocal(attrs['Last taken at'] || attrs['last_taken'] || 'Never');
             const schedule = formatSchedule(attrs['Schedule'] || 'Not scheduled');
-            const nextDose = formatTimeToLocal(attrs['Next dose time'] || 'Unknown');
+            
+            // Use cached next dose time if available, otherwise get from attributes
+            let nextDose = attrs['Next dose time'] || attrs['next_dose_time'] || 'Unknown';
+            const cachedNextDose = getCachedNextSchedule(medId);
+            if (cachedNextDose && cachedNextDose !== 'Unknown') {
+                nextDose = cachedNextDose;
+            }
+            nextDose = formatTimeToLocal(nextDose);
+            
             const refillAmount = attrs['Refill amount'] || 0;
             const medName = med.entityId.replace('sensor.pa_', '').replace(/_/g, ' ');
             
@@ -789,6 +892,11 @@
 
         // Show notification message
         function showNotification(message, type = 'success') {
+            // Only show success notifications if the banner is enabled
+            if (type === 'success' && !showConfirmationBanner) {
+                return;
+            }
+            
             const msgEl = document.createElement('div');
             msgEl.className = type === 'error' ? 'error-message' : 'success-message';
             msgEl.textContent = message;
@@ -802,6 +910,68 @@
         // Medication actions
         async function takeMedication(medId) {
             await callService('pill_assistant', 'take_medication', { medication_id: medId });
+            
+            // After taking medication, check if there's no next schedule
+            setTimeout(async () => {
+                await checkAndPromptNextSchedule(medId);
+            }, STATE_UPDATE_DELAY_MS + 200);
+        }
+
+        // Check if medication has no next schedule and prompt user
+        async function checkAndPromptNextSchedule(medId) {
+            try {
+                // Reload medications to get latest state
+                await loadMedications();
+                
+                // Find the medication
+                const med = medications.find(m => 
+                    m.attributes['Medication ID'] === medId || 
+                    m.attributes['medication_id'] === medId
+                );
+                
+                if (!med) {
+                    return;
+                }
+                
+                const nextDose = med.attributes['Next dose time'] || med.attributes['next_dose_time'];
+                
+                // If there's no next dose scheduled, prompt user
+                if (!nextDose || nextDose === 'Unknown' || nextDose === 'None') {
+                    const medName = med.entityId.replace('sensor.pa_', '').replace(/_/g, ' ');
+                    const now = new Date();
+                    const defaultTime = now.toTimeString().slice(0, 5); // HH:MM format
+                    
+                    // Create a timeout promise (5 minutes)
+                    const timeoutPromise = new Promise(resolve => {
+                        setTimeout(() => resolve(null), 300000); // 5 minutes
+                    });
+                    
+                    // Create user input promise
+                    const inputPromise = new Promise(resolve => {
+                        const userInput = prompt(
+                            `${medName} has no next scheduled dose.\n\n` +
+                            `When should the next dose be taken?\n` +
+                            `Format: HH:MM (24-hour) or HH:MM AM/PM\n\n` +
+                            `Leave empty or click Cancel to use the current time (${defaultTime})`,
+                            defaultTime
+                        );
+                        resolve(userInput);
+                    });
+                    
+                    // Wait for either user input or timeout
+                    const userTime = await Promise.race([inputPromise, timeoutPromise]);
+                    
+                    // If timeout or empty, use default time
+                    const timeToUse = userTime || defaultTime;
+                    
+                    console.log(`Next dose time set to: ${timeToUse} for ${medName}`);
+                    // Note: This would require backend support to actually set the next dose time
+                    // For now, we just cache it locally
+                    updateNextScheduleCache(medId, timeToUse);
+                }
+            } catch (error) {
+                console.error('Error checking next schedule:', error);
+            }
         }
 
         async function skipMedication(medId) {
