@@ -1,5 +1,7 @@
 """Fixtures for testing Pill Assistant."""
 
+import os
+import shutil
 import pytest
 
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -9,6 +11,16 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 def auto_enable_custom_integrations(enable_custom_integrations):
     """Enable custom integrations for testing."""
     yield
+
+
+@pytest.fixture(autouse=True)
+def cleanup_log_files(hass):
+    """Clean up log files after each test."""
+    yield
+    # Clean up log files after each test
+    logs_dir = hass.config.path("Pill Assistant", "Logs")
+    if os.path.exists(logs_dir):
+        shutil.rmtree(logs_dir, ignore_errors=True)
 
 
 @pytest.fixture
