@@ -442,9 +442,19 @@
         const SUBSCRIPTION_MAX_DELAY_MS = 5000;
         const RELOAD_DELAY_MS = 100;
         const POLL_INTERVAL_MS = 30000;
+        const STATE_UPDATE_DELAY_MS = 100; // Delay to allow backend state propagation
 
         let hass = null;
         let medications = [];
+
+        // Helper function to refresh hass connection
+        function refreshHassConnection() {
+            const newHass = getHassConnection();
+            if (newHass) {
+                hass = newHass;
+            }
+            return hass;
+        }
 
         // Helper function to find medication card by ID
         function findMedicationCard(medId) {
@@ -740,10 +750,10 @@
                 await hass.callService(domain, service, serviceData);
                 
                 // Wait a bit for state to update in backend
-                await new Promise(resolve => setTimeout(resolve, 100));
+                await new Promise(resolve => setTimeout(resolve, STATE_UPDATE_DELAY_MS));
                 
                 // Refresh hass connection to get latest states
-                hass = getHassConnection();
+                refreshHassConnection();
                 
                 // Immediately reload medications for instant feedback
                 await loadMedications();
@@ -926,7 +936,7 @@
                             console.log('Pill Assistant state changed:', event.data.entity_id);
                             
                             // Refresh hass connection to get latest states
-                            hass = getHassConnection();
+                            refreshHassConnection();
                             
                             // Reload medications with updated state
                             await loadMedications();
