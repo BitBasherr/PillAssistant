@@ -41,6 +41,36 @@
             color: var(--primary-color, #03a9f4);
         }
 
+        .header-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .add-medication-btn {
+            background-color: var(--primary-color, #03a9f4);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 24px;
+            font-size: 1em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .add-medication-btn:hover {
+            background-color: var(--dark-primary-color, #0288d1);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            transform: translateY(-2px);
+        }
+
+        .add-medication-btn:active {
+            transform: translateY(0);
+        }
+
         .medication-card {
             background: var(--card-background-color, #ffffff);
             border-radius: 8px;
@@ -244,6 +274,39 @@
             background: #0288d1;
         }
 
+        .btn-edit {
+            background: #2196f3;
+            color: white;
+        }
+
+        .btn-edit:hover {
+            background: #1976d2;
+        }
+
+        .btn-delete {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-delete:hover {
+            background: #d32f2f;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
+        .card-management-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid var(--divider-color, #e0e0e0);
+        }
+
         .loading {
             text-align: center;
             padding: 40px;
@@ -361,7 +424,12 @@
 </head>
 <body>
     <div class="container">
-        <h1>💊 Pill Assistant</h1>
+        <div class="header-section">
+            <h1>💊 Pill Assistant</h1>
+            <button class="add-medication-btn" onclick="addMedication()">
+                ➕ Add Medication
+            </button>
+        </div>
         <div id="content">
             <div class="loading">Loading medications...</div>
         </div>
@@ -638,6 +706,15 @@
                             Test Notification
                         </button>
                     </div>
+
+                    <div class="card-management-actions">
+                        <button class="action-btn btn-edit" onclick="editMedication('${medId}')">
+                            ✏️ Edit
+                        </button>
+                        <button class="action-btn btn-delete" onclick="deleteMedication('${medId}', '${medName}')">
+                            🗑️ Delete
+                        </button>
+                    </div>
                 </div>
             `;
         }
@@ -730,6 +807,87 @@
         async function adjustRemaining(medId, change) {
             const service = change > 0 ? 'increment_remaining' : 'decrement_remaining';
             await callService('pill_assistant', service, { medication_id: medId });
+        }
+
+        // Add medication - opens config flow
+        async function addMedication() {
+            try {
+                if (!hass) {
+                    throw new Error('Home Assistant connection not available');
+                }
+
+                // Navigate to the config flow for adding a new medication
+                const domain = 'pill_assistant';
+                
+                // Use Home Assistant's showConfigFlowDialog method if available
+                if (window.parent && window.parent.document) {
+                    const haElement = window.parent.document.querySelector('home-assistant');
+                    if (haElement && haElement.provideHass) {
+                        // Fire an event to open the config flow
+                        window.parent.dispatchEvent(new CustomEvent('hass-more-info', {
+                            detail: { 
+                                action: 'show-dialog',
+                                dialogTag: 'dialog-add-integration',
+                                dialogImport: () => import('@/dialogs/config-flow/show-dialog-data-entry-flow'),
+                                dialogParams: {
+                                    domain: domain,
+                                }
+                            }
+                        }));
+                        
+                        // Alternative: navigate to integrations page
+                        window.parent.location.href = `/config/integrations/dashboard/add?domain=${domain}`;
+                    }
+                }
+            } catch (error) {
+                console.error('Error adding medication:', error);
+                showErrorMessage(`Error: ${error.message}. Please add medication through Settings → Devices & Services → Add Integration → Pill Assistant`);
+            }
+        }
+
+        // Edit medication - opens options flow
+        async function editMedication(medId) {
+            try {
+                if (!hass) {
+                    throw new Error('Home Assistant connection not available');
+                }
+
+                // Navigate to the options flow for this medication
+                if (window.parent) {
+                    // Navigate to the config entry options page
+                    window.parent.location.href = `/config/integrations/integration/pill_assistant/entry/${medId}`;
+                }
+            } catch (error) {
+                console.error('Error editing medication:', error);
+                showErrorMessage(`Error: ${error.message}. Please edit medication through Settings → Devices & Services → Configure`);
+            }
+        }
+
+        // Delete medication - removes config entry
+        async function deleteMedication(medId, medName) {
+            try {
+                if (!hass) {
+                    throw new Error('Home Assistant connection not available');
+                }
+
+                // Confirm deletion
+                if (!confirm(`Are you sure you want to delete ${medName}? This will remove all data for this medication.`)) {
+                    return;
+                }
+
+                // Call the config_entries.remove service
+                await hass.callService('config_entries', 'remove', {
+                    entry_id: medId
+                });
+                
+                showSuccessMessage(`${medName} deleted successfully!`);
+                
+                // Reload medications
+                await loadMedications();
+            } catch (error) {
+                console.error('Error deleting medication:', error);
+                showErrorMessage(`Error deleting medication: ${error.message}`);
+            }
         }
 
         // Initialize on load
