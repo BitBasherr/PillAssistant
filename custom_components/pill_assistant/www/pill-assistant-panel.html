@@ -937,29 +937,46 @@
                 
                 // If there's no next dose scheduled, prompt user
                 if (!nextDose || nextDose === 'Unknown' || nextDose === 'None') {
-                    const medName = med.entityId.replace('sensor.pa_', '').replace(/_/g, ' ');
+                    // Sanitize medication name for display
+                    const medName = med.entityId
+                        .replace('sensor.pa_', '')
+                        .replace(/_/g, ' ')
+                        .replace(/[<>'"]/g, ''); // Remove potentially problematic characters
+                    
                     const now = new Date();
                     const defaultTime = now.toTimeString().slice(0, 5); // HH:MM format
                     
-                    // Create a timeout promise (5 minutes)
+                    // Create a timeout promise (5 minutes) with cleanup
+                    let timeoutId;
                     const timeoutPromise = new Promise(resolve => {
-                        setTimeout(() => resolve(null), 300000); // 5 minutes
+                        timeoutId = setTimeout(() => resolve(null), 300000); // 5 minutes
                     });
                     
-                    // Create user input promise
+                    // Use prompt (will replace with custom modal in future enhancement)
+                    // Note: This is a temporary solution, a custom modal would provide better UX
                     const inputPromise = new Promise(resolve => {
-                        const userInput = prompt(
-                            `${medName} has no next scheduled dose.\n\n` +
-                            `When should the next dose be taken?\n` +
-                            `Format: HH:MM (24-hour) or HH:MM AM/PM\n\n` +
-                            `Leave empty or click Cancel to use the current time (${defaultTime})`,
-                            defaultTime
-                        );
-                        resolve(userInput);
+                        try {
+                            const userInput = prompt(
+                                `${medName} has no next scheduled dose.\n\n` +
+                                `When should the next dose be taken?\n` +
+                                `Format: HH:MM (24-hour) or HH:MM AM/PM\n\n` +
+                                `Leave empty or click Cancel to use the current time (${defaultTime})`,
+                                defaultTime
+                            );
+                            resolve(userInput);
+                        } catch (error) {
+                            console.warn('Prompt blocked or failed:', error);
+                            resolve(null);
+                        }
                     });
                     
                     // Wait for either user input or timeout
                     const userTime = await Promise.race([inputPromise, timeoutPromise]);
+                    
+                    // Clear timeout to prevent memory leak
+                    if (timeoutId) {
+                        clearTimeout(timeoutId);
+                    }
                     
                     // If timeout or empty, use default time
                     const timeToUse = userTime || defaultTime;

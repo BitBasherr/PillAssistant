@@ -65,12 +65,15 @@ def normalize_dosage_unit(dosage_unit: str | None) -> str:
     
     # Check if a specific unit is embedded in the string (e.g., "500mg", "10mL")
     # Use word boundaries or numeric prefixes to avoid false matches
+    # Try to find the longest matching specific unit
     dosage_unit_lower = dosage_unit.lower()
+    longest_match = None
+    longest_match_len = 0
+    
     for specific_unit in SPECIFIC_DOSAGE_UNITS:
         specific_lower = specific_unit.lower()
         # Check if the unit appears at word boundaries or after digits
         if specific_lower in dosage_unit_lower:
-            # Make sure 'g' doesn't match 'gummy' etc by checking context
             idx = dosage_unit_lower.find(specific_lower)
             if idx >= 0:
                 # Check if it's preceded by a digit or at the start
@@ -79,8 +82,12 @@ def normalize_dosage_unit(dosage_unit: str | None) -> str:
                 after_idx = idx + len(specific_lower)
                 after_ok = after_idx >= len(dosage_unit_lower) or not dosage_unit_lower[after_idx].isalpha()
                 
-                if before_ok and after_ok:
-                    return specific_unit
+                if before_ok and after_ok and len(specific_lower) > longest_match_len:
+                    longest_match = specific_unit
+                    longest_match_len = len(specific_lower)
+    
+    if longest_match:
+        return longest_match
     
     # Return as-is if it's already in the system, otherwise default to pill(s)
     return dosage_unit if dosage_unit else DEFAULT_DOSAGE_UNIT
