@@ -1692,19 +1692,36 @@
                     return;
                 }
 
-                // Call the get_statistics service
-                const response = await hass.callService(
-                    'pill_assistant',
-                    'get_statistics',
-                    {
-                        start_date: new Date(startDate).toISOString(),
-                        end_date: new Date(endDate + 'T23:59:59').toISOString()
-                    }
-                );
+                // Use callWS with return_response: true to properly receive service responses
+                // This is the correct method for services that support response data
+                let response = null;
+                try {
+                    response = await hass.callWS({
+                        type: 'call_service',
+                        domain: 'pill_assistant',
+                        service: 'get_statistics',
+                        service_data: {
+                            start_date: new Date(startDate).toISOString(),
+                            end_date: new Date(endDate + 'T23:59:59').toISOString()
+                        },
+                        return_response: true
+                    });
+                } catch (wsError) {
+                    // Fallback: If callWS fails (older HA version), try callService
+                    console.warn('callWS failed, falling back to callService:', wsError);
+                    response = await hass.callService(
+                        'pill_assistant',
+                        'get_statistics',
+                        {
+                            start_date: new Date(startDate).toISOString(),
+                            end_date: new Date(endDate + 'T23:59:59').toISOString()
+                        }
+                    );
+                }
 
                 // Handle different response structures from different HA versions
                 // The response could be:
-                // 1. { response: { ...stats } } - wrapped response
+                // 1. { response: { ...stats } } - wrapped response from callWS
                 // 2. { ...stats } - direct response
                 // 3. undefined/null - no response (service doesn't support response)
                 if (response && typeof response === 'object') {
@@ -1715,7 +1732,7 @@
                 
                 let stats = null;
                 if (response && typeof response === 'object') {
-                    // Try wrapped response first
+                    // Try wrapped response first (from callWS)
                     if ('response' in response && response.response) {
                         stats = response.response;
                     } 
