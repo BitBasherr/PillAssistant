@@ -6,11 +6,17 @@ schedules, and log medication history.
 
 > **Note**: This README is optimized for both desktop and mobile viewing.
 
+> **🎉 NEW**: Complete UI-based medication management! Add, edit, and delete medications directly from the frontend panel - **no YAML configuration required!**
+
 ## Features
 
 ### Core Features
-- **Medication Management**: Add and manage multiple  
-  medications through the UI with PA_ entity naming prefix
+- **Complete UI Management**: Add, edit, and delete medications from the frontend panel or Settings
+  - ➕ **Add** medications with the "Add Medication" button
+  - ✏️ **Edit** medications with the "Edit" button on each card
+  - 🗑️ **Delete** medications with confirmation dialog
+  - 🚫 **No YAML required** for any core functionality
+- **Medication Management**: Manage multiple medications through the UI with PA_ entity naming prefix
 - **Flexible Scheduling**: 
   - Fixed time schedules (specific times on specific days)
   - Relative scheduling (after another medication)

@@ -2,6 +2,8 @@
 
 This guide will help you get started with Pill Assistant in just a few minutes.
 
+> **🎉 NEW**: You can now manage medications entirely from the UI! No YAML configuration required!
+
 ## Step 1: Installation
 
 ### Option A: HACS (Recommended)
@@ -19,6 +21,12 @@ This guide will help you get started with Pill Assistant in just a few minutes.
 
 ## Step 2: Add Your First Medication
 
+### Option A: Using the Frontend Panel (Easiest! ⭐)
+1. Click **Pill Assistant** in your Home Assistant sidebar
+2. Click the **"➕ Add Medication"** button
+3. Follow the setup wizard
+
+### Option B: Using Settings Menu
 1. Go to **Settings** → **Devices & Services**
 2. Click **+ Add Integration**
 3. Search for "Pill Assistant"
@@ -130,15 +138,20 @@ Example log entries:
 ## Common Tasks
 
 ### Add Another Medication
-Repeat Step 2 with different medication details
+**Easy way**: Click "➕ Add Medication" button in the Frontend Panel  
+**Alternative**: Repeat Step 2 via Settings → Devices & Services
 
 ### Modify Medication Settings
+**Easy way**: Click "✏️ Edit" button on the medication card in Frontend Panel  
+**Alternative**:
 1. Go to **Settings** → **Devices & Services**
 2. Find Pill Assistant integration
 3. Click **Configure** on the medication entry
 4. Update settings and save
 
 ### Delete a Medication
+**Easy way**: Click "🗑️ Delete" button on the medication card in Frontend Panel (with confirmation)  
+**Alternative**:
 1. Go to **Settings** → **Devices & Services**
 2. Find Pill Assistant integration
 3. Click on the medication entry
