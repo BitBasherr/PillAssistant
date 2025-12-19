@@ -10,6 +10,9 @@ DOMAIN = "pill_assistant"
 CONF_MEDICATION_NAME = "medication_name"
 CONF_DOSAGE = "dosage"
 CONF_DOSAGE_UNIT = "dosage_unit"
+CONF_MEDICATION_TYPE = (
+    "medication_type"  # Type of medication (pill, tablet, liquid, etc.)
+)
 CONF_SCHEDULE_TIMES = "schedule_times"  # List of times in HH:MM format
 CONF_SCHEDULE_DAYS = "schedule_days"  # List of days (mon, tue, wed, thu, fri, sat, sun)
 CONF_REFILL_AMOUNT = "refill_amount"
@@ -37,7 +40,8 @@ CONF_ON_TIME_WINDOW_MINUTES = (
 )
 
 # Default values
-DEFAULT_DOSAGE_UNIT = "pill(s)"
+DEFAULT_DOSAGE_UNIT = "each"
+DEFAULT_MEDICATION_TYPE = "pill"
 DEFAULT_REFILL_REMINDER_DAYS = 7
 DEFAULT_SCHEDULE_DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
 DEFAULT_SCHEDULE_TYPE = "fixed_time"
@@ -53,27 +57,53 @@ SCHEDULE_TYPE_OPTIONS = [
     {"label": "After Sensor Event", "value": "relative_sensor"},
 ]
 
-# Dosage unit options
+# Medication type options (form of medication)
+MEDICATION_TYPE_OPTIONS = [
+    {"label": "Pill", "value": "pill"},
+    {"label": "Tablet", "value": "tablet"},
+    {"label": "Capsule", "value": "capsule"},
+    {"label": "Gelatin Capsule", "value": "gelatin_capsule"},
+    {"label": "Gummy", "value": "gummy"},
+    {"label": "Liquid", "value": "liquid"},
+    {"label": "Syrup", "value": "syrup"},
+    {"label": "Drop", "value": "drop"},
+    {"label": "Spray", "value": "spray"},
+    {"label": "Puff", "value": "puff"},
+    {"label": "Injection", "value": "injection"},
+    {"label": "Patch", "value": "patch"},
+    {"label": "Cream/Ointment", "value": "cream"},
+    {"label": "Powder", "value": "powder"},
+    {"label": "Other", "value": "other"},
+]
+
+# Dosage unit options (measurement units)
 DOSAGE_UNIT_OPTIONS = [
-    {"label": "Pill(s)", "value": "pill(s)"},
+    {"label": "Each", "value": "each"},
     {"label": "mL", "value": "mL"},
     {"label": "mg", "value": "mg"},
     {"label": "g", "value": "g"},
+    {"label": "mcg", "value": "mcg"},
     {"label": "tsp", "value": "tsp"},
     {"label": "TBSP", "value": "TBSP"},
-    {"label": "Each", "value": "each"},
-    {"label": "Tablet(s)", "value": "tablet(s)"},
-    {"label": "Capsule(s)", "value": "capsule(s)"},
-    {"label": "Gelatin Capsule(s)", "value": "gelatin_capsule(s)"},
-    {"label": "Gummy/Gummies", "value": "gummy/gummies"},
-    {"label": "Drop(s)", "value": "drop(s)"},
-    {"label": "Spray(s)", "value": "spray(s)"},
-    {"label": "Puff(s)", "value": "puff(s)"},
-    {"label": "Syrup (mL)", "value": "syrup_mL"},
+    {"label": "units", "value": "units"},
+    {"label": "IU", "value": "IU"},
 ]
 
+# Legacy dosage units that combined type and unit (for migration)
+LEGACY_DOSAGE_UNITS = {
+    "pill(s)": ("pill", "each"),
+    "tablet(s)": ("tablet", "each"),
+    "capsule(s)": ("capsule", "each"),
+    "gelatin_capsule(s)": ("gelatin_capsule", "each"),
+    "gummy/gummies": ("gummy", "each"),
+    "drop(s)": ("drop", "each"),
+    "spray(s)": ("spray", "each"),
+    "puff(s)": ("puff", "each"),
+    "syrup_mL": ("syrup", "mL"),
+}
+
 # Specific measurement units that should be preferred over generic types
-SPECIFIC_DOSAGE_UNITS = ["mL", "mg", "g", "tsp", "TBSP", "each"]
+SPECIFIC_DOSAGE_UNITS = ["mL", "mg", "g", "mcg", "tsp", "TBSP", "each", "units", "IU"]
 
 # Days of week options
 DAY_OPTIONS = [
@@ -87,6 +117,10 @@ DAY_OPTIONS = [
 ]
 
 # Selectors
+SELECT_MEDICATION_TYPE = selector(
+    {"select": {"options": MEDICATION_TYPE_OPTIONS, "mode": "dropdown"}}
+)
+
 SELECT_DOSAGE_UNIT = selector(
     {"select": {"options": DOSAGE_UNIT_OPTIONS, "mode": "dropdown"}}
 )

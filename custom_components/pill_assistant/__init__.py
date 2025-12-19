@@ -30,11 +30,15 @@ from .const import (
     CONF_DOSAGE,
     CONF_DOSAGE_UNIT,
     CONF_MEDICATION_NAME,
+    CONF_MEDICATION_TYPE,
     CONF_NOTIFY_SERVICES,
     CONF_REFILL_AMOUNT,
     DEFAULT_SNOOZE_DURATION_MINUTES,
+    DEFAULT_MEDICATION_TYPE,
+    DEFAULT_DOSAGE_UNIT,
     DOMAIN,
     LOG_FILE_NAME,
+    LEGACY_DOSAGE_UNITS,
     SERVICE_DECREMENT_DOSAGE,
     SERVICE_DECREMENT_REMAINING,
     SERVICE_GET_STATISTICS,
@@ -226,6 +230,44 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Pill Assistant from a config entry."""
     hass.data.setdefault(DOMAIN, {})
+
+    # Migrate legacy dosage_unit format to separate medication_type and dosage_unit
+    needs_migration = CONF_MEDICATION_TYPE not in entry.data
+    if needs_migration:
+        _LOGGER.info(
+            "Upgrading medication configuration for '%s' to separate dosage and medication type",
+            entry.data.get(CONF_MEDICATION_NAME, "Unknown"),
+        )
+        migrated_data = entry.data.copy()
+        dosage_unit = entry.data.get(CONF_DOSAGE_UNIT, DEFAULT_DOSAGE_UNIT)
+
+        # Check if this is a legacy dosage unit
+        if dosage_unit in LEGACY_DOSAGE_UNITS:
+            med_type, unit = LEGACY_DOSAGE_UNITS[dosage_unit]
+            migrated_data[CONF_MEDICATION_TYPE] = med_type
+            migrated_data[CONF_DOSAGE_UNIT] = unit
+            _LOGGER.info(
+                "Migrated '%s' from '%s' to type='%s', unit='%s'",
+                entry.data.get(CONF_MEDICATION_NAME),
+                dosage_unit,
+                med_type,
+                unit,
+            )
+        else:
+            # Unknown format - assign default medication type
+            migrated_data[CONF_MEDICATION_TYPE] = DEFAULT_MEDICATION_TYPE
+            # Keep existing dosage_unit if it's valid
+            valid_units = ["mL", "mg", "g", "mcg", "tsp", "TBSP", "each", "units", "IU"]
+            if dosage_unit not in valid_units:
+                migrated_data[CONF_DOSAGE_UNIT] = DEFAULT_DOSAGE_UNIT
+            _LOGGER.info(
+                "Assigned default medication type '%s' for '%s'",
+                DEFAULT_MEDICATION_TYPE,
+                entry.data.get(CONF_MEDICATION_NAME),
+            )
+
+        # Update the config entry with migrated data
+        hass.config_entries.async_update_entry(entry, data=migrated_data)
 
     # Initialize storage
     store = Store(hass, STORAGE_VERSION, STORAGE_KEY)

@@ -20,6 +20,7 @@ from .const import (
     CONF_MEDICATION_NAME,
     CONF_DOSAGE,
     CONF_DOSAGE_UNIT,
+    CONF_MEDICATION_TYPE,
     CONF_SCHEDULE_TIMES,
     CONF_SCHEDULE_DAYS,
     CONF_SCHEDULE_TYPE,
@@ -35,6 +36,7 @@ from .const import (
     CONF_ON_TIME_WINDOW_MINUTES,
     DEFAULT_SCHEDULE_TYPE,
     DEFAULT_DOSAGE_UNIT,
+    DEFAULT_MEDICATION_TYPE,
     DEFAULT_ENABLE_AUTOMATIC_NOTIFICATIONS,
     DEFAULT_ON_TIME_WINDOW_MINUTES,
     SPECIFIC_DOSAGE_UNITS,
@@ -208,12 +210,22 @@ class PillAssistantSensor(SensorEntity):
         dosage_unit = normalize_dosage_unit(
             med_data.get(CONF_DOSAGE_UNIT, self._entry.data.get(CONF_DOSAGE_UNIT, ""))
         )
+        medication_type = med_data.get(
+            CONF_MEDICATION_TYPE,
+            self._entry.data.get(CONF_MEDICATION_TYPE, DEFAULT_MEDICATION_TYPE),
+        )
+
+        # Format dosage display with type
+        dosage_display = f"{dosage} {dosage_unit}"
+        if medication_type:
+            dosage_display = f"{dosage} {medication_type}(s) ({dosage_unit})"
 
         # Use human-friendly keys as per requirements but keep backward compatibility
         attributes = {
             # Human-friendly attribute names
             ATTR_DISPLAY_MEDICATION_ID: self._medication_id,
-            "Dosage": f"{dosage} {dosage_unit}",
+            "Dosage": dosage_display,
+            "Medication Type": medication_type,
             ATTR_SCHEDULE: schedule_str,
             ATTR_REMAINING_AMOUNT: med_data.get("remaining_amount", 0),
             ATTR_LAST_TAKEN: med_data.get("last_taken") or "Never",
@@ -235,6 +247,7 @@ class PillAssistantSensor(SensorEntity):
             "last_taken": med_data.get("last_taken"),
             "dosage": dosage,
             "dosage_unit": dosage_unit,
+            "medication_type": medication_type,
             "log_file_location": global_log_path,  # Backward compatibility
         }
 
@@ -593,9 +606,15 @@ class PillAssistantSensor(SensorEntity):
         dosage_unit = med_data.get(
             CONF_DOSAGE_UNIT, self._entry.data.get(CONF_DOSAGE_UNIT, "")
         )
+        medication_type = med_data.get(
+            CONF_MEDICATION_TYPE,
+            self._entry.data.get(CONF_MEDICATION_TYPE, DEFAULT_MEDICATION_TYPE),
+        )
 
-        # Create notification message
-        message = f"Time to take {dosage} {dosage_unit} of {med_name}"
+        # Create notification message with type
+        message = (
+            f"Time to take {dosage} {medication_type}(s) of {med_name} ({dosage_unit})"
+        )
         title = "Medication Reminder"
 
         # Send notification to configured services
