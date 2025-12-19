@@ -738,10 +738,17 @@
                 }
 
                 await hass.callService(domain, service, serviceData);
-                showSuccessMessage(`Action completed successfully!`);
+                
+                // Wait a bit for state to update in backend
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                // Refresh hass connection to get latest states
+                hass = getHassConnection();
                 
                 // Immediately reload medications for instant feedback
                 await loadMedications();
+                
+                showSuccessMessage(`Action completed successfully!`);
                 
                 // Remove updating class
                 if (targetCard) {
@@ -818,10 +825,19 @@
 
                 // Navigate to the config flow for adding a new medication
                 const domain = 'pill_assistant';
+                const path = `/config/integrations/dashboard/add?domain=${domain}`;
                 
-                // Navigate to integrations page to add new medication
-                if (window.parent) {
-                    window.parent.location.href = `/config/integrations/dashboard/add?domain=${domain}`;
+                // Navigate using Home Assistant's navigation pattern
+                if (window.parent && window.parent.history) {
+                    try {
+                        window.parent.history.pushState(null, '', path);
+                        window.parent.dispatchEvent(new CustomEvent('location-changed', {
+                            detail: { replace: false }
+                        }));
+                    } catch (navError) {
+                        console.error('Navigation error:', navError);
+                        throw new Error('Cannot navigate - not embedded in Home Assistant');
+                    }
                 } else {
                     throw new Error('Cannot navigate - not embedded in Home Assistant');
                 }
@@ -841,8 +857,19 @@
                 // Note: medId is the config entry ID (entry_id from Home Assistant)
                 // Each medication is a separate config entry, so medId === entry_id
                 // Navigate to the options flow for this medication config entry
-                if (window.parent) {
-                    window.parent.location.href = `/config/integrations/integration/pill_assistant/entry/${medId}`;
+                const path = `/config/integrations/integration/pill_assistant/entry/${medId}`;
+                
+                // Navigate using Home Assistant's navigation pattern
+                if (window.parent && window.parent.history) {
+                    try {
+                        window.parent.history.pushState(null, '', path);
+                        window.parent.dispatchEvent(new CustomEvent('location-changed', {
+                            detail: { replace: false }
+                        }));
+                    } catch (navError) {
+                        console.error('Navigation error:', navError);
+                        throw new Error('Cannot navigate - not embedded in Home Assistant');
+                    }
                 } else {
                     throw new Error('Cannot navigate - not embedded in Home Assistant');
                 }
@@ -892,12 +919,17 @@
             // Subscribe to state changes using hass connection
             if (hass.connection && hass.connection.subscribeEvents) {
                 hass.connection.subscribeEvents(
-                    (event) => {
+                    async (event) => {
                         // Check if the changed entity is a pill assistant sensor
                         if (event.data && event.data.entity_id && 
                             event.data.entity_id.startsWith('sensor.pa_')) {
                             console.log('Pill Assistant state changed:', event.data.entity_id);
-                            loadMedications();
+                            
+                            // Refresh hass connection to get latest states
+                            hass = getHassConnection();
+                            
+                            // Reload medications with updated state
+                            await loadMedications();
                         }
                     },
                     'state_changed'
