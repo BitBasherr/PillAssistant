@@ -1965,6 +1965,12 @@
             // Render charts
             renderTrendsChart(stats);
             renderAdherenceChart(stats);
+            
+            // Load clock data for the selected date if picker exists
+            const datePicker = document.getElementById('clock-date-picker');
+            if (datePicker && datePicker.value) {
+                loadClockData(datePicker.value);
+            }
         }
 
         // Render summary statistics cards
@@ -2565,14 +2571,14 @@
             path.setAttribute('fill', color);
             path.setAttribute('class', 'clock-wedge');
             
-            // Add title for tooltip
+            # Add title for tooltip
             const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
-            const timeStr = new Date(0, 0, 0, Math.floor(angle / 15), Math.round((angle % 15) * 4)).toLocaleTimeString('en-US', { 
+            const timeStr = event.time.toLocaleTimeString('en-US', { 
                 hour: 'numeric', 
                 minute: '2-digit',
                 hour12: true 
             });
-            title.textContent = `${medication} - ${type} at ~${timeStr}`;
+            title.textContent = `${medication} - ${type} at ${timeStr}`;
             path.appendChild(title);
             
             svg.appendChild(path);
@@ -2599,18 +2605,6 @@
                 });
             }
         });
-
-        // Update renderStatistics to also render clocks
-        const originalRenderStatistics = renderStatistics;
-        renderStatistics = function(stats) {
-            originalRenderStatistics(stats);
-            
-            // Also render clocks with the statistics data
-            const datePicker = document.getElementById('clock-date-picker');
-            if (datePicker && datePicker.value) {
-                loadClockData(datePicker.value);
-            }
-        };
     </script>
 </body>
 </html>
