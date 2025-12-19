@@ -17,7 +17,6 @@ def auto_enable_custom_integrations(enable_custom_integrations):
 def cleanup_log_files(hass):
     """Clean up log files after each test."""
     yield
-    # Clean up log files after each test
     logs_dir = hass.config.path("Pill Assistant", "Logs")
     if os.path.exists(logs_dir):
         shutil.rmtree(logs_dir, ignore_errors=True)
