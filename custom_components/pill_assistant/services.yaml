@@ -116,3 +116,30 @@ decrement_remaining:
       example: "abc123def456"
       selector:
         text:
+
+get_statistics:
+  name: Get Statistics
+  description: Get medication statistics from CSV logs for a date range
+  fields:
+    medication_id:
+      name: Medication ID
+      description: Optional medication ID to filter statistics (omit for all medications)
+      required: false
+      example: "abc123def456"
+      selector:
+        text:
+    start_date:
+      name: Start Date
+      description: Start date for statistics (ISO format, defaults to 30 days ago)
+      required: false
+      example: "2024-01-01T00:00:00"
+      selector:
+        text:
+    end_date:
+      name: End Date
+      description: End date for statistics (ISO format, defaults to now)
+      required: false
+      example: "2024-01-31T23:59:59"
+      selector:
+        text:
+

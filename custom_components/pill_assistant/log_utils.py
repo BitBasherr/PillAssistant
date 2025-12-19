@@ -114,3 +114,138 @@ async def async_log_event(
     await hass.async_add_executor_job(
         _append_csv_row, med_path, GLOBAL_LOG_COLUMNS, row
     )
+
+
+def _read_csv_statistics(
+    path: str, start_date: str | None = None, end_date: str | None = None
+) -> list[dict[str, Any]]:
+    """Read and parse CSV log file, optionally filtering by date range."""
+    try:
+        if not os.path.exists(path):
+            return []
+
+        from datetime import datetime, timedelta
+
+        # Parse date filters
+        start_dt = None
+        end_dt = None
+        if start_date:
+            try:
+                start_dt = datetime.fromisoformat(start_date)
+            except (ValueError, TypeError):
+                pass
+
+        if end_date:
+            try:
+                end_dt = datetime.fromisoformat(end_date)
+            except (ValueError, TypeError):
+                pass
+
+        # If no dates provided, default to last 30 days
+        if not start_dt and not end_dt:
+            end_dt = datetime.now()
+            start_dt = end_dt - timedelta(days=30)
+
+        rows = []
+        with open(path, "r", newline="", encoding="utf-8") as handle:
+            reader = csv.DictReader(handle)
+            for row in reader:
+                timestamp_str = row.get("timestamp", "")
+                if not timestamp_str:
+                    continue
+
+                # Filter by date range
+                try:
+                    row_dt = datetime.fromisoformat(timestamp_str)
+                    if start_dt and row_dt < start_dt:
+                        continue
+                    if end_dt and row_dt > end_dt:
+                        continue
+                except (ValueError, TypeError):
+                    continue
+
+                rows.append(row)
+
+        return rows
+    except (OSError, PermissionError):
+        return []
+
+
+async def async_get_statistics(
+    hass: HomeAssistant,
+    start_date: str | None = None,
+    end_date: str | None = None,
+    medication_id: str | None = None,
+) -> dict[str, Any]:
+    """Get medication statistics from CSV logs."""
+    global_path = get_global_log_path(hass)
+
+    # Read CSV data
+    rows = await hass.async_add_executor_job(
+        _read_csv_statistics, global_path, start_date, end_date
+    )
+
+    # Filter by medication_id if provided
+    if medication_id:
+        rows = [r for r in rows if r.get("medication_id") == medication_id]
+
+    # Aggregate statistics
+    stats = {
+        "total_entries": len(rows),
+        "medications": {},
+        "daily_counts": {},
+        "action_counts": {},
+    }
+
+    for row in rows:
+        med_id = row.get("medication_id", "unknown")
+        med_name = row.get("medication_name", "Unknown")
+        action = row.get("action", "unknown")
+        timestamp_str = row.get("timestamp", "")
+
+        # Aggregate by medication
+        if med_id not in stats["medications"]:
+            stats["medications"][med_id] = {
+                "name": med_name,
+                "taken_count": 0,
+                "skipped_count": 0,
+                "refilled_count": 0,
+                "total_count": 0,
+            }
+
+        stats["medications"][med_id]["total_count"] += 1
+        if action == "taken":
+            stats["medications"][med_id]["taken_count"] += 1
+        elif action == "skipped":
+            stats["medications"][med_id]["skipped_count"] += 1
+        elif action == "refilled":
+            stats["medications"][med_id]["refilled_count"] += 1
+
+        # Aggregate by day
+        try:
+            from datetime import datetime
+
+            row_dt = datetime.fromisoformat(timestamp_str)
+            day_key = row_dt.strftime("%Y-%m-%d")
+
+            if day_key not in stats["daily_counts"]:
+                stats["daily_counts"][day_key] = {}
+
+            if med_id not in stats["daily_counts"][day_key]:
+                stats["daily_counts"][day_key][med_id] = {
+                    "name": med_name,
+                    "taken": 0,
+                    "skipped": 0,
+                }
+
+            if action == "taken":
+                stats["daily_counts"][day_key][med_id]["taken"] += 1
+            elif action == "skipped":
+                stats["daily_counts"][day_key][med_id]["skipped"] += 1
+        except (ValueError, TypeError):
+            pass
+
+        # Aggregate by action type
+        stats["action_counts"][action] = stats["action_counts"].get(action, 0) + 1
+
+    return stats
