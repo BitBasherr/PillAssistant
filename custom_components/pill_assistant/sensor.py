@@ -52,24 +52,24 @@ _LOGGER = logging.getLogger(__name__)
 def normalize_dosage_unit(dosage_unit: str | None) -> str:
     """
     Normalize dosage unit for backward compatibility.
-    
+
     If a specific unit (mg, mL, g, tsp, TBSP, each) is found, use it.
     Otherwise, default to the provided unit or DEFAULT_DOSAGE_UNIT.
     """
     if not dosage_unit:
         return DEFAULT_DOSAGE_UNIT
-    
+
     # Check if it's already a specific unit (exact match)
     if dosage_unit in SPECIFIC_DOSAGE_UNITS:
         return dosage_unit
-    
+
     # Check if a specific unit is embedded in the string (e.g., "500mg", "10mL")
     # Use word boundaries or numeric prefixes to avoid false matches
     # Try to find the longest matching specific unit
     dosage_unit_lower = dosage_unit.lower()
     longest_match = None
     longest_match_len = 0
-    
+
     for specific_unit in SPECIFIC_DOSAGE_UNITS:
         specific_lower = specific_unit.lower()
         # Check if the unit appears at word boundaries or after digits
@@ -81,14 +81,14 @@ def normalize_dosage_unit(dosage_unit: str | None) -> str:
                 before_ok = idx == 0 or dosage_unit_lower[idx - 1].isdigit() or not dosage_unit_lower[idx - 1].isalpha()
                 after_idx = idx + len(specific_lower)
                 after_ok = after_idx >= len(dosage_unit_lower) or not dosage_unit_lower[after_idx].isalpha()
-                
+
                 if before_ok and after_ok and len(specific_lower) > longest_match_len:
                     longest_match = specific_unit
                     longest_match_len = len(specific_lower)
-    
+
     if longest_match:
         return longest_match
-    
+
     # Return as-is if it's already in the system, otherwise default to pill(s)
     return dosage_unit if dosage_unit else DEFAULT_DOSAGE_UNIT
 
