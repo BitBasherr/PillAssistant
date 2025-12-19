@@ -1273,7 +1273,7 @@
                 let navigationSuccess = false;
                 
                 // Method 1: Try using hass.navigate if available (preferred for panels)
-                if (hass && typeof hass.navigate === 'function') {
+                if (typeof hass.navigate === 'function') {
                     try {
                         hass.navigate(path);
                         navigationSuccess = true;
