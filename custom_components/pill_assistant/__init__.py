@@ -193,6 +193,8 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             if "frontend" in hass.config.components:
                 from homeassistant.components import frontend
 
+                # Note: Despite the name, async_register_built_in_panel is a regular
+                # function decorated with @callback, not an async function, so no await
                 frontend.async_register_built_in_panel(
                     hass,
                     "iframe",
