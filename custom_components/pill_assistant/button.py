@@ -8,6 +8,7 @@ from typing import Any
 from homeassistant.components.button import ButtonEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
@@ -58,14 +59,14 @@ class PillAssistantTestButton(ButtonEntity):
         self._attr_name = f"PA_{medication_name}"
 
     @property
-    def device_info(self) -> dict[str, Any]:
+    def device_info(self) -> DeviceInfo:
         """Return device information."""
-        return {
-            "identifiers": {(DOMAIN, self._medication_id)},
-            "name": f"Pill Assistant - {self._medication_name}",
-            "manufacturer": "Pill Assistant",
-            "model": "Medication Tracker",
-        }
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._medication_id)},
+            name=f"Pill Assistant - {self._medication_name}",
+            manufacturer="Pill Assistant",
+            model="Medication Tracker",
+        )
 
     @property
     def icon(self) -> str:

@@ -270,7 +270,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass.config_entries.async_update_entry(entry, data=migrated_data)
 
     # Initialize storage
-    store = Store(hass, STORAGE_VERSION, STORAGE_KEY)
+    store: Store[dict[str, Any]] = Store(hass, STORAGE_VERSION, STORAGE_KEY)
     storage_data = await store.async_load() or {}
 
     if "medications" not in storage_data:

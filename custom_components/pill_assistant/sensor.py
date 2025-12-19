@@ -9,6 +9,7 @@ from typing import Any
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_time_interval
@@ -170,14 +171,14 @@ class PillAssistantSensor(SensorEntity):
         return "mdi:calendar-clock"
 
     @property
-    def device_info(self) -> dict[str, Any]:
+    def device_info(self) -> DeviceInfo:
         """Return device information."""
-        return {
-            "identifiers": {(DOMAIN, self._medication_id)},
-            "name": f"Pill Assistant - {self._medication_name}",
-            "manufacturer": "Pill Assistant",
-            "model": "Medication Tracker",
-        }
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._medication_id)},
+            name=f"Pill Assistant - {self._medication_name}",
+            manufacturer="Pill Assistant",
+            model="Medication Tracker",
+        )
 
     @property
     def extra_state_attributes(self) -> dict:
