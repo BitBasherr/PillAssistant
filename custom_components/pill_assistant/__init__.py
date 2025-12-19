@@ -193,7 +193,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             if "frontend" in hass.config.components:
                 from homeassistant.components import frontend
 
-                await frontend.async_register_built_in_panel(
+                frontend.async_register_built_in_panel(
                     hass,
                     "iframe",
                     "Pill Assistant",
