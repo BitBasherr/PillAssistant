@@ -787,10 +787,10 @@
 
         <!-- Navigation Tabs -->
         <div class="nav-tabs">
-            <button class="nav-tab active" onclick="switchTab('medications')">
+            <button class="nav-tab active" onclick="switchTab('medications', event)">
                 💊 Medications
             </button>
-            <button class="nav-tab" onclick="switchTab('statistics')">
+            <button class="nav-tab" onclick="switchTab('statistics', event)">
                 📊 Statistics
             </button>
         </div>
@@ -1641,11 +1641,13 @@
         let currentStats = null;
 
         // Switch between tabs
-        function switchTab(tabName) {
+        function switchTab(tabName, event) {
             // Update tab buttons
             const tabs = document.querySelectorAll('.nav-tab');
             tabs.forEach(tab => tab.classList.remove('active'));
-            event.target.classList.add('active');
+            if (event && event.target) {
+                event.target.classList.add('active');
+            }
 
             // Update tab content
             const contents = document.querySelectorAll('.tab-content');
@@ -1785,16 +1787,18 @@
                     return dayData ? dayData.taken : 0;
                 });
 
-                // Generate distinct colors for each medication
-                const hue = (index * 137.5) % 360; // Golden angle for color distribution
+                // Generate distinct colors for each medication using golden angle
+                // Golden angle (137.5°) provides optimal color distribution
+                const hue = (index * 137.5) % 360;
                 const color = `hsl(${hue}, 70%, 50%)`;
                 const borderColor = `hsl(${hue}, 70%, 40%)`;
+                const ALPHA_50_PERCENT = '80'; // Hex for 50% transparency
 
                 return {
                     label: medName,
                     data: data,
                     borderColor: borderColor,
-                    backgroundColor: color + '80', // Add transparency
+                    backgroundColor: color + ALPHA_50_PERCENT,
                     borderWidth: 2,
                     fill: false,
                     tension: 0.4

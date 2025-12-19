@@ -1,6 +1,9 @@
+"""Utility functions for logging medication events to CSV files."""
+
 from __future__ import annotations
 
 import csv
+from datetime import datetime, timedelta
 import json
 import os
 import re
@@ -124,8 +127,6 @@ def _read_csv_statistics(
         if not os.path.exists(path):
             return []
 
-        from datetime import datetime, timedelta
-
         # Parse date filters
         start_dt = None
         end_dt = None
@@ -223,8 +224,6 @@ async def async_get_statistics(
 
         # Aggregate by day
         try:
-            from datetime import datetime
-
             row_dt = datetime.fromisoformat(timestamp_str)
             day_key = row_dt.strftime("%Y-%m-%d")
 
