@@ -23,8 +23,10 @@ except ImportError:  # pragma: no cover - older HA / test env without StaticPath
     StaticPathConfig = None  # type: ignore[assignment]
 
 from .const import (
+    ATTR_END_DATE,
     ATTR_MEDICATION_ID,
     ATTR_SNOOZE_DURATION,
+    ATTR_START_DATE,
     CONF_DOSAGE,
     CONF_DOSAGE_UNIT,
     CONF_MEDICATION_NAME,
@@ -35,6 +37,7 @@ from .const import (
     LOG_FILE_NAME,
     SERVICE_DECREMENT_DOSAGE,
     SERVICE_DECREMENT_REMAINING,
+    SERVICE_GET_STATISTICS,
     SERVICE_INCREMENT_DOSAGE,
     SERVICE_INCREMENT_REMAINING,
     SERVICE_REFILL_MEDICATION,
@@ -107,6 +110,14 @@ SERVICE_INCREMENT_REMAINING_SCHEMA = vol.Schema(
 SERVICE_DECREMENT_REMAINING_SCHEMA = vol.Schema(
     {
         vol.Required(ATTR_MEDICATION_ID): cv.string,
+    },
+)
+
+SERVICE_GET_STATISTICS_SCHEMA = vol.Schema(
+    {
+        vol.Optional(ATTR_MEDICATION_ID): cv.string,
+        vol.Optional(ATTR_START_DATE): cv.string,
+        vol.Optional(ATTR_END_DATE): cv.string,
     },
 )
 
@@ -830,6 +841,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             new_remaining,
         )
 
+    async def handle_get_statistics(call: ServiceCall) -> dict:
+        """Handle get statistics service."""
+        _med_id = call.data.get(ATTR_MEDICATION_ID)
+        start_date = call.data.get(ATTR_START_DATE)
+        end_date = call.data.get(ATTR_END_DATE)
+
+        stats = await log_utils.async_get_statistics(
+            hass,
+            start_date=start_date,
+            end_date=end_date,
+            medication_id=_med_id,
+        )
+
+        _LOGGER.info("Statistics retrieved: %s entries", stats["total_entries"])
+        return stats
+
     # Register services only once
     if not hass.services.has_service(DOMAIN, SERVICE_TAKE_MEDICATION):
         hass.services.async_register(
@@ -893,6 +920,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             SERVICE_DECREMENT_REMAINING,
             handle_decrement_remaining,
             schema=SERVICE_DECREMENT_REMAINING_SCHEMA,
+        )
+    if not hass.services.has_service(DOMAIN, SERVICE_GET_STATISTICS):
+        hass.services.async_register(
+            DOMAIN,
+            SERVICE_GET_STATISTICS,
+            handle_get_statistics,
+            schema=SERVICE_GET_STATISTICS_SCHEMA,
+            supports_response=True,
         )
 
     return True
