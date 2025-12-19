@@ -1168,8 +1168,28 @@
                 return;
             }
 
+            // Sort medications by next_dose_time (next scheduled first)
+            const sortedMedications = [...medications].sort((a, b) => {
+                const aNextDose = a.attributes['Next dose time'] || a.attributes['next_dose_time'];
+                const bNextDose = b.attributes['Next dose time'] || b.attributes['next_dose_time'];
+                
+                // Handle medications with no next dose (put them at the end)
+                if (!aNextDose || aNextDose === 'Unknown' || aNextDose === 'Never') return 1;
+                if (!bNextDose || bNextDose === 'Unknown' || bNextDose === 'Never') return -1;
+                
+                // Parse dates and compare
+                const aDate = new Date(aNextDose);
+                const bDate = new Date(bNextDose);
+                
+                // Invalid dates go to the end
+                if (isNaN(aDate.getTime())) return 1;
+                if (isNaN(bDate.getTime())) return -1;
+                
+                return aDate - bDate;
+            });
+
             let html = '';
-            medications.forEach(med => {
+            sortedMedications.forEach(med => {
                 html += renderMedicationCard(med);
             });
 
@@ -1181,7 +1201,8 @@
             const attrs = med.attributes;
             const medId = attrs['Medication ID'] || attrs['medication_id'] || '';
             const dosage = attrs['dosage'] || attrs['Dosage'] || '1';
-            const dosageUnit = attrs['dosage_unit'] || attrs['Dosage unit'] || 'pill(s)';
+            const dosageUnit = attrs['dosage_unit'] || attrs['Dosage unit'] || 'each';
+            const medicationType = attrs['medication_type'] || attrs['Medication Type'] || 'pill';
             const remaining = attrs['remaining_amount'] || attrs['Remaining amount'] || 0;
             const lastTaken = formatTimeToLocal(attrs['Last taken at'] || attrs['last_taken'] || 'Never');
             const schedule = formatSchedule(attrs['Schedule'] || 'Not scheduled');
@@ -1210,6 +1231,10 @@
 
                     <div class="medication-details">
                         <div class="detail-item">
+                            <div class="detail-label">Type</div>
+                            <div class="detail-value">${medicationType}</div>
+                        </div>
+                        <div class="detail-item">
                             <div class="detail-label">Schedule</div>
                             <div class="detail-value">${schedule}</div>
                         </div>
@@ -1232,7 +1257,7 @@
                             <div class="dosage-label">Dosage:</div>
                             <div class="dosage-controls">
                                 <button class="dosage-btn" onclick="adjustDosage('${medId}', -1)" ${isDecrementDisabled ? 'disabled' : ''}>−</button>
-                                <div class="dosage-value">${dosage} ${dosageUnit}</div>
+                                <div class="dosage-value">${dosage} ${medicationType}(s) (${dosageUnit})</div>
                                 <button class="dosage-btn" onclick="adjustDosage('${medId}', 1)">+</button>
                             </div>
                         </div>
@@ -1241,7 +1266,7 @@
                             <div class="dosage-label">Remaining:</div>
                             <div class="dosage-controls">
                                 <button class="dosage-btn" onclick="adjustRemaining('${medId}', -1)" ${isRemainingDecrementDisabled ? 'disabled' : ''}>−</button>
-                                <div class="dosage-value">${remaining} ${dosageUnit}</div>
+                                <div class="dosage-value">${remaining} ${medicationType}(s) (${dosageUnit})</div>
                                 <button class="dosage-btn" onclick="adjustRemaining('${medId}', 1)">+</button>
                             </div>
                         </div>
