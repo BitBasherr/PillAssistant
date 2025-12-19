@@ -75,13 +75,13 @@ async def test_statistics_service_response_structure(hass: HomeAssistant):
     # Verify response structure
     assert response is not None
     assert isinstance(response, dict)
-    
+
     # The response should contain statistics data directly
     assert "total_entries" in response
     assert "medications" in response
     assert "daily_counts" in response
     assert response["total_entries"] >= 3  # We took medication 3 times
-    
+
     # Verify medication data
     assert config_entry.entry_id in response["medications"]
     med_stats = response["medications"][config_entry.entry_id]
@@ -191,7 +191,7 @@ async def test_statistics_with_taken_and_skipped(hass: HomeAssistant):
     # Verify statistics
     assert response is not None
     assert response["total_entries"] == 7  # 5 taken + 2 skipped
-    
+
     med_stats = response["medications"][config_entry.entry_id]
     assert med_stats["taken_count"] == 5
     assert med_stats["skipped_count"] == 2
@@ -246,10 +246,10 @@ async def test_statistics_daily_counts(hass: HomeAssistant):
     assert response is not None
     assert "daily_counts" in response
     assert isinstance(response["daily_counts"], dict)
-    
+
     # Should have at least one day with data
     assert len(response["daily_counts"]) > 0
-    
+
     # Check that daily count contains medication data
     for day_key, day_data in response["daily_counts"].items():
         assert isinstance(day_data, dict)
@@ -258,4 +258,3 @@ async def test_statistics_daily_counts(hass: HomeAssistant):
             assert "taken" in med_day_data
             assert "skipped" in med_day_data
             assert "name" in med_day_data
-
