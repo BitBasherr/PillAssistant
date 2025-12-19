@@ -189,8 +189,14 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     if not hass.data[DOMAIN].get("sidebar_registered"):
         try:
             # Use HA frontend component to register iframe panel
+            # Import the frontend component dynamically to avoid issues
             if "frontend" in hass.config.components:
-                hass.components.frontend.async_register_built_in_panel(
+                from homeassistant.components import frontend
+
+                # Note: Despite the name, async_register_built_in_panel is a regular
+                # function decorated with @callback, not an async function, so no await
+                frontend.async_register_built_in_panel(
+                    hass,
                     "iframe",
                     "Pill Assistant",
                     "mdi:pill",
