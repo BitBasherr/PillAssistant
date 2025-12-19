@@ -1707,7 +1707,11 @@
                 // 1. { response: { ...stats } } - wrapped response
                 // 2. { ...stats } - direct response
                 // 3. undefined/null - no response (service doesn't support response)
-                console.log('Statistics service response:', response);
+                if (response && typeof response === 'object') {
+                    console.debug('Pill Assistant: Statistics service response received', response);
+                } else {
+                    console.warn('Pill Assistant: Unexpected response type from statistics service', typeof response);
+                }
                 
                 let stats = null;
                 if (response && typeof response === 'object') {
@@ -1812,7 +1816,7 @@
             
             // Handle empty data case
             if (dates.length === 0 || medIds.size === 0) {
-                console.log('No data available for trends chart');
+                console.debug('Pill Assistant: No data available for trends chart');
                 // Create empty chart with message
                 trendsChart = new Chart(ctx, {
                     type: 'line',
@@ -1960,7 +1964,7 @@
             
             // Handle empty data case
             if (medNames.length === 0) {
-                console.log('No data available for adherence chart');
+                console.debug('Pill Assistant: No data available for adherence chart');
                 // Create empty chart
                 adherenceChart = new Chart(ctx, {
                     type: 'bar',
