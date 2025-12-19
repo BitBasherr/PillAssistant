@@ -15,9 +15,11 @@ def auto_enable_custom_integrations(enable_custom_integrations):
 
 @pytest.fixture(autouse=True)
 def cleanup_log_files(hass):
-    """Clean up log files after each test."""
-    yield
+    """Clean up CSV log files from Pill Assistant to ensure test isolation."""
     logs_dir = hass.config.path("Pill Assistant", "Logs")
+    if os.path.exists(logs_dir):
+        shutil.rmtree(logs_dir, ignore_errors=True)
+    yield
     if os.path.exists(logs_dir):
         shutil.rmtree(logs_dir, ignore_errors=True)
 
