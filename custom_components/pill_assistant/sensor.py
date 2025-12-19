@@ -30,8 +30,13 @@ from .const import (
     CONF_REFILL_AMOUNT,
     CONF_REFILL_REMINDER_DAYS,
     CONF_NOTES,
+    CONF_NOTIFY_SERVICES,
+    CONF_ENABLE_AUTOMATIC_NOTIFICATIONS,
+    CONF_ON_TIME_WINDOW_MINUTES,
     DEFAULT_SCHEDULE_TYPE,
     DEFAULT_DOSAGE_UNIT,
+    DEFAULT_ENABLE_AUTOMATIC_NOTIFICATIONS,
+    DEFAULT_ON_TIME_WINDOW_MINUTES,
     SPECIFIC_DOSAGE_UNITS,
     ATTR_DISPLAY_MEDICATION_ID,
     ATTR_NEXT_DOSE_TIME,
@@ -123,6 +128,7 @@ class PillAssistantSensor(SensorEntity):
         self._attr_unique_id = f"{DOMAIN}_{entry.entry_id}"
         self._attr_native_value = "scheduled"
         self._medication_id = entry.entry_id
+        self._last_notification_time = None  # Track when we last sent a notification
 
         # Get storage data
         self._store_data = hass.data[DOMAIN][entry.entry_id]
@@ -217,6 +223,12 @@ class PillAssistantSensor(SensorEntity):
             ATTR_TAKEN_SCHEDULED_RATIO: ratio_str,
             "Global log path": global_log_path,
             "Medication log path": med_log_path,
+            "Automatic notifications enabled": self._entry.data.get(
+                CONF_ENABLE_AUTOMATIC_NOTIFICATIONS, DEFAULT_ENABLE_AUTOMATIC_NOTIFICATIONS
+            ),
+            "On-time window (minutes)": self._entry.data.get(
+                CONF_ON_TIME_WINDOW_MINUTES, DEFAULT_ON_TIME_WINDOW_MINUTES
+            ),
             # Keep backward-compatible keys for existing automations
             "remaining_amount": med_data.get("remaining_amount", 0),
             "last_taken": med_data.get("last_taken"),
@@ -546,6 +558,89 @@ class PillAssistantSensor(SensorEntity):
 
         return missed[:5]  # Limit to 5 most recent
 
+    async def _send_automatic_notification(self) -> None:
+        """Send automatic notification when medication is due."""
+        # Check if automatic notifications are enabled
+        enable_auto_notify = self._entry.data.get(
+            CONF_ENABLE_AUTOMATIC_NOTIFICATIONS, DEFAULT_ENABLE_AUTOMATIC_NOTIFICATIONS
+        )
+        if not enable_auto_notify:
+            return
+
+        # Get notification services
+        notify_services = self._entry.data.get(CONF_NOTIFY_SERVICES, [])
+        if not notify_services:
+            return
+
+        # Check if we already sent a notification recently (within the last hour)
+        now = dt_util.now()
+        if self._last_notification_time:
+            try:
+                last_notif = datetime.fromisoformat(self._last_notification_time)
+                # Don't send another notification if we sent one within the last hour
+                if (now - last_notif).total_seconds() < 3600:
+                    return
+            except (ValueError, TypeError):
+                pass
+
+        # Get medication details from storage
+        storage_data = self._store_data["storage_data"]
+        med_data = storage_data["medications"].get(self._medication_id, {})
+        
+        med_name = med_data.get(CONF_MEDICATION_NAME, self._medication_name)
+        dosage = med_data.get(CONF_DOSAGE, self._entry.data.get(CONF_DOSAGE, ""))
+        dosage_unit = med_data.get(
+            CONF_DOSAGE_UNIT, self._entry.data.get(CONF_DOSAGE_UNIT, "")
+        )
+
+        # Create notification message
+        message = f"Time to take {dosage} {dosage_unit} of {med_name}"
+        title = "Medication Reminder"
+
+        # Send notification to configured services
+        for service_name in notify_services:
+            try:
+                # Extract domain and service
+                service_parts = service_name.split(".")
+                if len(service_parts) == 2:
+                    domain, service = service_parts
+                    await self.hass.services.async_call(
+                        domain,
+                        service,
+                        {
+                            "title": title,
+                            "message": message,
+                            "data": {
+                                "tag": f"pill_assistant_{self._medication_id}",
+                                "actions": [
+                                    {
+                                        "action": f"take_medication_{self._medication_id}",
+                                        "title": "Mark as Taken",
+                                    },
+                                    {
+                                        "action": f"snooze_medication_{self._medication_id}",
+                                        "title": "Snooze",
+                                    },
+                                    {
+                                        "action": f"skip_medication_{self._medication_id}",
+                                        "title": "Skip",
+                                    },
+                                ],
+                            },
+                        },
+                        blocking=False,
+                    )
+            except Exception as err:  # pragma: no cover - notify failure
+                _LOGGER.error(
+                    "Failed to send automatic notification via %s: %s",
+                    service_name,
+                    err,
+                )
+
+        # Update last notification time
+        self._last_notification_time = now.isoformat()
+        _LOGGER.info("Automatic notification sent for %s", med_name)
+
     @callback
     async def _async_update(self, _now=None) -> None:
         """Update the sensor state."""
@@ -595,7 +690,12 @@ class PillAssistantSensor(SensorEntity):
                     self._attr_native_value = "scheduled"
                 # Due if within 30 minutes
                 elif 0 <= time_to_dose <= 1800:
+                    # Set state to due
+                    previous_state = self._attr_native_value
                     self._attr_native_value = "due"
+                    # Send automatic notification if state changed to due
+                    if previous_state != "due":
+                        await self._send_automatic_notification()
                 # Overdue if missed by more than 30 minutes
                 elif time_to_dose < 0:
                     self._attr_native_value = "overdue"

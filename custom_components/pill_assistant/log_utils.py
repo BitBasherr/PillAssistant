@@ -178,7 +178,7 @@ async def async_get_statistics(
     end_date: str | None = None,
     medication_id: str | None = None,
 ) -> dict[str, Any]:
-    """Get medication statistics from CSV logs."""
+    """Get medication statistics from CSV logs with on-time tracking."""
     global_path = get_global_log_path(hass)
 
     # Read CSV data
@@ -189,6 +189,28 @@ async def async_get_statistics(
     # Filter by medication_id if provided
     if medication_id:
         rows = [r for r in rows if r.get("medication_id") == medication_id]
+
+    # Get medication configurations for on-time window calculations
+    from .const import (
+        DOMAIN,
+        CONF_SCHEDULE_TIMES,
+        CONF_SCHEDULE_DAYS,
+        CONF_ON_TIME_WINDOW_MINUTES,
+        DEFAULT_ON_TIME_WINDOW_MINUTES,
+    )
+    
+    med_configs = {}
+    if hasattr(hass, "data") and DOMAIN in hass.data:
+        for med_id, entry_data in hass.data[DOMAIN].items():
+            if isinstance(entry_data, dict) and "entry" in entry_data:
+                entry = entry_data["entry"]
+                med_configs[med_id] = {
+                    "schedule_times": entry.data.get(CONF_SCHEDULE_TIMES, []),
+                    "schedule_days": entry.data.get(CONF_SCHEDULE_DAYS, []),
+                    "on_time_window": entry.data.get(
+                        CONF_ON_TIME_WINDOW_MINUTES, DEFAULT_ON_TIME_WINDOW_MINUTES
+                    ),
+                }
 
     # Aggregate statistics
     stats = {
@@ -209,18 +231,70 @@ async def async_get_statistics(
             stats["medications"][med_id] = {
                 "name": med_name,
                 "taken_count": 0,
+                "taken_on_time_count": 0,
+                "taken_late_count": 0,
                 "skipped_count": 0,
                 "refilled_count": 0,
                 "total_count": 0,
+                "on_time_percentage": 0.0,
             }
 
         stats["medications"][med_id]["total_count"] += 1
+        
         if action == "taken":
             stats["medications"][med_id]["taken_count"] += 1
+            
+            # Calculate if taken on time
+            if med_id in med_configs and timestamp_str:
+                try:
+                    taken_time = datetime.fromisoformat(timestamp_str)
+                    config = med_configs[med_id]
+                    schedule_times = config["schedule_times"]
+                    schedule_days = config["schedule_days"]
+                    on_time_window = config["on_time_window"]
+                    
+                    # Check if taken on a scheduled day
+                    day_abbr = taken_time.strftime("%a").lower()[:3]
+                    if day_abbr in schedule_days:
+                        # Find closest scheduled time
+                        taken_minutes = taken_time.hour * 60 + taken_time.minute
+                        closest_diff = float('inf')
+                        
+                        for time_str in schedule_times:
+                            try:
+                                if isinstance(time_str, list):
+                                    time_str = time_str[0] if time_str else "00:00"
+                                hour, minute = map(int, time_str.split(":"))
+                                scheduled_minutes = hour * 60 + minute
+                                diff = abs(taken_minutes - scheduled_minutes)
+                                closest_diff = min(closest_diff, diff)
+                            except (ValueError, AttributeError):
+                                continue
+                        
+                        # Check if within on-time window
+                        if closest_diff <= on_time_window:
+                            stats["medications"][med_id]["taken_on_time_count"] += 1
+                        else:
+                            stats["medications"][med_id]["taken_late_count"] += 1
+                    else:
+                        # Taken on non-scheduled day counts as late
+                        stats["medications"][med_id]["taken_late_count"] += 1
+                except (ValueError, TypeError):
+                    # If we can't parse, don't count as on-time or late
+                    pass
+                    
         elif action == "skipped":
             stats["medications"][med_id]["skipped_count"] += 1
         elif action == "refilled":
             stats["medications"][med_id]["refilled_count"] += 1
+
+        # Calculate on-time percentage
+        taken_total = stats["medications"][med_id]["taken_count"]
+        if taken_total > 0:
+            on_time_count = stats["medications"][med_id]["taken_on_time_count"]
+            stats["medications"][med_id]["on_time_percentage"] = round(
+                (on_time_count / taken_total) * 100, 1
+            )
 
         # Aggregate by day
         try:
