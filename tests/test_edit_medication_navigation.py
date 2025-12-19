@@ -43,7 +43,7 @@ async def test_medication_sensor_exposes_entry_id(
     # Get the sensor state
     entity_id = f"sensor.pa_{mock_config_entry.data[CONF_MEDICATION_NAME].lower().replace(' ', '_')}"
     state = hass.states.get(entity_id)
-    
+
     assert state is not None
     # The sensor should expose the medication ID (which is the entry_id)
     assert "Medication ID" in state.attributes
@@ -60,7 +60,7 @@ async def test_options_flow_accessible_with_entry_id(
 
     # Attempt to initialize options flow using entry_id
     result = await hass.config_entries.options.async_init(mock_config_entry.entry_id)
-    
+
     # Should successfully show the options form
     assert result["type"] == "form"
     assert result["step_id"] == "init"
@@ -86,7 +86,7 @@ async def test_multiple_medications_have_unique_entry_ids(hass: HomeAssistant):
     entry1.add_to_hass(hass)
     await hass.config_entries.async_setup(entry1.entry_id)
     await hass.async_block_till_done()
-    
+
     # Create second medication
     entry2 = MockConfigEntry(
         domain=DOMAIN,
@@ -108,11 +108,11 @@ async def test_multiple_medications_have_unique_entry_ids(hass: HomeAssistant):
 
     # Verify they have different entry IDs
     assert entry1.entry_id != entry2.entry_id
-    
+
     # Verify both can be retrieved
     retrieved_entry1 = hass.config_entries.async_get_entry(entry1.entry_id)
     retrieved_entry2 = hass.config_entries.async_get_entry(entry2.entry_id)
-    
+
     assert retrieved_entry1 is not None
     assert retrieved_entry2 is not None
     assert retrieved_entry1.data[CONF_MEDICATION_NAME] == "Medication One"
@@ -129,10 +129,10 @@ async def test_edit_medication_preserves_existing_data(
 
     # Get original data
     original_name = mock_config_entry.data[CONF_MEDICATION_NAME]
-    
+
     # Initialize options flow
     result = await hass.config_entries.options.async_init(mock_config_entry.entry_id)
-    
+
     # Configure with updated dosage only
     result = await hass.config_entries.options.async_configure(
         result["flow_id"],
@@ -146,10 +146,10 @@ async def test_edit_medication_preserves_existing_data(
             CONF_REFILL_REMINDER_DAYS: 7,
         },
     )
-    
+
     # Verify update was successful
     assert result["type"] == "create_entry"
-    
+
     # Verify entry was updated with new dosage
     entry = hass.config_entries.async_get_entry(mock_config_entry.entry_id)
     assert entry.data[CONF_DOSAGE] == "150"
