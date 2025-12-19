@@ -216,10 +216,8 @@ class PillAssistantSensor(SensorEntity):
             self._entry.data.get(CONF_MEDICATION_TYPE, DEFAULT_MEDICATION_TYPE),
         )
 
-        # Format dosage display with type
-        dosage_display = f"{dosage} {dosage_unit}"
-        if medication_type:
-            dosage_display = f"{dosage} {medication_type}(s) ({dosage_unit})"
+        # Format dosage display with type and unit
+        dosage_display = f"{dosage} {medication_type}(s) ({dosage_unit})"
 
         # Use human-friendly keys as per requirements but keep backward compatibility
         attributes = {

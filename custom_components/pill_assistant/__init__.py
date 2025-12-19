@@ -39,6 +39,7 @@ from .const import (
     DOMAIN,
     LOG_FILE_NAME,
     LEGACY_DOSAGE_UNITS,
+    DOSAGE_UNIT_OPTIONS,
     SERVICE_DECREMENT_DOSAGE,
     SERVICE_DECREMENT_REMAINING,
     SERVICE_GET_STATISTICS,
@@ -257,7 +258,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             # Unknown format - assign default medication type
             migrated_data[CONF_MEDICATION_TYPE] = DEFAULT_MEDICATION_TYPE
             # Keep existing dosage_unit if it's valid
-            valid_units = ["mL", "mg", "g", "mcg", "tsp", "TBSP", "each", "units", "IU"]
+            valid_units = [opt["value"] for opt in DOSAGE_UNIT_OPTIONS]
             if dosage_unit not in valid_units:
                 migrated_data[CONF_DOSAGE_UNIT] = DEFAULT_DOSAGE_UNIT
             _LOGGER.info(

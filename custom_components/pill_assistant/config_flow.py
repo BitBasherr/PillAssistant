@@ -42,6 +42,7 @@ from .const import (
     SELECT_DOSAGE_UNIT,
     SELECT_DAYS,
     LEGACY_DOSAGE_UNITS,
+    DOSAGE_UNIT_OPTIONS,
 )
 
 
@@ -70,20 +71,8 @@ def migrate_legacy_dosage_unit(data: dict) -> dict:
         # Unknown format - assign defaults
         migrated_data[CONF_MEDICATION_TYPE] = DEFAULT_MEDICATION_TYPE
         # Keep the existing dosage_unit if it's valid, otherwise use default
-        if dosage_unit not in [
-            opt["value"]
-            for opt in [
-                {"value": "mL"},
-                {"value": "mg"},
-                {"value": "g"},
-                {"value": "mcg"},
-                {"value": "tsp"},
-                {"value": "TBSP"},
-                {"value": "each"},
-                {"value": "units"},
-                {"value": "IU"},
-            ]
-        ]:
+        valid_units = [opt["value"] for opt in DOSAGE_UNIT_OPTIONS]
+        if dosage_unit not in valid_units:
             migrated_data[CONF_DOSAGE_UNIT] = DEFAULT_DOSAGE_UNIT
 
     return migrated_data
