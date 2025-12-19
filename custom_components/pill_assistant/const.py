@@ -31,6 +31,10 @@ CONF_RELATIVE_OFFSET_HOURS = "relative_offset_hours"  # Hours offset from refere
 CONF_RELATIVE_OFFSET_MINUTES = (
     "relative_offset_minutes"  # Minutes offset from reference
 )
+CONF_ENABLE_AUTOMATIC_NOTIFICATIONS = "enable_automatic_notifications"  # Enable automatic notifications at scheduled times
+CONF_ON_TIME_WINDOW_MINUTES = (
+    "on_time_window_minutes"  # Time window (±minutes) for "on time" statistics
+)
 
 # Default values
 DEFAULT_DOSAGE_UNIT = "pill(s)"
@@ -39,6 +43,8 @@ DEFAULT_SCHEDULE_DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
 DEFAULT_SCHEDULE_TYPE = "fixed_time"
 DEFAULT_RELATIVE_OFFSET_HOURS = 0
 DEFAULT_RELATIVE_OFFSET_MINUTES = 0
+DEFAULT_ENABLE_AUTOMATIC_NOTIFICATIONS = True
+DEFAULT_ON_TIME_WINDOW_MINUTES = 30
 
 # Schedule type options
 SCHEDULE_TYPE_OPTIONS = [

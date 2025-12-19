@@ -24,6 +24,8 @@ from .const import (
     CONF_NOTES,
     CONF_NOTIFY_SERVICES,
     CONF_SNOOZE_DURATION_MINUTES,
+    CONF_ENABLE_AUTOMATIC_NOTIFICATIONS,
+    CONF_ON_TIME_WINDOW_MINUTES,
     DEFAULT_DOSAGE_UNIT,
     DEFAULT_REFILL_REMINDER_DAYS,
     DEFAULT_SCHEDULE_DAYS,
@@ -31,6 +33,8 @@ from .const import (
     DEFAULT_SNOOZE_DURATION_MINUTES,
     DEFAULT_RELATIVE_OFFSET_HOURS,
     DEFAULT_RELATIVE_OFFSET_MINUTES,
+    DEFAULT_ENABLE_AUTOMATIC_NOTIFICATIONS,
+    DEFAULT_ON_TIME_WINDOW_MINUTES,
     SCHEDULE_TYPE_OPTIONS,
     SELECT_DOSAGE_UNIT,
     SELECT_DAYS,
@@ -447,6 +451,13 @@ class PillAssistantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Optional(
                 CONF_SNOOZE_DURATION_MINUTES, default=DEFAULT_SNOOZE_DURATION_MINUTES
             ): vol.Coerce(int),
+            vol.Optional(
+                CONF_ENABLE_AUTOMATIC_NOTIFICATIONS,
+                default=DEFAULT_ENABLE_AUTOMATIC_NOTIFICATIONS,
+            ): selector({"boolean": {}}),
+            vol.Optional(
+                CONF_ON_TIME_WINDOW_MINUTES, default=DEFAULT_ON_TIME_WINDOW_MINUTES
+            ): vol.Coerce(int),
         }
 
         # Add notification service selector if services are available
@@ -729,6 +740,23 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
                 CONF_SNOOZE_DURATION_MINUTES,
                 default=current_data.get(
                     CONF_SNOOZE_DURATION_MINUTES, DEFAULT_SNOOZE_DURATION_MINUTES
+                ),
+            )
+        ] = vol.Coerce(int)
+        schema_dict[
+            vol.Optional(
+                CONF_ENABLE_AUTOMATIC_NOTIFICATIONS,
+                default=current_data.get(
+                    CONF_ENABLE_AUTOMATIC_NOTIFICATIONS,
+                    DEFAULT_ENABLE_AUTOMATIC_NOTIFICATIONS,
+                ),
+            )
+        ] = selector({"boolean": {}})
+        schema_dict[
+            vol.Optional(
+                CONF_ON_TIME_WINDOW_MINUTES,
+                default=current_data.get(
+                    CONF_ON_TIME_WINDOW_MINUTES, DEFAULT_ON_TIME_WINDOW_MINUTES
                 ),
             )
         ] = vol.Coerce(int)
