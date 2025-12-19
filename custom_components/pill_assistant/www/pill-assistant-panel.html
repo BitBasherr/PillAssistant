@@ -1702,7 +1702,39 @@
                     }
                 );
 
-                currentStats = response.response;
+                // Handle different response structures from different HA versions
+                // The response could be:
+                // 1. { response: { ...stats } } - wrapped response
+                // 2. { ...stats } - direct response
+                // 3. undefined/null - no response (service doesn't support response)
+                console.log('Statistics service response:', response);
+                
+                let stats = null;
+                if (response && typeof response === 'object') {
+                    // Try wrapped response first
+                    if ('response' in response && response.response) {
+                        stats = response.response;
+                    } 
+                    // Try direct response (has expected properties)
+                    else if ('medications' in response || 'daily_counts' in response || 'total_entries' in response) {
+                        stats = response;
+                    }
+                }
+                
+                if (!stats) {
+                    console.warn('No statistics data received from service');
+                    showErrorMessage('No statistics data available. Please ensure medications have been logged.');
+                    // Set empty stats to clear any previous data
+                    currentStats = {
+                        total_entries: 0,
+                        medications: {},
+                        daily_counts: {},
+                        action_counts: {}
+                    };
+                } else {
+                    currentStats = stats;
+                }
+                
                 renderStatistics(currentStats);
             } catch (error) {
                 console.error('Error loading statistics:', error);
@@ -1765,6 +1797,7 @@
             // Destroy existing chart
             if (trendsChart) {
                 trendsChart.destroy();
+                trendsChart = null;
             }
 
             // Prepare data by date
@@ -1776,6 +1809,28 @@
             Object.values(dailyCounts).forEach(day => {
                 Object.keys(day).forEach(medId => medIds.add(medId));
             });
+            
+            // Handle empty data case
+            if (dates.length === 0 || medIds.size === 0) {
+                console.log('No data available for trends chart');
+                // Create empty chart with message
+                trendsChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: []
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { enabled: false }
+                        }
+                    }
+                });
+                return;
+            }
 
             // Prepare datasets for each medication
             const datasets = Array.from(medIds).map((medId, index) => {
@@ -1884,6 +1939,7 @@
             // Destroy existing chart
             if (adherenceChart) {
                 adherenceChart.destroy();
+                adherenceChart = null;
             }
 
             const medications = stats.medications || {};
@@ -1901,6 +1957,28 @@
                 const hue = (index * 137.5) % 360;
                 colors.push(`hsl(${hue}, 70%, 50%)`);
             });
+            
+            // Handle empty data case
+            if (medNames.length === 0) {
+                console.log('No data available for adherence chart');
+                // Create empty chart
+                adherenceChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: [],
+                        datasets: []
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { enabled: false }
+                        }
+                    }
+                });
+                return;
+            }
 
             // Determine if we're in dark mode
             const isDarkMode = document.body.classList.contains('theme-dark');
