@@ -78,9 +78,16 @@ def normalize_dosage_unit(dosage_unit: str | None) -> str:
             if idx >= 0:
                 # Check if it's preceded by a digit or at the start
                 # and followed by nothing or non-letter
-                before_ok = idx == 0 or dosage_unit_lower[idx - 1].isdigit() or not dosage_unit_lower[idx - 1].isalpha()
+                before_ok = (
+                    idx == 0
+                    or dosage_unit_lower[idx - 1].isdigit()
+                    or not dosage_unit_lower[idx - 1].isalpha()
+                )
                 after_idx = idx + len(specific_lower)
-                after_ok = after_idx >= len(dosage_unit_lower) or not dosage_unit_lower[after_idx].isalpha()
+                after_ok = (
+                    after_idx >= len(dosage_unit_lower)
+                    or not dosage_unit_lower[after_idx].isalpha()
+                )
 
                 if before_ok and after_ok and len(specific_lower) > longest_match_len:
                     longest_match = specific_unit
@@ -193,9 +200,7 @@ class PillAssistantSensor(SensorEntity):
         # Use med_data for dosage so increment/decrement reflects in UI
         dosage = med_data.get(CONF_DOSAGE, self._entry.data.get(CONF_DOSAGE, ""))
         dosage_unit = normalize_dosage_unit(
-            med_data.get(
-                CONF_DOSAGE_UNIT, self._entry.data.get(CONF_DOSAGE_UNIT, "")
-            )
+            med_data.get(CONF_DOSAGE_UNIT, self._entry.data.get(CONF_DOSAGE_UNIT, ""))
         )
 
         # Use human-friendly keys as per requirements but keep backward compatibility
