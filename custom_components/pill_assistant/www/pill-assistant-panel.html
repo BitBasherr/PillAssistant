@@ -643,6 +643,143 @@
             height: 400px;
         }
 
+        /* Clock visualizations */
+        .clocks-container {
+            display: flex;
+            gap: 40px;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .clock-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .clock-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--primary-text-color, #212121);
+        }
+
+        .clock {
+            position: relative;
+            width: 300px;
+            height: 300px;
+        }
+
+        .clock svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .clock-circle {
+            fill: none;
+            stroke: var(--divider-color, #e0e0e0);
+            stroke-width: 2;
+        }
+
+        .clock-wedge {
+            fill-opacity: 0.7;
+            stroke: none;
+        }
+
+        .clock-wedge.taken {
+            fill: #4caf50;
+        }
+
+        .clock-wedge.skipped {
+            fill: #f44336;
+        }
+
+        .clock-wedge.snoozed {
+            fill: #ff9800;
+        }
+
+        .clock-hour-mark {
+            stroke: var(--secondary-text-color, #757575);
+            stroke-width: 2;
+        }
+
+        .clock-hour-label {
+            fill: var(--primary-text-color, #212121);
+            font-size: 14px;
+            font-weight: 500;
+            text-anchor: middle;
+        }
+
+        .clock-center-dot {
+            fill: var(--primary-color, #03a9f4);
+        }
+
+        body.theme-dark .clock-circle {
+            stroke: #444;
+        }
+
+        body.theme-dark .clock-hour-mark {
+            stroke: #666;
+        }
+
+        body.theme-dark .clock-hour-label {
+            fill: #e0e0e0;
+        }
+
+        body.theme-dark .clock-title {
+            color: #ffffff;
+        }
+
+        /* Sorting controls */
+        .sorting-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .sorting-controls label {
+            font-size: 0.9em;
+            font-weight: 500;
+            color: var(--secondary-text-color, #757575);
+        }
+
+        .sort-button {
+            padding: 8px 16px;
+            background: var(--card-background-color, #ffffff);
+            border: 2px solid var(--divider-color, #e0e0e0);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            color: var(--primary-text-color, #212121);
+        }
+
+        .sort-button:hover {
+            border-color: var(--primary-color, #03a9f4);
+        }
+
+        .sort-button.active {
+            background: var(--primary-color, #03a9f4);
+            color: white;
+            border-color: var(--primary-color, #03a9f4);
+        }
+
+        body.theme-dark .sort-button {
+            background: #2a2a2a;
+            color: #e0e0e0;
+            border-color: #444;
+        }
+
+        body.theme-dark .sort-button.active {
+            background: var(--primary-color, #03a9f4);
+            color: white;
+            border-color: var(--primary-color, #03a9f4);
+        }
+
         /* Dark theme adjustments for statistics */
         body.theme-dark .stat-card {
             background: #1e1e1e;
@@ -751,6 +888,20 @@
             .chart-wrapper {
                 height: 300px;
             }
+            
+            .clocks-container {
+                flex-direction: column;
+                gap: 30px;
+            }
+            
+            .clock {
+                width: 250px;
+                height: 250px;
+            }
+            
+            .sorting-controls {
+                justify-content: center;
+            }
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -797,6 +948,26 @@
 
         <!-- Medications Tab -->
         <div id="medications-tab" class="tab-content active">
+            <!-- Clock Visualizations -->
+            <div class="clocks-container">
+                <div class="clock-wrapper">
+                    <div class="clock-title">12-Hour Clock</div>
+                    <div class="clock" id="clock-12"></div>
+                </div>
+                <div class="clock-wrapper">
+                    <div class="clock-title">24-Hour Clock</div>
+                    <div class="clock" id="clock-24"></div>
+                </div>
+            </div>
+
+            <!-- Sorting Controls -->
+            <div class="sorting-controls">
+                <label>Sort by:</label>
+                <button class="sort-button active" onclick="sortMedications('nextup')">Next Up</button>
+                <button class="sort-button" onclick="sortMedications('az')">A→Z</button>
+                <button class="sort-button" onclick="sortMedications('za')">Z→A</button>
+            </div>
+
             <div id="content">
                 <div class="loading">Loading medications...</div>
             </div>
@@ -1140,6 +1311,8 @@
                     }
                 }
 
+                // Apply current sorting
+                applySorting();
                 renderMedications();
             } catch (error) {
                 console.error('Error loading medications:', error);
@@ -1149,6 +1322,153 @@
                     </div>
                 `;
             }
+        }
+
+        // Current sorting mode
+        let currentSortMode = 'nextup';
+
+        // Apply current sorting to medications array
+        function applySorting() {
+            if (currentSortMode === 'nextup') {
+                // Sort by next dose time (earliest first)
+                medications.sort((a, b) => {
+                    const aTime = a.attributes['Next dose time'] || a.attributes['next_dose_time'] || '';
+                    const bTime = b.attributes['Next dose time'] || b.attributes['next_dose_time'] || '';
+                    
+                    // Handle special cases
+                    if (!aTime || aTime === 'Unknown' || aTime === 'Never') return 1;
+                    if (!bTime || bTime === 'Unknown' || bTime === 'Never') return -1;
+                    
+                    // Parse times
+                    const aDate = new Date(aTime);
+                    const bDate = new Date(bTime);
+                    
+                    return aDate.getTime() - bDate.getTime();
+                });
+            } else if (currentSortMode === 'az') {
+                // Sort alphabetically A→Z
+                medications.sort((a, b) => {
+                    const aName = a.entityId.replace('sensor.pa_', '').replace(/_/g, ' ');
+                    const bName = b.entityId.replace('sensor.pa_', '').replace(/_/g, ' ');
+                    return aName.localeCompare(bName);
+                });
+            } else if (currentSortMode === 'za') {
+                // Sort alphabetically Z→A
+                medications.sort((a, b) => {
+                    const aName = a.entityId.replace('sensor.pa_', '').replace(/_/g, ' ');
+                    const bName = b.entityId.replace('sensor.pa_', '').replace(/_/g, ' ');
+                    return bName.localeCompare(aName);
+                });
+            }
+        }
+
+        // Sort medications
+        function sortMedications(mode) {
+            currentSortMode = mode;
+            
+            // Update button states
+            document.querySelectorAll('.sort-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Apply sorting and re-render
+            applySorting();
+            renderMedications();
+        }
+
+        // Draw clock visualization
+        function drawClock(containerId, is24Hour) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            
+            const size = 300;
+            const centerX = size / 2;
+            const centerY = size / 2;
+            const radius = size / 2 - 20;
+            
+            // Create SVG
+            let svg = `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">`;
+            
+            // Draw clock circle
+            svg += `<circle cx="${centerX}" cy="${centerY}" r="${radius}" class="clock-circle"/>`;
+            
+            // Draw hour marks and labels
+            const hours = is24Hour ? 24 : 12;
+            for (let i = 0; i < hours; i++) {
+                const angle = (i * 360 / hours - 90) * Math.PI / 180;
+                const x1 = centerX + radius * 0.9 * Math.cos(angle);
+                const y1 = centerY + radius * 0.9 * Math.sin(angle);
+                const x2 = centerX + radius * Math.cos(angle);
+                const y2 = centerY + radius * Math.sin(angle);
+                
+                svg += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="clock-hour-mark"/>`;
+                
+                // Add hour labels
+                const labelX = centerX + radius * 0.75 * Math.cos(angle);
+                const labelY = centerY + radius * 0.75 * Math.sin(angle) + 5;
+                const label = is24Hour ? i : (i === 0 ? 12 : i);
+                svg += `<text x="${labelX}" y="${labelY}" class="clock-hour-label">${label}</text>`;
+            }
+            
+            // Draw wedges for medication times
+            medications.forEach(med => {
+                const lastTaken = med.attributes['Last taken at'] || med.attributes['last_taken'];
+                if (!lastTaken || lastTaken === 'Never') return;
+                
+                try {
+                    const takenDate = new Date(lastTaken);
+                    if (isNaN(takenDate.getTime())) return;
+                    
+                    const hour = takenDate.getHours();
+                    const minute = takenDate.getMinutes();
+                    
+                    // Calculate angle for the time
+                    let angle;
+                    if (is24Hour) {
+                        angle = ((hour + minute / 60) * 360 / 24 - 90) * Math.PI / 180;
+                    } else {
+                        const hour12 = hour % 12;
+                        angle = ((hour12 + minute / 60) * 360 / 12 - 90) * Math.PI / 180;
+                    }
+                    
+                    // Wedge properties
+                    const wedgeWidth = 5; // degrees
+                    const wedgeAngleStart = angle - (wedgeWidth / 2 * Math.PI / 180);
+                    const wedgeAngleEnd = angle + (wedgeWidth / 2 * Math.PI / 180);
+                    
+                    // Calculate wedge path
+                    const x1 = centerX + radius * Math.cos(wedgeAngleStart);
+                    const y1 = centerY + radius * Math.sin(wedgeAngleStart);
+                    const x2 = centerX + radius * Math.cos(wedgeAngleEnd);
+                    const y2 = centerY + radius * Math.sin(wedgeAngleEnd);
+                    
+                    // Determine wedge color based on state
+                    let wedgeClass = 'taken';
+                    if (med.state === 'skipped') {
+                        wedgeClass = 'skipped';
+                    } else if (med.attributes['snooze_until'] || med.attributes['Snooze until']) {
+                        wedgeClass = 'snoozed';
+                    }
+                    
+                    // Draw wedge as a triangle from center
+                    svg += `<path d="M ${centerX} ${centerY} L ${x1} ${y1} A ${radius} ${radius} 0 0 1 ${x2} ${y2} Z" class="clock-wedge ${wedgeClass}"/>`;
+                } catch (e) {
+                    console.warn('Error drawing wedge for medication:', med.entityId, e);
+                }
+            });
+            
+            // Draw center dot
+            svg += `<circle cx="${centerX}" cy="${centerY}" r="5" class="clock-center-dot"/>`;
+            
+            svg += '</svg>';
+            container.innerHTML = svg;
+        }
+
+        // Update clocks
+        function updateClocks() {
+            drawClock('clock-12', false);
+            drawClock('clock-24', true);
         }
 
         // Render medications
@@ -1174,6 +1494,9 @@
             });
 
             content.innerHTML = html;
+            
+            // Update clock visualizations
+            updateClocks();
         }
 
         // Render individual medication card
