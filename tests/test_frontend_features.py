@@ -86,22 +86,25 @@ async def setup_multiple_medications(hass: HomeAssistant):
     return [entry1, entry2, entry3]
 
 
-async def test_medications_have_next_dose_time(hass: HomeAssistant, setup_multiple_medications):
+async def test_medications_have_next_dose_time(
+    hass: HomeAssistant, setup_multiple_medications
+):
     """Test that all medications have next_dose_time attribute for sorting."""
     medications = setup_multiple_medications
-    
+
     # Check that all sensor entities have next_dose_time attribute
     for entry in medications:
         med_name = entry.data[CONF_MEDICATION_NAME].lower().replace(" ", "_")
         entity_id = f"sensor.pa_{med_name}"
-        
+
         state = hass.states.get(entity_id)
         assert state is not None, f"Entity {entity_id} not found"
-        
+
         # Check for next_dose_time in attributes
         attrs = state.attributes
-        assert "Next dose time" in attrs or "next_dose_time" in attrs, \
-            f"Entity {entity_id} missing next_dose_time attribute"
+        assert (
+            "Next dose time" in attrs or "next_dose_time" in attrs
+        ), f"Entity {entity_id} missing next_dose_time attribute"
 
 
 async def test_medication_type_and_unit_separation(hass: HomeAssistant):
@@ -128,16 +131,16 @@ async def test_medication_type_and_unit_separation(hass: HomeAssistant):
 
     state = hass.states.get("sensor.pa_test_separation")
     assert state is not None
-    
+
     attrs = state.attributes
-    
+
     # Check that both medication_type and dosage_unit are present and separate
     assert "Medication Type" in attrs or "medication_type" in attrs
     assert "Dosage unit" in attrs or "dosage_unit" in attrs
-    
+
     med_type = attrs.get("Medication Type") or attrs.get("medication_type")
     dosage_unit = attrs.get("Dosage unit") or attrs.get("dosage_unit")
-    
+
     assert med_type == "liquid"
     assert dosage_unit == "mL"
     assert med_type != dosage_unit, "Type and unit should be different values"
@@ -168,7 +171,9 @@ async def test_statistics_service_for_clock_data(hass: HomeAssistant):
     # Get medication ID
     state = hass.states.get("sensor.pa_clock_test")
     assert state is not None
-    med_id = state.attributes.get("Medication ID") or state.attributes.get("medication_id")
+    med_id = state.attributes.get("Medication ID") or state.attributes.get(
+        "medication_id"
+    )
 
     # Take medication to generate data
     await hass.services.async_call(
@@ -180,7 +185,7 @@ async def test_statistics_service_for_clock_data(hass: HomeAssistant):
 
     # Call statistics service for today
     today = dt_util.now().date().isoformat()
-    
+
     response = await hass.services.async_call(
         DOMAIN,
         SERVICE_GET_STATISTICS,
@@ -224,7 +229,7 @@ async def test_clock_date_range_data(hass: HomeAssistant):
     today = dt_util.now().date()
     yesterday = (today - timedelta(days=1)).isoformat()
     today_str = today.isoformat()
-    
+
     # Query for yesterday
     response_yesterday = await hass.services.async_call(
         DOMAIN,
@@ -236,7 +241,7 @@ async def test_clock_date_range_data(hass: HomeAssistant):
         blocking=True,
         return_response=True,
     )
-    
+
     # Query for today
     response_today = await hass.services.async_call(
         DOMAIN,
@@ -252,16 +257,20 @@ async def test_clock_date_range_data(hass: HomeAssistant):
     # Both queries should succeed (even if no data for yesterday)
     assert response_yesterday is not None
     assert response_today is not None
-    
+
     # Verify the service handles date ranges properly
-    assert "medications" in response_yesterday or "medication_stats" in response_yesterday
+    assert (
+        "medications" in response_yesterday or "medication_stats" in response_yesterday
+    )
     assert "medications" in response_today or "medication_stats" in response_today
 
 
-async def test_medication_sorting_by_schedule(hass: HomeAssistant, setup_multiple_medications):
+async def test_medication_sorting_by_schedule(
+    hass: HomeAssistant, setup_multiple_medications
+):
     """Test that medications can be sorted by their next_dose_time."""
     medications = setup_multiple_medications
-    
+
     # Get all medication entities
     med_states = []
     for entry in medications:
@@ -269,29 +278,34 @@ async def test_medication_sorting_by_schedule(hass: HomeAssistant, setup_multipl
         entity_id = f"sensor.pa_{med_name}"
         state = hass.states.get(entity_id)
         if state:
-            med_states.append({
-                "entity_id": entity_id,
-                "name": entry.data[CONF_MEDICATION_NAME],
-                "next_dose": state.attributes.get("Next dose time") or state.attributes.get("next_dose_time"),
-            })
-    
+            med_states.append(
+                {
+                    "entity_id": entity_id,
+                    "name": entry.data[CONF_MEDICATION_NAME],
+                    "next_dose": state.attributes.get("Next dose time")
+                    or state.attributes.get("next_dose_time"),
+                }
+            )
+
     # Verify we have multiple medications
     assert len(med_states) >= 3
-    
+
     # Verify that next_dose times are different and sortable
     next_doses = [med["next_dose"] for med in med_states if med["next_dose"]]
     assert len(next_doses) >= 3, "All medications should have next_dose_time"
-    
+
     # Try to parse and sort the times
     parsed_times = []
     for dose_time in next_doses:
         if dose_time and dose_time not in ["Unknown", "Never"]:
             try:
-                parsed_times.append(datetime.fromisoformat(dose_time.replace("Z", "+00:00")))
+                parsed_times.append(
+                    datetime.fromisoformat(dose_time.replace("Z", "+00:00"))
+                )
             except (ValueError, AttributeError):
                 # If parsing fails, that's also valid test information
                 pass
-    
+
     # If we successfully parsed times, verify they can be sorted
     if len(parsed_times) >= 2:
         sorted_times = sorted(parsed_times)
@@ -331,13 +345,13 @@ async def test_display_attributes_include_type_and_unit(hass: HomeAssistant):
         med_name = f"display_test_{med_type}"
         state = hass.states.get(f"sensor.pa_{med_name}")
         assert state is not None, f"Entity for {med_type} not found"
-        
+
         attrs = state.attributes
-        
+
         # Verify both attributes exist
         med_type_attr = attrs.get("Medication Type") or attrs.get("medication_type")
         dosage_unit_attr = attrs.get("Dosage unit") or attrs.get("dosage_unit")
-        
+
         assert med_type_attr is not None, f"Medication Type missing for {med_type}"
         assert dosage_unit_attr is not None, f"Dosage unit missing for {med_type}"
         assert med_type_attr == med_type
