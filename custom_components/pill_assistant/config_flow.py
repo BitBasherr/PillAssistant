@@ -12,6 +12,7 @@ from .const import (
     CONF_MEDICATION_NAME,
     CONF_DOSAGE,
     CONF_DOSAGE_UNIT,
+    CONF_MEDICATION_TYPE,
     CONF_SCHEDULE_TIMES,
     CONF_SCHEDULE_DAYS,
     CONF_SCHEDULE_TYPE,
@@ -27,6 +28,7 @@ from .const import (
     CONF_ENABLE_AUTOMATIC_NOTIFICATIONS,
     CONF_ON_TIME_WINDOW_MINUTES,
     DEFAULT_DOSAGE_UNIT,
+    DEFAULT_MEDICATION_TYPE,
     DEFAULT_REFILL_REMINDER_DAYS,
     DEFAULT_SCHEDULE_DAYS,
     DEFAULT_SCHEDULE_TYPE,
@@ -36,9 +38,44 @@ from .const import (
     DEFAULT_ENABLE_AUTOMATIC_NOTIFICATIONS,
     DEFAULT_ON_TIME_WINDOW_MINUTES,
     SCHEDULE_TYPE_OPTIONS,
+    SELECT_MEDICATION_TYPE,
     SELECT_DOSAGE_UNIT,
     SELECT_DAYS,
+    LEGACY_DOSAGE_UNITS,
+    DOSAGE_UNIT_OPTIONS,
 )
+
+
+def migrate_legacy_dosage_unit(data: dict) -> dict:
+    """
+    Migrate legacy dosage_unit to separate medication_type and dosage_unit.
+
+    This handles upgrading configurations that used the old combined format
+    (e.g., "pill(s)", "tablet(s)") to the new separate fields.
+
+    Returns a new dict with migrated data.
+    """
+    if CONF_MEDICATION_TYPE in data:
+        # Already migrated
+        return data
+
+    migrated_data = data.copy()
+    dosage_unit = data.get(CONF_DOSAGE_UNIT, DEFAULT_DOSAGE_UNIT)
+
+    # Check if this is a legacy dosage unit
+    if dosage_unit in LEGACY_DOSAGE_UNITS:
+        med_type, unit = LEGACY_DOSAGE_UNITS[dosage_unit]
+        migrated_data[CONF_MEDICATION_TYPE] = med_type
+        migrated_data[CONF_DOSAGE_UNIT] = unit
+    else:
+        # Unknown format - assign defaults
+        migrated_data[CONF_MEDICATION_TYPE] = DEFAULT_MEDICATION_TYPE
+        # Keep the existing dosage_unit if it's valid, otherwise use default
+        valid_units = [opt["value"] for opt in DOSAGE_UNIT_OPTIONS]
+        if dosage_unit not in valid_units:
+            migrated_data[CONF_DOSAGE_UNIT] = DEFAULT_DOSAGE_UNIT
+
+    return migrated_data
 
 
 def normalize_time_input(time_str: str) -> tuple[str | None, bool]:
@@ -167,6 +204,9 @@ class PillAssistantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 {
                     vol.Required(CONF_MEDICATION_NAME): str,
                     vol.Required(CONF_DOSAGE, default="1"): str,
+                    vol.Required(
+                        CONF_MEDICATION_TYPE, default=DEFAULT_MEDICATION_TYPE
+                    ): SELECT_MEDICATION_TYPE,
                     vol.Required(
                         CONF_DOSAGE_UNIT, default=DEFAULT_DOSAGE_UNIT
                     ): SELECT_DOSAGE_UNIT,
@@ -512,9 +552,8 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
         """Manage the options."""
         errors = {}
 
-        # Determine which schedule_type to use for the form
-        # Use temp_schedule_type if set (user changed it), otherwise use config entry
-        current_data = self._config_entry.data
+        # Migrate legacy data on first access
+        current_data = migrate_legacy_dosage_unit(self._config_entry.data)
         schedule_type_changed = False
 
         if user_input is not None:
@@ -608,6 +647,10 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
                 default=current_data.get(CONF_MEDICATION_NAME, ""),
             ): str,
             vol.Required(CONF_DOSAGE, default=current_data.get(CONF_DOSAGE, "1")): str,
+            vol.Required(
+                CONF_MEDICATION_TYPE,
+                default=current_data.get(CONF_MEDICATION_TYPE, DEFAULT_MEDICATION_TYPE),
+            ): SELECT_MEDICATION_TYPE,
             vol.Required(
                 CONF_DOSAGE_UNIT,
                 default=current_data.get(CONF_DOSAGE_UNIT, DEFAULT_DOSAGE_UNIT),
