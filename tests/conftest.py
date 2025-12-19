@@ -6,6 +6,8 @@ import pytest
 
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
+from custom_components.pill_assistant.log_utils import get_logs_dir
+
 
 @pytest.fixture(autouse=True)
 def auto_enable_custom_integrations(enable_custom_integrations):
@@ -16,7 +18,7 @@ def auto_enable_custom_integrations(enable_custom_integrations):
 @pytest.fixture(autouse=True)
 def cleanup_log_files(hass):
     """Clean up CSV log files from Pill Assistant to ensure test isolation."""
-    logs_dir = hass.config.path("Pill Assistant", "Logs")
+    logs_dir = get_logs_dir(hass)
     if os.path.exists(logs_dir):
         shutil.rmtree(logs_dir, ignore_errors=True)
     yield
