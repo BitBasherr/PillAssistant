@@ -31,6 +31,8 @@ from .const import (
     CONF_REFILL_REMINDER_DAYS,
     CONF_NOTES,
     DEFAULT_SCHEDULE_TYPE,
+    DEFAULT_DOSAGE_UNIT,
+    SPECIFIC_DOSAGE_UNITS,
     ATTR_DISPLAY_MEDICATION_ID,
     ATTR_NEXT_DOSE_TIME,
     ATTR_LAST_TAKEN,
@@ -45,6 +47,43 @@ from .const import (
 from . import log_utils
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def normalize_dosage_unit(dosage_unit: str | None) -> str:
+    """
+    Normalize dosage unit for backward compatibility.
+    
+    If a specific unit (mg, mL, g, tsp, TBSP, each) is found, use it.
+    Otherwise, default to the provided unit or DEFAULT_DOSAGE_UNIT.
+    """
+    if not dosage_unit:
+        return DEFAULT_DOSAGE_UNIT
+    
+    # Check if it's already a specific unit (exact match)
+    if dosage_unit in SPECIFIC_DOSAGE_UNITS:
+        return dosage_unit
+    
+    # Check if a specific unit is embedded in the string (e.g., "500mg", "10mL")
+    # Use word boundaries or numeric prefixes to avoid false matches
+    dosage_unit_lower = dosage_unit.lower()
+    for specific_unit in SPECIFIC_DOSAGE_UNITS:
+        specific_lower = specific_unit.lower()
+        # Check if the unit appears at word boundaries or after digits
+        if specific_lower in dosage_unit_lower:
+            # Make sure 'g' doesn't match 'gummy' etc by checking context
+            idx = dosage_unit_lower.find(specific_lower)
+            if idx >= 0:
+                # Check if it's preceded by a digit or at the start
+                # and followed by nothing or non-letter
+                before_ok = idx == 0 or dosage_unit_lower[idx - 1].isdigit() or not dosage_unit_lower[idx - 1].isalpha()
+                after_idx = idx + len(specific_lower)
+                after_ok = after_idx >= len(dosage_unit_lower) or not dosage_unit_lower[after_idx].isalpha()
+                
+                if before_ok and after_ok:
+                    return specific_unit
+    
+    # Return as-is if it's already in the system, otherwise default to pill(s)
+    return dosage_unit if dosage_unit else DEFAULT_DOSAGE_UNIT
 
 
 async def async_setup_entry(
@@ -146,8 +185,10 @@ class PillAssistantSensor(SensorEntity):
 
         # Use med_data for dosage so increment/decrement reflects in UI
         dosage = med_data.get(CONF_DOSAGE, self._entry.data.get(CONF_DOSAGE, ""))
-        dosage_unit = med_data.get(
-            CONF_DOSAGE_UNIT, self._entry.data.get(CONF_DOSAGE_UNIT, "")
+        dosage_unit = normalize_dosage_unit(
+            med_data.get(
+                CONF_DOSAGE_UNIT, self._entry.data.get(CONF_DOSAGE_UNIT, "")
+            )
         )
 
         # Use human-friendly keys as per requirements but keep backward compatibility
