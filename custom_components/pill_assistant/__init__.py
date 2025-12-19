@@ -201,7 +201,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
                     "Pill Assistant",
                     "mdi:pill",
                     DOMAIN,
-                    {"url": f"/{DOMAIN}/pill-assistant-panel.html"},
+                    f"/{DOMAIN}/pill-assistant-panel.html",
                     require_admin=True,
                 )
                 hass.data[DOMAIN]["sidebar_registered"] = True

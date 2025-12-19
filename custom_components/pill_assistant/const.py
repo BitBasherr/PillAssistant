@@ -53,6 +53,9 @@ DOSAGE_UNIT_OPTIONS = [
     {"label": "mL", "value": "mL"},
     {"label": "mg", "value": "mg"},
     {"label": "g", "value": "g"},
+    {"label": "tsp", "value": "tsp"},
+    {"label": "TBSP", "value": "TBSP"},
+    {"label": "Each", "value": "each"},
     {"label": "Tablet(s)", "value": "tablet(s)"},
     {"label": "Capsule(s)", "value": "capsule(s)"},
     {"label": "Gelatin Capsule(s)", "value": "gelatin_capsule(s)"},
@@ -62,6 +65,9 @@ DOSAGE_UNIT_OPTIONS = [
     {"label": "Puff(s)", "value": "puff(s)"},
     {"label": "Syrup (mL)", "value": "syrup_mL"},
 ]
+
+# Specific measurement units that should be preferred over generic types
+SPECIFIC_DOSAGE_UNITS = ["mL", "mg", "g", "tsp", "TBSP", "each"]
 
 # Days of week options
 DAY_OPTIONS = [
