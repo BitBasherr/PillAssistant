@@ -104,7 +104,7 @@ async def test_get_medication_history_filtered_by_date_range(
 ):
     """Test retrieving medication history filtered by date range."""
     from datetime import datetime, timedelta
-    
+
     mock_config_entry.add_to_hass(hass)
     await hass.config_entries.async_setup(mock_config_entry.entry_id)
     await hass.async_block_till_done()
@@ -121,7 +121,7 @@ async def test_get_medication_history_filtered_by_date_range(
     # Get history filtered by date range
     start_date = (datetime.now() - timedelta(days=1)).isoformat()
     end_date = (datetime.now() + timedelta(days=1)).isoformat()
-    
+
     response = await hass.services.async_call(
         DOMAIN,
         SERVICE_GET_MEDICATION_HISTORY,
