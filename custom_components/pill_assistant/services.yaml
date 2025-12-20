@@ -143,3 +143,90 @@ get_statistics:
       selector:
         text:
 
+get_medication_history:
+  name: Get Medication History
+  description: Retrieve medication history entries from storage
+  fields:
+    medication_id:
+      name: Medication ID
+      description: Optional medication ID to filter history (omit for all medications)
+      required: false
+      example: "abc123def456"
+      selector:
+        text:
+    start_date:
+      name: Start Date
+      description: Start date for history (ISO format, defaults to 30 days ago)
+      required: false
+      example: "2024-01-01T00:00:00"
+      selector:
+        text:
+    end_date:
+      name: End Date
+      description: End date for history (ISO format, defaults to now)
+      required: false
+      example: "2024-01-31T23:59:59"
+      selector:
+        text:
+
+edit_medication_history:
+  name: Edit Medication History
+  description: Edit a medication history entry
+  fields:
+    history_index:
+      name: History Index
+      description: The index of the history entry to edit
+      required: true
+      example: 42
+      selector:
+        number:
+          min: 0
+    timestamp:
+      name: Timestamp
+      description: New timestamp for the entry (ISO format)
+      required: false
+      example: "2024-01-01T12:00:00"
+      selector:
+        text:
+    action:
+      name: Action
+      description: New action type for the entry
+      required: false
+      example: "taken"
+      selector:
+        select:
+          options:
+            - "taken"
+            - "skipped"
+            - "snoozed"
+            - "refilled"
+    dosage:
+      name: Dosage
+      description: New dosage for the entry
+      required: false
+      example: 2.0
+      selector:
+        number:
+          min: 0
+          step: 0.5
+    dosage_unit:
+      name: Dosage Unit
+      description: New dosage unit for the entry
+      required: false
+      example: "mL"
+      selector:
+        text:
+
+delete_medication_history:
+  name: Delete Medication History
+  description: Delete a medication history entry
+  fields:
+    history_index:
+      name: History Index
+      description: The index of the history entry to delete
+      required: true
+      example: 42
+      selector:
+        number:
+          min: 0
+
