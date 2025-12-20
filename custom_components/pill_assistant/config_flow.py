@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+from datetime import timedelta
+
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.helpers.selector import selector
+from homeassistant.util import dt as dt_util
 
 from .const import (
     DOMAIN,
@@ -20,6 +23,8 @@ from .const import (
     CONF_RELATIVE_TO_SENSOR,
     CONF_RELATIVE_OFFSET_HOURS,
     CONF_RELATIVE_OFFSET_MINUTES,
+    CONF_SENSOR_TRIGGER_VALUE,
+    CONF_AVOID_DUPLICATE_TRIGGERS,
     CONF_REFILL_AMOUNT,
     CONF_REFILL_REMINDER_DAYS,
     CONF_NOTES,
@@ -35,6 +40,8 @@ from .const import (
     DEFAULT_SNOOZE_DURATION_MINUTES,
     DEFAULT_RELATIVE_OFFSET_HOURS,
     DEFAULT_RELATIVE_OFFSET_MINUTES,
+    DEFAULT_SENSOR_TRIGGER_VALUE,
+    DEFAULT_AVOID_DUPLICATE_TRIGGERS,
     DEFAULT_ENABLE_AUTOMATIC_NOTIFICATIONS,
     DEFAULT_ON_TIME_WINDOW_MINUTES,
     SCHEDULE_TYPE_OPTIONS,
@@ -430,35 +437,200 @@ class PillAssistantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._data.update(user_input)
             return await self.async_step_refill()
 
-        return self.async_show_form(
-            step_id="schedule_relative_sensor",
-            data_schema=vol.Schema(
+        # Build sensor information display if a sensor has been selected
+        sensor_info = ""
+        sensor_entity_id = self._data.get(CONF_RELATIVE_TO_SENSOR)
+        
+        if sensor_entity_id:
+            sensor_state = self.hass.states.get(sensor_entity_id)
+            if sensor_state:
+                # Get current state and last changed
+                current_value = sensor_state.state
+                last_changed = sensor_state.last_changed
+                
+                # Convert to local time
+                local_time = dt_util.as_local(last_changed)
+                last_changed_str = local_time.strftime("%Y-%m-%d %H:%M:%S")
+                
+                # Build sensor info display
+                sensor_info = f"**Current Sensor Information:**\n\n"
+                sensor_info += f"**Current Value:** `{current_value}`\n"
+                sensor_info += f"**Last Changed:** {last_changed_str}\n\n"
+                
+                # Get state history for last 24 hours
+                now = dt_util.now()
+                start_time = now - timedelta(hours=24)
+                
+                # Get history using recorder component
+                from homeassistant.components import history
+                
+                history_states = await self.hass.async_add_executor_job(
+                    history.state_changes_during_period,
+                    self.hass,
+                    start_time,
+                    now,
+                    sensor_entity_id
+                )
+                
+                if history_states and sensor_entity_id in history_states:
+                    state_changes = history_states[sensor_entity_id]
+                    
+                    if len(state_changes) > 1:
+                        sensor_info += f"**State Changes (Last 24 Hours):**\n\n```\n"
+                        
+                        # Show all state changes in reverse chronological order (newest first)
+                        for state in reversed(state_changes[-20:]):  # Limit to last 20 changes
+                            change_time = dt_util.as_local(state.last_changed)
+                            change_time_str = change_time.strftime("%Y-%m-%d %H:%M:%S")
+                            sensor_info += f"• {change_time_str} → {state.state}\n"
+                        
+                        sensor_info += "```\n"
+                    else:
+                        sensor_info += "*No state changes in the last 24 hours.*\n"
+                else:
+                    sensor_info += "*No state history available.*\n"
+                    
+                # Detect sensor type and offer trigger value options
+                sensor_type = self._detect_sensor_type(sensor_state)
+                trigger_value_options = self._get_trigger_value_options(sensor_state, sensor_type)
+                
+        # Build schema
+        schema_dict = {
+            vol.Required(CONF_RELATIVE_TO_SENSOR): selector(
                 {
-                    vol.Required(CONF_RELATIVE_TO_SENSOR): selector(
-                        {
-                            "entity": {
-                                "domain": ["binary_sensor", "sensor"],
-                            }
-                        }
-                    ),
-                    vol.Required(
-                        CONF_RELATIVE_OFFSET_HOURS,
-                        default=DEFAULT_RELATIVE_OFFSET_HOURS,
-                    ): vol.Coerce(int),
-                    vol.Required(
-                        CONF_RELATIVE_OFFSET_MINUTES,
-                        default=DEFAULT_RELATIVE_OFFSET_MINUTES,
-                    ): vol.Coerce(int),
-                    vol.Required(
-                        CONF_SCHEDULE_DAYS, default=DEFAULT_SCHEDULE_DAYS
-                    ): SELECT_DAYS,
+                    "entity": {
+                        "domain": ["binary_sensor", "sensor"],
+                    }
                 }
             ),
+        }
+        
+        # Add trigger value selector if sensor is selected
+        if sensor_entity_id and sensor_state:
+            trigger_value_options = self._get_trigger_value_options(sensor_state, self._detect_sensor_type(sensor_state))
+            if trigger_value_options:
+                schema_dict[vol.Optional(
+                    CONF_SENSOR_TRIGGER_VALUE,
+                    default=DEFAULT_SENSOR_TRIGGER_VALUE,
+                )] = selector({
+                    "select": {
+                        "options": trigger_value_options,
+                        "mode": "dropdown",
+                        "custom_value": True,
+                    }
+                })
+            else:
+                # Allow free text input for custom trigger values
+                schema_dict[vol.Optional(
+                    CONF_SENSOR_TRIGGER_VALUE,
+                    default=DEFAULT_SENSOR_TRIGGER_VALUE,
+                )] = selector({"text": {}})
+        
+        schema_dict.update({
+            vol.Required(
+                CONF_RELATIVE_OFFSET_HOURS,
+                default=DEFAULT_RELATIVE_OFFSET_HOURS,
+            ): vol.Coerce(int),
+            vol.Required(
+                CONF_RELATIVE_OFFSET_MINUTES,
+                default=DEFAULT_RELATIVE_OFFSET_MINUTES,
+            ): vol.Coerce(int),
+            vol.Optional(
+                CONF_AVOID_DUPLICATE_TRIGGERS,
+                default=DEFAULT_AVOID_DUPLICATE_TRIGGERS,
+            ): selector({"boolean": {}}),
+            vol.Required(
+                CONF_SCHEDULE_DAYS, default=DEFAULT_SCHEDULE_DAYS
+            ): SELECT_DAYS,
+        })
+
+        return self.async_show_form(
+            step_id="schedule_relative_sensor",
+            data_schema=vol.Schema(schema_dict),
             errors=errors,
             description_placeholders={
-                "help": "Take this medication X hours/minutes after a sensor changes state (e.g., wake-up sensor)"
+                "help": f"{sensor_info}\nTake this medication X hours/minutes after a sensor changes state to a specific value (e.g., wake-up sensor).\n\n**Trigger Value:** Specify which sensor value should trigger the medication schedule (leave empty to trigger on any change).\n\n**Avoid Duplicate Triggers:** When enabled, prevents multiple medication schedules from being created for the same sensor event."
             },
         )
+    
+    def _detect_sensor_type(self, sensor_state):
+        """Detect the type of sensor based on its attributes and state."""
+        if not sensor_state:
+            return "unknown"
+        
+        domain = sensor_state.entity_id.split(".")[0]
+        
+        # Binary sensors have on/off states
+        if domain == "binary_sensor":
+            return "binary"
+        
+        # Check attributes for sensor class
+        attributes = sensor_state.attributes
+        device_class = attributes.get("device_class")
+        unit = attributes.get("unit_of_measurement")
+        
+        if device_class:
+            return device_class
+        
+        # Try to detect from state value
+        state_value = sensor_state.state
+        
+        # Check if numeric
+        try:
+            float(state_value)
+            return "numeric"
+        except (ValueError, TypeError):
+            pass
+        
+        # Check common state patterns
+        if state_value in ["on", "off", "true", "false", "open", "closed"]:
+            return "binary_like"
+        
+        return "text"
+    
+    def _get_trigger_value_options(self, sensor_state, sensor_type):
+        """Get appropriate trigger value options based on sensor type."""
+        if not sensor_state:
+            return []
+        
+        options = []
+        
+        if sensor_type == "binary" or sensor_type == "binary_like":
+            # Binary sensors or sensors with binary-like values
+            current_state = sensor_state.state.lower()
+            if current_state in ["on", "off"]:
+                options = [
+                    {"label": "On", "value": "on"},
+                    {"label": "Off", "value": "off"},
+                ]
+            elif current_state in ["true", "false"]:
+                options = [
+                    {"label": "True", "value": "true"},
+                    {"label": "False", "value": "false"},
+                ]
+            elif current_state in ["open", "closed"]:
+                options = [
+                    {"label": "Open", "value": "open"},
+                    {"label": "Closed", "value": "closed"},
+                ]
+            else:
+                # Provide both on and off as defaults
+                options = [
+                    {"label": "On", "value": "on"},
+                    {"label": "Off", "value": "off"},
+                ]
+        elif sensor_type == "numeric":
+            # For numeric sensors, user can enter custom values
+            # Return empty to show text input
+            return []
+        else:
+            # For other sensors, get unique values from history or use text input
+            return []
+        
+        # Add "Any change" option at the beginning
+        options.insert(0, {"label": "Any change (empty)", "value": ""})
+        
+        return options
 
     async def async_step_refill(self, user_input=None):
         """Handle the refill step."""
@@ -740,6 +912,32 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
                     }
                 }
             )
+            
+            # Add trigger value and duplicate avoidance options
+            sensor_entity_id = current_data.get(CONF_RELATIVE_TO_SENSOR)
+            if sensor_entity_id:
+                sensor_state = self.hass.states.get(sensor_entity_id)
+                if sensor_state:
+                    sensor_type = self._detect_sensor_type(sensor_state)
+                    trigger_value_options = self._get_trigger_value_options(sensor_state, sensor_type)
+                    
+                    if trigger_value_options:
+                        schema_dict[vol.Optional(
+                            CONF_SENSOR_TRIGGER_VALUE,
+                            default=current_data.get(CONF_SENSOR_TRIGGER_VALUE, DEFAULT_SENSOR_TRIGGER_VALUE),
+                        )] = selector({
+                            "select": {
+                                "options": trigger_value_options,
+                                "mode": "dropdown",
+                                "custom_value": True,
+                            }
+                        })
+                    else:
+                        schema_dict[vol.Optional(
+                            CONF_SENSOR_TRIGGER_VALUE,
+                            default=current_data.get(CONF_SENSOR_TRIGGER_VALUE, DEFAULT_SENSOR_TRIGGER_VALUE),
+                        )] = selector({"text": {}})
+            
             schema_dict[
                 vol.Required(
                     CONF_RELATIVE_OFFSET_HOURS,
@@ -756,6 +954,14 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
                     ),
                 )
             ] = vol.Coerce(int)
+            schema_dict[
+                vol.Optional(
+                    CONF_AVOID_DUPLICATE_TRIGGERS,
+                    default=current_data.get(
+                        CONF_AVOID_DUPLICATE_TRIGGERS, DEFAULT_AVOID_DUPLICATE_TRIGGERS
+                    ),
+                )
+            ] = selector({"boolean": {}})
 
         # Add common fields
         schema_dict[
@@ -891,3 +1097,82 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
                 "clarification_help": "\n".join(description_lines)
             },
         )
+    
+    def _detect_sensor_type(self, sensor_state):
+        """Detect the type of sensor based on its attributes and state."""
+        if not sensor_state:
+            return "unknown"
+        
+        domain = sensor_state.entity_id.split(".")[0]
+        
+        # Binary sensors have on/off states
+        if domain == "binary_sensor":
+            return "binary"
+        
+        # Check attributes for sensor class
+        attributes = sensor_state.attributes
+        device_class = attributes.get("device_class")
+        unit = attributes.get("unit_of_measurement")
+        
+        if device_class:
+            return device_class
+        
+        # Try to detect from state value
+        state_value = sensor_state.state
+        
+        # Check if numeric
+        try:
+            float(state_value)
+            return "numeric"
+        except (ValueError, TypeError):
+            pass
+        
+        # Check common state patterns
+        if state_value in ["on", "off", "true", "false", "open", "closed"]:
+            return "binary_like"
+        
+        return "text"
+    
+    def _get_trigger_value_options(self, sensor_state, sensor_type):
+        """Get appropriate trigger value options based on sensor type."""
+        if not sensor_state:
+            return []
+        
+        options = []
+        
+        if sensor_type == "binary" or sensor_type == "binary_like":
+            # Binary sensors or sensors with binary-like values
+            current_state = sensor_state.state.lower()
+            if current_state in ["on", "off"]:
+                options = [
+                    {"label": "On", "value": "on"},
+                    {"label": "Off", "value": "off"},
+                ]
+            elif current_state in ["true", "false"]:
+                options = [
+                    {"label": "True", "value": "true"},
+                    {"label": "False", "value": "false"},
+                ]
+            elif current_state in ["open", "closed"]:
+                options = [
+                    {"label": "Open", "value": "open"},
+                    {"label": "Closed", "value": "closed"},
+                ]
+            else:
+                # Provide both on and off as defaults
+                options = [
+                    {"label": "On", "value": "on"},
+                    {"label": "Off", "value": "off"},
+                ]
+        elif sensor_type == "numeric":
+            # For numeric sensors, user can enter custom values
+            # Return empty to show text input
+            return []
+        else:
+            # For other sensors, get unique values from history or use text input
+            return []
+        
+        # Add "Any change" option at the beginning
+        options.insert(0, {"label": "Any change (empty)", "value": ""})
+        
+        return options

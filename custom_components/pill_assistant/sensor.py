@@ -29,6 +29,8 @@ from .const import (
     CONF_RELATIVE_TO_SENSOR,
     CONF_RELATIVE_OFFSET_HOURS,
     CONF_RELATIVE_OFFSET_MINUTES,
+    CONF_SENSOR_TRIGGER_VALUE,
+    CONF_AVOID_DUPLICATE_TRIGGERS,
     CONF_REFILL_AMOUNT,
     CONF_REFILL_REMINDER_DAYS,
     CONF_NOTES,
@@ -38,6 +40,8 @@ from .const import (
     DEFAULT_SCHEDULE_TYPE,
     DEFAULT_DOSAGE_UNIT,
     DEFAULT_MEDICATION_TYPE,
+    DEFAULT_SENSOR_TRIGGER_VALUE,
+    DEFAULT_AVOID_DUPLICATE_TRIGGERS,
     DEFAULT_ENABLE_AUTOMATIC_NOTIFICATIONS,
     DEFAULT_ON_TIME_WINDOW_MINUTES,
     SPECIFIC_DOSAGE_UNITS,
@@ -491,6 +495,8 @@ class PillAssistantSensor(SensorEntity):
         sensor_entity_id = self._entry.data.get(CONF_RELATIVE_TO_SENSOR)
         offset_hours = self._entry.data.get(CONF_RELATIVE_OFFSET_HOURS, 0)
         offset_minutes = self._entry.data.get(CONF_RELATIVE_OFFSET_MINUTES, 0)
+        trigger_value = self._entry.data.get(CONF_SENSOR_TRIGGER_VALUE, DEFAULT_SENSOR_TRIGGER_VALUE)
+        avoid_duplicates = self._entry.data.get(CONF_AVOID_DUPLICATE_TRIGGERS, DEFAULT_AVOID_DUPLICATE_TRIGGERS)
 
         if not sensor_entity_id:
             return None
@@ -503,6 +509,24 @@ class PillAssistantSensor(SensorEntity):
         sensor_last_changed = sensor_state.last_changed
         if not sensor_last_changed:
             return None
+
+        # Check if trigger value matches (if specified)
+        if trigger_value:
+            current_value = sensor_state.state.lower() if sensor_state.state else ""
+            trigger_value_lower = trigger_value.lower()
+            
+            # Only trigger if the current value matches the trigger value
+            if current_value != trigger_value_lower:
+                return None
+        
+        # If avoiding duplicates, check if we've already triggered for this sensor event
+        if avoid_duplicates:
+            storage_data = self._store_data["storage_data"]
+            last_sensor_trigger = storage_data.get("last_sensor_trigger", {}).get(self._entry.entry_id)
+            
+            # If we've already triggered for this exact sensor change time, skip
+            if last_sensor_trigger and last_sensor_trigger == sensor_last_changed.isoformat():
+                return None
 
         # Calculate next dose time as offset from sensor event
         next_dose = sensor_last_changed + timedelta(
