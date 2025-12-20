@@ -791,9 +791,15 @@ class PillAssistantSensor(SensorEntity):
                     is_snoozed = True
                 else:
                     # Snooze period has expired, clear it
-                    med_data["snooze_until"] = None
                     store = self._store_data["store"]
-                    await store.async_save(storage_data)
+                    
+                    def clear_snooze(data: dict) -> None:
+                        """Clear snooze atomically."""
+                        med_data = data["medications"].get(self._medication_id)
+                        if med_data:
+                            med_data["snooze_until"] = None
+                    
+                    await store.async_update(clear_snooze)
             except (ValueError, TypeError):
                 pass
 
