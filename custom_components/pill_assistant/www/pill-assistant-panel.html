@@ -1992,6 +1992,11 @@ body.theme-dark .clock-legend.bottom-banner {
                 
                 renderStatistics(currentStats);
                 
+                // Also load table if table view is currently active
+                if (currentStatsSubtab === 'table') {
+                    loadMedicationHistory();
+                }
+                
             } catch (error) {
                 console.error('Error loading medication statistics:', error);
             }
@@ -2871,6 +2876,11 @@ body.theme-dark .clock-legend.bottom-banner {
             
             // Reload statistics with new context
             loadStatistics();
+            
+            // Also reload table if table view is currently active
+            if (currentStatsSubtab === 'table') {
+                loadMedicationHistory();
+            }
         }
         
         // Update view context toggle visibility and label
