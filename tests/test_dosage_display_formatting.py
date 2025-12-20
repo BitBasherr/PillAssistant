@@ -137,7 +137,7 @@ async def test_medication_with_mg_unit(hass: HomeAssistant):
     state = hass.states.get(entity_id)
     
     assert state is not None
-    assert state.attributes.get("dosage") == "500.0"
+    assert state.attributes.get("dosage") == "500"
     assert state.attributes.get("dosage_unit") == "mg"
     assert state.attributes.get("medication_type") == "tablet"
     
@@ -168,7 +168,7 @@ async def test_medication_with_ml_unit(hass: HomeAssistant):
     state = hass.states.get(entity_id)
     
     assert state is not None
-    assert state.attributes.get("dosage") == "10.0"
+    assert state.attributes.get("dosage") == "10"
     assert state.attributes.get("dosage_unit") == "mL"
     assert state.attributes.get("medication_type") == "liquid"
     
@@ -199,7 +199,7 @@ async def test_medication_with_each_unit_singular(hass: HomeAssistant):
     state = hass.states.get(entity_id)
     
     assert state is not None
-    assert state.attributes.get("dosage") == "1.0"
+    assert state.attributes.get("dosage") == "1"
     assert state.attributes.get("dosage_unit") == "each"
     assert state.attributes.get("medication_type") == "capsule"
     
@@ -230,7 +230,7 @@ async def test_medication_with_each_unit_plural(hass: HomeAssistant):
     state = hass.states.get(entity_id)
     
     assert state is not None
-    assert state.attributes.get("dosage") == "2.0"
+    assert state.attributes.get("dosage") == "2"
     assert state.attributes.get("dosage_unit") == "each"
     assert state.attributes.get("medication_type") == "tablet"
     
@@ -261,7 +261,7 @@ async def test_medication_with_gummy_pluralization(hass: HomeAssistant):
     state = hass.states.get(entity_id)
     
     assert state is not None
-    assert state.attributes.get("dosage") == "2.0"
+    assert state.attributes.get("dosage") == "2"
     assert state.attributes.get("medication_type") == "gummy"
     
     # Frontend should display as "2 gummies" not "2 gummys"
