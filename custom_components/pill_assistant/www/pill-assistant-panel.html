@@ -246,8 +246,9 @@
         }
 
         .action-btn {
-            flex: 1;
+            flex: 1 1 auto;
             min-width: 120px;
+            max-width: 200px;
             padding: 12px 20px;
             border: none;
             border-radius: 6px;
@@ -690,10 +691,93 @@
             gap: 15px;
         }
 
-        .date-range-picker {
+        .date-range-picker-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .date-preset-options {
             display: flex;
             gap: 10px;
             align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .date-preset-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.9em;
+            cursor: pointer;
+            user-select: none;
+            color: var(--primary-text-color, #212121);
+        }
+
+        .date-preset-checkbox input[type="checkbox"] {
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+        }
+
+        .date-preset-btn {
+            padding: 6px 12px;
+            background: var(--secondary-background-color, #f5f5f5);
+            color: var(--primary-text-color, #212121);
+            border: 1px solid var(--divider-color, #e0e0e0);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .date-preset-btn:hover {
+            background: var(--primary-color, #03a9f4);
+            color: white;
+            border-color: var(--primary-color, #03a9f4);
+        }
+
+        body.theme-dark .date-preset-btn {
+            background: #2a2a2a;
+            color: #e0e0e0;
+            border-color: #444;
+        }
+
+        body.theme-dark .date-preset-btn:hover {
+            background: var(--primary-color, #03a9f4);
+            color: white;
+        }
+
+        body.theme-dark .date-preset-checkbox {
+            color: #e0e0e0;
+        }
+
+        .date-time-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .date-input-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .date-input-group label {
+            min-width: 40px;
+        }
+
+        .update-btn {
+            align-self: flex-end;
+        }
+
+        .date-range-picker {
+            display: flex;
+            gap: 15px;
+            align-items: flex-end;
             flex-wrap: wrap;
         }
 
@@ -801,7 +885,7 @@
             display: flex;
             gap: 40px;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start;
             flex-wrap: wrap;
             margin-top: 20px;
         }
@@ -812,6 +896,7 @@
             align-items: center;
             gap: 15px;
             min-height: 380px;
+            flex: 0 0 auto;
         }
 
         .clock-toggle {
@@ -1130,13 +1215,28 @@
         <div id="statistics-tab" class="tab-content">
             <div class="statistics-header">
                 <h2>Medication Statistics</h2>
-                <div class="date-range-picker">
-                    <label>From:</label>
-                    <input type="date" id="stats-start-date">
-                    <label>To:</label>
-                    <input type="date" id="stats-end-date">
-                    <button onclick="loadStatistics()">Update</button>
-                    <button onclick="setLast30Days()">Last 30 Days</button>
+                <div class="date-range-picker-container">
+                    <div class="date-preset-options">
+                        <label class="date-preset-checkbox">
+                            <input type="checkbox" id="stats-today-checkbox" onchange="setToday()" checked>
+                            <span>Today</span>
+                        </label>
+                        <button class="date-preset-btn" onclick="setLast7Days()">Last 7 Days</button>
+                        <button class="date-preset-btn" onclick="setLast30Days()">Last 30 Days</button>
+                    </div>
+                    <div class="date-range-picker">
+                        <div class="date-time-group">
+                            <div class="date-input-group">
+                                <label>Start:</label>
+                                <input type="date" id="stats-start-date" onchange="onDateRangeChange()">
+                            </div>
+                            <div class="date-input-group">
+                                <label>End:</label>
+                                <input type="date" id="stats-end-date" onchange="onDateRangeChange()">
+                            </div>
+                        </div>
+                        <button class="update-btn" onclick="loadStatistics()">Update</button>
+                    </div>
                 </div>
             </div>
 
@@ -1510,8 +1610,16 @@
             // Switch to statistics tab
             switchTab('statistics');
             
-            // Set the date range for last 30 days
-            setLast30Days();
+            // Set the date range to today by default
+            const today = new Date();
+            document.getElementById('stats-start-date').valueAsDate = today;
+            document.getElementById('stats-end-date').valueAsDate = today;
+            
+            // Check the today checkbox
+            const checkbox = document.getElementById('stats-today-checkbox');
+            if (checkbox) {
+                checkbox.checked = true;
+            }
             
             // Load statistics with medication filter
             loadStatisticsForMedication(medId, medName);
@@ -1716,6 +1824,16 @@
             return result;
         }
 
+        // Format medication type from snake_case to Title Case
+        function formatMedicationType(type) {
+            if (!type) return '';
+            // Replace underscores with spaces, then capitalize each word
+            return type
+                .split('_')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                .join(' ');
+        }
+
         // Get Home Assistant connection
         function getHassConnection() {
             if (window.parent && window.parent.document) {
@@ -1861,7 +1979,8 @@
             const medId = attrs['Medication ID'] || attrs['medication_id'] || '';
             const dosage = attrs['dosage'] || attrs['Dosage'] || '1';
             const dosageUnit = attrs['dosage_unit'] || attrs['Dosage unit'] || 'each';
-            const medicationType = attrs['medication_type'] || attrs['Medication Type'] || 'pill';
+            const medicationTypeRaw = attrs['medication_type'] || attrs['Medication Type'] || 'pill';
+            const medicationType = formatMedicationType(medicationTypeRaw);
             const remaining = attrs['remaining_amount'] || attrs['Remaining amount'] || 0;
             const lastTaken = formatTimeToLocal(attrs['Last taken at'] || attrs['last_taken'] || 'Never');
             const schedule = formatSchedule(attrs['Schedule'] || 'Not scheduled');
@@ -2356,8 +2475,42 @@
 
         // Initialize statistics section
         function initStatistics() {
-            // Set default date range to last 30 days
-            setLast30Days();
+            // Set default to today (with checkbox checked)
+            setToday();
+        }
+
+        // Set date range to today only
+        function setToday() {
+            const today = new Date();
+            document.getElementById('stats-start-date').valueAsDate = today;
+            document.getElementById('stats-end-date').valueAsDate = today;
+            
+            // Check the today checkbox
+            const checkbox = document.getElementById('stats-today-checkbox');
+            if (checkbox) {
+                checkbox.checked = true;
+            }
+            
+            // Auto-load statistics
+            loadStatistics();
+        }
+
+        // Set date range to last 7 days
+        function setLast7Days() {
+            const endDate = new Date();
+            const startDate = new Date();
+            startDate.setDate(startDate.getDate() - 7);
+
+            document.getElementById('stats-start-date').valueAsDate = startDate;
+            document.getElementById('stats-end-date').valueAsDate = endDate;
+            
+            // Uncheck the today checkbox since we're using a different range
+            const checkbox = document.getElementById('stats-today-checkbox');
+            if (checkbox) {
+                checkbox.checked = false;
+            }
+            
+            // Auto-load statistics
             loadStatistics();
         }
 
@@ -2369,6 +2522,27 @@
 
             document.getElementById('stats-start-date').valueAsDate = startDate;
             document.getElementById('stats-end-date').valueAsDate = endDate;
+            
+            // Uncheck the today checkbox since we're using a different range
+            const checkbox = document.getElementById('stats-today-checkbox');
+            if (checkbox) {
+                checkbox.checked = false;
+            }
+            
+            // Auto-load statistics
+            loadStatistics();
+        }
+
+        // Handle date range change - auto-refresh when dates are manually changed
+        function onDateRangeChange() {
+            // Uncheck the today checkbox since user is manually selecting dates
+            const checkbox = document.getElementById('stats-today-checkbox');
+            if (checkbox) {
+                checkbox.checked = false;
+            }
+            
+            // Auto-load statistics when dates change
+            loadStatistics();
         }
 
         // Load statistics from backend
@@ -2918,10 +3092,16 @@
                 }
 
                 // Call the statistics service for the selected date using callWS for response
-                const startDate = dateStr;
-                // Validate date format (YYYY-MM-DD) before using
+                // Convert date strings to ISO format to match how bar/scatter charts fetch data
                 const datePattern = /^\d{4}-\d{2}-\d{2}$/;
-                const endDate = datePattern.test(dateStr) ? dateStr + 'T23:59:59' : dateStr;
+                if (!datePattern.test(dateStr)) {
+                    console.warn('Invalid date format for clock data:', dateStr);
+                    return;
+                }
+                
+                // Create proper ISO date strings for start and end of the day
+                const startDateISO = new Date(dateStr).toISOString();
+                const endDateISO = new Date(dateStr + 'T23:59:59').toISOString();
                 
                 let response = null;
                 try {
@@ -2930,23 +3110,36 @@
                         domain: 'pill_assistant',
                         service: 'get_statistics',
                         service_data: {
-                            start_date: startDate,
-                            end_date: endDate
+                            start_date: startDateISO,
+                            end_date: endDateISO
                         },
                         return_response: true
                     });
                 } catch (wsError) {
                     console.warn('callWS failed for clock data:', wsError);
+                    // Fallback to callService
+                    try {
+                        response = await hass.callService(
+                            'pill_assistant',
+                            'get_statistics',
+                            {
+                                start_date: startDateISO,
+                                end_date: endDateISO
+                            }
+                        );
+                    } catch (serviceError) {
+                        console.warn('callService also failed for clock data:', serviceError);
+                    }
                 }
 
                 console.debug('Clock data loaded for', dateStr, response);
                 
-                // Handle wrapped response
+                // Handle wrapped response - same logic as loadStatistics
                 let stats = null;
                 if (response && typeof response === 'object') {
                     if ('response' in response && response.response) {
                         stats = response.response;
-                    } else if ('medications' in response) {
+                    } else if ('medications' in response || 'daily_counts' in response || 'total_entries' in response) {
                         stats = response;
                     }
                 }
