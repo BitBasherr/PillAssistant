@@ -453,9 +453,13 @@ async def test_html_panel_date_range_auto_refresh(hass: HomeAssistant):
 
     # Check for onchange handler on date inputs
     assert "onDateRangeChange()" in content, "onDateRangeChange function call missing"
-    assert "function onDateRangeChange()" in content, "onDateRangeChange function definition missing"
+    assert (
+        "function onDateRangeChange()" in content
+    ), "onDateRangeChange function definition missing"
     # Check that onDateRangeChange calls loadStatistics
-    assert "loadStatistics()" in content, "loadStatistics call missing in date change handler"
+    assert (
+        "loadStatistics()" in content
+    ), "loadStatistics call missing in date change handler"
 
 
 async def test_html_panel_clock_uses_iso_dates(hass: HomeAssistant):
@@ -475,7 +479,9 @@ async def test_html_panel_clock_uses_iso_dates(hass: HomeAssistant):
     # Check that loadClockData uses toISOString for proper date format
     assert "toISOString()" in content, "toISOString conversion missing for clock data"
     # The startDateISO and endDateISO variables should be used
-    assert "startDateISO" in content, "startDateISO variable missing in clock data loading"
+    assert (
+        "startDateISO" in content
+    ), "startDateISO variable missing in clock data loading"
     assert "endDateISO" in content, "endDateISO variable missing in clock data loading"
 
 
@@ -574,6 +580,10 @@ async def test_html_panel_unwrap_helper(hass: HomeAssistant):
         content = f.read()
 
     # Check for helper function
-    assert "function unwrapServiceResponse" in content, "unwrapServiceResponse function missing"
+    assert (
+        "function unwrapServiceResponse" in content
+    ), "unwrapServiceResponse function missing"
     # Check that it's used in the codebase
-    assert "unwrapServiceResponse(response)" in content, "unwrapServiceResponse not being used"
+    assert (
+        "unwrapServiceResponse(response)" in content
+    ), "unwrapServiceResponse not being used"
