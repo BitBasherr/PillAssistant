@@ -393,3 +393,197 @@ async def test_time_offset_format_mixed(hass: HomeAssistant):
     # Should contain "1 hr 30 min" not "1h 30m"
     assert "1 hr" in schedule, f"Schedule should use readable format, got: {schedule}"
     assert "30 min" in schedule, f"Schedule should use readable format, got: {schedule}"
+
+
+async def test_html_panel_medication_type_formatting(hass: HomeAssistant):
+    """Test that the HTML panel has the formatMedicationType function for snake_case to Title Case."""
+    html_path = os.path.join(
+        os.path.dirname(__file__),
+        "..",
+        "custom_components",
+        "pill_assistant",
+        "www",
+        "pill-assistant-panel.html",
+    )
+
+    with open(html_path, "r") as f:
+        content = f.read()
+
+    # Check for medication type formatting function
+    assert "formatMedicationType" in content, "formatMedicationType function missing"
+    # Check that the function converts snake_case to Title Case
+    assert "split('_')" in content, "Snake case splitting logic missing"
+    assert "toUpperCase()" in content, "Title case conversion missing"
+
+
+async def test_html_panel_today_checkbox(hass: HomeAssistant):
+    """Test that the HTML panel has Today checkbox for default date selection."""
+    html_path = os.path.join(
+        os.path.dirname(__file__),
+        "..",
+        "custom_components",
+        "pill_assistant",
+        "www",
+        "pill-assistant-panel.html",
+    )
+
+    with open(html_path, "r") as f:
+        content = f.read()
+
+    # Check for Today checkbox
+    assert "stats-today-checkbox" in content, "Today checkbox ID missing"
+    assert "setToday()" in content, "setToday function call missing"
+    # Check for the function itself
+    assert "function setToday()" in content, "setToday function definition missing"
+
+
+async def test_html_panel_date_range_auto_refresh(hass: HomeAssistant):
+    """Test that the HTML panel auto-refreshes when date range changes."""
+    html_path = os.path.join(
+        os.path.dirname(__file__),
+        "..",
+        "custom_components",
+        "pill_assistant",
+        "www",
+        "pill-assistant-panel.html",
+    )
+
+    with open(html_path, "r") as f:
+        content = f.read()
+
+    # Check for onchange handler on date inputs
+    assert "onDateRangeChange()" in content, "onDateRangeChange function call missing"
+    assert (
+        "function onDateRangeChange()" in content
+    ), "onDateRangeChange function definition missing"
+    # Check that onDateRangeChange calls loadStatistics
+    assert (
+        "loadStatistics()" in content
+    ), "loadStatistics call missing in date change handler"
+
+
+async def test_html_panel_clock_uses_iso_dates(hass: HomeAssistant):
+    """Test that the HTML panel clock data loading uses ISO date format."""
+    html_path = os.path.join(
+        os.path.dirname(__file__),
+        "..",
+        "custom_components",
+        "pill_assistant",
+        "www",
+        "pill-assistant-panel.html",
+    )
+
+    with open(html_path, "r") as f:
+        content = f.read()
+
+    # Check that loadClockData uses toISOString for proper date format
+    assert "toISOString()" in content, "toISOString conversion missing for clock data"
+    # The startDateISO and endDateISO variables should be used
+    assert (
+        "startDateISO" in content
+    ), "startDateISO variable missing in clock data loading"
+    assert "endDateISO" in content, "endDateISO variable missing in clock data loading"
+
+
+async def test_html_panel_button_max_width(hass: HomeAssistant):
+    """Test that action buttons have max-width for proper spacing."""
+    html_path = os.path.join(
+        os.path.dirname(__file__),
+        "..",
+        "custom_components",
+        "pill_assistant",
+        "www",
+        "pill-assistant-panel.html",
+    )
+
+    with open(html_path, "r") as f:
+        content = f.read()
+
+    # Check that action buttons have max-width to prevent abnormally wide spacing
+    assert "max-width: 200px" in content, "Button max-width CSS rule missing"
+
+
+async def test_html_panel_clock_alignment(hass: HomeAssistant):
+    """Test that clock wrappers align properly with flex-start."""
+    html_path = os.path.join(
+        os.path.dirname(__file__),
+        "..",
+        "custom_components",
+        "pill_assistant",
+        "www",
+        "pill-assistant-panel.html",
+    )
+
+    with open(html_path, "r") as f:
+        content = f.read()
+
+    # Check that clock container aligns items at flex-start for proper column alignment
+    assert "align-items: flex-start" in content, "Clock alignment CSS rule missing"
+
+
+async def test_html_panel_time_pickers(hass: HomeAssistant):
+    """Test that the HTML panel has time picker inputs alongside date pickers."""
+    html_path = os.path.join(
+        os.path.dirname(__file__),
+        "..",
+        "custom_components",
+        "pill_assistant",
+        "www",
+        "pill-assistant-panel.html",
+    )
+
+    with open(html_path, "r") as f:
+        content = f.read()
+
+    # Check for time input elements
+    assert "stats-start-time" in content, "Start time input ID missing"
+    assert "stats-end-time" in content, "End time input ID missing"
+    assert 'type="time"' in content, "Time input type missing"
+    # Check that time inputs are styled
+    assert 'input[type="time"]' in content, "Time input CSS styling missing"
+
+
+async def test_html_panel_debounce_mechanism(hass: HomeAssistant):
+    """Test that the HTML panel has debounce mechanism for date/time changes."""
+    html_path = os.path.join(
+        os.path.dirname(__file__),
+        "..",
+        "custom_components",
+        "pill_assistant",
+        "www",
+        "pill-assistant-panel.html",
+    )
+
+    with open(html_path, "r") as f:
+        content = f.read()
+
+    # Check for debounce timer variable
+    assert "dateChangeDebounceTimer" in content, "Debounce timer variable missing"
+    assert "DATE_CHANGE_DEBOUNCE_MS" in content, "Debounce constant missing"
+    # Check that setTimeout is used for debouncing
+    assert "setTimeout" in content, "setTimeout for debouncing missing"
+    assert "clearTimeout" in content, "clearTimeout for debouncing missing"
+
+
+async def test_html_panel_unwrap_helper(hass: HomeAssistant):
+    """Test that the HTML panel has the unwrapServiceResponse helper function."""
+    html_path = os.path.join(
+        os.path.dirname(__file__),
+        "..",
+        "custom_components",
+        "pill_assistant",
+        "www",
+        "pill-assistant-panel.html",
+    )
+
+    with open(html_path, "r") as f:
+        content = f.read()
+
+    # Check for helper function
+    assert (
+        "function unwrapServiceResponse" in content
+    ), "unwrapServiceResponse function missing"
+    # Check that it's used in the codebase
+    assert (
+        "unwrapServiceResponse(response)" in content
+    ), "unwrapServiceResponse not being used"
