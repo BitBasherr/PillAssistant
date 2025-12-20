@@ -359,12 +359,12 @@ class PillAssistantSensor(SensorEntity):
 
         # Fallback: Format the entity ID
         # Remove domain prefix (e.g., 'binary_sensor.bedroom_motion' -> 'bedroom_motion')
-        if '.' in entity_id:
-            entity_id = entity_id.split('.', 1)[1]
+        if "." in entity_id:
+            entity_id = entity_id.split(".", 1)[1]
 
         # Split on underscores and title case each word
-        words = entity_id.split('_')
-        formatted = ' '.join(word.capitalize() for word in words if word)
+        words = entity_id.split("_")
+        formatted = " ".join(word.capitalize() for word in words if word)
 
         return formatted if formatted else "unknown"
 

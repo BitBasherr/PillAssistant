@@ -26,11 +26,9 @@ async def test_entity_name_with_friendly_name(
     """Test that entity friendly name is used when available."""
     # Create a binary sensor with a friendly name
     hass.states.async_set(
-        "binary_sensor.bedroom_motion",
-        "on",
-        {"friendly_name": "Bedroom Motion Sensor"}
+        "binary_sensor.bedroom_motion", "on", {"friendly_name": "Bedroom Motion Sensor"}
     )
-    
+
     # Create medication config entry with relative_sensor schedule
     entry = MockConfigEntry(
         domain=DOMAIN,
@@ -51,11 +49,13 @@ async def test_entity_name_with_friendly_name(
     entry.add_to_hass(hass)
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
-    
+
     # Get the sensor state and check the Schedule attribute
-    entity_id = f"sensor.pa_{entry.data[CONF_MEDICATION_NAME].lower().replace(' ', '_')}"
+    entity_id = (
+        f"sensor.pa_{entry.data[CONF_MEDICATION_NAME].lower().replace(' ', '_')}"
+    )
     state = hass.states.get(entity_id)
-    
+
     assert state is not None
     schedule = state.attributes.get("Schedule")
     assert schedule is not None
@@ -64,17 +64,13 @@ async def test_entity_name_with_friendly_name(
     assert "binary_sensor.bedroom_motion" not in schedule
 
 
-async def test_entity_name_without_friendly_name_formats_entity_id(
-    hass: HomeAssistant
-):
+async def test_entity_name_without_friendly_name_formats_entity_id(hass: HomeAssistant):
     """Test that entity ID is formatted nicely when no friendly name exists."""
     # Create a binary sensor WITHOUT a friendly name
     hass.states.async_set(
-        "binary_sensor.bedroom_motion_detector",
-        "on",
-        {}  # No friendly_name attribute
+        "binary_sensor.bedroom_motion_detector", "on", {}  # No friendly_name attribute
     )
-    
+
     # Create medication config entry with relative_sensor schedule
     entry = MockConfigEntry(
         domain=DOMAIN,
@@ -95,11 +91,13 @@ async def test_entity_name_without_friendly_name_formats_entity_id(
     entry.add_to_hass(hass)
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
-    
+
     # Get the sensor state and check the Schedule attribute
-    entity_id = f"sensor.pa_{entry.data[CONF_MEDICATION_NAME].lower().replace(' ', '_')}"
+    entity_id = (
+        f"sensor.pa_{entry.data[CONF_MEDICATION_NAME].lower().replace(' ', '_')}"
+    )
     state = hass.states.get(entity_id)
-    
+
     assert state is not None
     schedule = state.attributes.get("Schedule")
     assert schedule is not None
@@ -112,12 +110,8 @@ async def test_entity_name_without_friendly_name_formats_entity_id(
 async def test_entity_name_with_underscores_in_name(hass: HomeAssistant):
     """Test entity name formatting with multiple underscores."""
     # Create entity without friendly name
-    hass.states.async_set(
-        "sensor.living_room_temperature_sensor",
-        "72",
-        {}
-    )
-    
+    hass.states.async_set("sensor.living_room_temperature_sensor", "72", {})
+
     entry = MockConfigEntry(
         domain=DOMAIN,
         data={
@@ -137,10 +131,12 @@ async def test_entity_name_with_underscores_in_name(hass: HomeAssistant):
     entry.add_to_hass(hass)
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
-    
-    entity_id = f"sensor.pa_{entry.data[CONF_MEDICATION_NAME].lower().replace(' ', '_')}"
+
+    entity_id = (
+        f"sensor.pa_{entry.data[CONF_MEDICATION_NAME].lower().replace(' ', '_')}"
+    )
     state = hass.states.get(entity_id)
-    
+
     assert state is not None
     schedule = state.attributes.get("Schedule")
     assert schedule is not None
@@ -150,12 +146,8 @@ async def test_entity_name_with_underscores_in_name(hass: HomeAssistant):
 
 async def test_entity_name_with_numbers(hass: HomeAssistant):
     """Test entity name formatting preserves numbers."""
-    hass.states.async_set(
-        "binary_sensor.door_sensor_2nd_floor",
-        "off",
-        {}
-    )
-    
+    hass.states.async_set("binary_sensor.door_sensor_2nd_floor", "off", {})
+
     entry = MockConfigEntry(
         domain=DOMAIN,
         data={
@@ -175,10 +167,12 @@ async def test_entity_name_with_numbers(hass: HomeAssistant):
     entry.add_to_hass(hass)
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
-    
-    entity_id = f"sensor.pa_{entry.data[CONF_MEDICATION_NAME].lower().replace(' ', '_')}"
+
+    entity_id = (
+        f"sensor.pa_{entry.data[CONF_MEDICATION_NAME].lower().replace(' ', '_')}"
+    )
     state = hass.states.get(entity_id)
-    
+
     assert state is not None
     schedule = state.attributes.get("Schedule")
     assert schedule is not None
@@ -208,10 +202,12 @@ async def test_entity_name_fallback_when_entity_not_found(hass: HomeAssistant):
     entry.add_to_hass(hass)
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
-    
-    entity_id = f"sensor.pa_{entry.data[CONF_MEDICATION_NAME].lower().replace(' ', '_')}"
+
+    entity_id = (
+        f"sensor.pa_{entry.data[CONF_MEDICATION_NAME].lower().replace(' ', '_')}"
+    )
     state = hass.states.get(entity_id)
-    
+
     assert state is not None
     schedule = state.attributes.get("Schedule")
     assert schedule is not None
@@ -222,11 +218,9 @@ async def test_entity_name_fallback_when_entity_not_found(hass: HomeAssistant):
 async def test_entity_name_special_characters(hass: HomeAssistant):
     """Test entity name formatting with special characters in entity ID."""
     hass.states.async_set(
-        "sensor.co2_sensor_v2",
-        "400",
-        {"friendly_name": "CO₂ Sensor v2"}
+        "sensor.co2_sensor_v2", "400", {"friendly_name": "CO₂ Sensor v2"}
     )
-    
+
     entry = MockConfigEntry(
         domain=DOMAIN,
         data={
@@ -246,10 +240,12 @@ async def test_entity_name_special_characters(hass: HomeAssistant):
     entry.add_to_hass(hass)
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
-    
-    entity_id = f"sensor.pa_{entry.data[CONF_MEDICATION_NAME].lower().replace(' ', '_')}"
+
+    entity_id = (
+        f"sensor.pa_{entry.data[CONF_MEDICATION_NAME].lower().replace(' ', '_')}"
+    )
     state = hass.states.get(entity_id)
-    
+
     assert state is not None
     schedule = state.attributes.get("Schedule")
     assert schedule is not None
