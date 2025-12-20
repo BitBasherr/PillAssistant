@@ -1345,6 +1345,7 @@
         const RELOAD_DELAY_MS = 100;
         const POLL_INTERVAL_MS = 30000;
         const STATE_UPDATE_DELAY_MS = 100; // Delay to allow backend state propagation
+        const DATE_CHANGE_DEBOUNCE_MS = 300; // Debounce delay for date/time changes
 
         let hass = null;
         let medications = [];
@@ -1352,6 +1353,23 @@
         let currentTheme = 'auto'; // Default theme
         let nextScheduleCache = {}; // Cache for next scheduled times
         let darkModeMediaQuery = null; // Media query for system dark mode
+        let dateChangeDebounceTimer = null; // Timer for debouncing date/time changes
+
+        // Helper function to unwrap service response from various formats
+        function unwrapServiceResponse(response) {
+            if (!response || typeof response !== 'object') {
+                return null;
+            }
+            // Try wrapped response first (from callWS)
+            if ('response' in response && response.response) {
+                return response.response;
+            }
+            // Try direct response (has expected properties)
+            if ('medications' in response || 'daily_counts' in response || 'total_entries' in response) {
+                return response;
+            }
+            return null;
+        }
 
         // Theme management functions
         function initTheme() {
@@ -1674,16 +1692,9 @@
                     header.textContent = `Statistics for ${medName}`;
                 }
 
-                // Process the response
-                let stats = null;
-                if (response && typeof response === 'object') {
-                    if ('response' in response && response.response) {
-                        stats = response.response;
-                    } else if ('medications' in response || 'daily_counts' in response) {
-                        stats = response;
-                    }
-                }
-                currentStats = stats || { total_entries: 0, medications: {}, daily_counts: {} };
+                // Use centralized helper to unwrap response
+                const stats = unwrapServiceResponse(response) || { total_entries: 0, medications: {}, daily_counts: {} };
+                currentStats = stats;
                 
                 renderStatistics(currentStats);
                 
@@ -2571,8 +2582,13 @@
                 checkbox.checked = false;
             }
             
-            // Auto-load statistics when dates change
-            loadStatistics();
+            // Debounce to prevent rapid successive API calls when user changes multiple fields
+            if (dateChangeDebounceTimer) {
+                clearTimeout(dateChangeDebounceTimer);
+            }
+            dateChangeDebounceTimer = setTimeout(() => {
+                loadStatistics();
+            }, DATE_CHANGE_DEBOUNCE_MS);
         }
 
         // Load statistics from backend
@@ -2623,28 +2639,14 @@
                     );
                 }
 
-                // Handle different response structures from different HA versions
-                // The response could be:
-                // 1. { response: { ...stats } } - wrapped response from callWS
-                // 2. { ...stats } - direct response
-                // 3. undefined/null - no response (service doesn't support response)
+                // Use centralized helper to unwrap response
                 if (response && typeof response === 'object') {
                     console.debug('Pill Assistant: Statistics service response received', response);
                 } else {
                     console.warn('Pill Assistant: Unexpected response type from statistics service', typeof response);
                 }
                 
-                let stats = null;
-                if (response && typeof response === 'object') {
-                    // Try wrapped response first (from callWS)
-                    if ('response' in response && response.response) {
-                        stats = response.response;
-                    } 
-                    // Try direct response (has expected properties)
-                    else if ('medications' in response || 'daily_counts' in response || 'total_entries' in response) {
-                        stats = response;
-                    }
-                }
+                const stats = unwrapServiceResponse(response);
                 
                 if (!stats) {
                     console.warn('No statistics data received from service');
@@ -3170,15 +3172,8 @@
 
                 console.debug('Clock data loaded for', dateStr, response);
                 
-                // Handle wrapped response - same logic as loadStatistics
-                let stats = null;
-                if (response && typeof response === 'object') {
-                    if ('response' in response && response.response) {
-                        stats = response.response;
-                    } else if ('medications' in response || 'daily_counts' in response || 'total_entries' in response) {
-                        stats = response;
-                    }
-                }
+                // Use centralized helper to unwrap response
+                const stats = unwrapServiceResponse(response);
                 
                 // Parse the dose events from the response
                 clockData = parseDoseEvents(stats, dateStr);

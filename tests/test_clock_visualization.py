@@ -535,3 +535,45 @@ async def test_html_panel_time_pickers(hass: HomeAssistant):
     assert 'type="time"' in content, "Time input type missing"
     # Check that time inputs are styled
     assert 'input[type="time"]' in content, "Time input CSS styling missing"
+
+
+async def test_html_panel_debounce_mechanism(hass: HomeAssistant):
+    """Test that the HTML panel has debounce mechanism for date/time changes."""
+    html_path = os.path.join(
+        os.path.dirname(__file__),
+        "..",
+        "custom_components",
+        "pill_assistant",
+        "www",
+        "pill-assistant-panel.html",
+    )
+
+    with open(html_path, "r") as f:
+        content = f.read()
+
+    # Check for debounce timer variable
+    assert "dateChangeDebounceTimer" in content, "Debounce timer variable missing"
+    assert "DATE_CHANGE_DEBOUNCE_MS" in content, "Debounce constant missing"
+    # Check that setTimeout is used for debouncing
+    assert "setTimeout" in content, "setTimeout for debouncing missing"
+    assert "clearTimeout" in content, "clearTimeout for debouncing missing"
+
+
+async def test_html_panel_unwrap_helper(hass: HomeAssistant):
+    """Test that the HTML panel has the unwrapServiceResponse helper function."""
+    html_path = os.path.join(
+        os.path.dirname(__file__),
+        "..",
+        "custom_components",
+        "pill_assistant",
+        "www",
+        "pill-assistant-panel.html",
+    )
+
+    with open(html_path, "r") as f:
+        content = f.read()
+
+    # Check for helper function
+    assert "function unwrapServiceResponse" in content, "unwrapServiceResponse function missing"
+    # Check that it's used in the codebase
+    assert "unwrapServiceResponse(response)" in content, "unwrapServiceResponse not being used"
