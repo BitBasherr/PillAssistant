@@ -36,6 +36,13 @@ async def test_notification_listeners_registered_once(hass: HomeAssistant):
     )
     entry1.add_to_hass(hass)
 
+    # Set up first entry
+    await hass.config_entries.async_setup(entry1.entry_id)
+    await hass.async_block_till_done()
+
+    # Check that listeners are registered
+    assert hass.data[DOMAIN].get("notification_listeners_registered") is True
+
     entry2 = MockConfigEntry(
         domain=DOMAIN,
         data={
@@ -50,13 +57,6 @@ async def test_notification_listeners_registered_once(hass: HomeAssistant):
         },
     )
     entry2.add_to_hass(hass)
-
-    # Set up first entry
-    await hass.config_entries.async_setup(entry1.entry_id)
-    await hass.async_block_till_done()
-
-    # Check that listeners are registered
-    assert hass.data[DOMAIN].get("notification_listeners_registered") is True
 
     # Set up second entry
     await hass.config_entries.async_setup(entry2.entry_id)
@@ -91,6 +91,10 @@ async def test_notification_action_handler_responds_to_all_medications(hass: Hom
     )
     entry1.add_to_hass(hass)
 
+    # Set up both entries
+    await hass.config_entries.async_setup(entry1.entry_id)
+    await hass.async_block_till_done()
+
     entry2 = MockConfigEntry(
         domain=DOMAIN,
         data={
@@ -106,8 +110,6 @@ async def test_notification_action_handler_responds_to_all_medications(hass: Hom
     )
     entry2.add_to_hass(hass)
 
-    # Set up both entries
-    await hass.config_entries.async_setup(entry1.entry_id)
     await hass.config_entries.async_setup(entry2.entry_id)
     await hass.async_block_till_done()
 

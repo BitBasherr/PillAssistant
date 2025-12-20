@@ -39,6 +39,10 @@ async def test_storage_singleton_shared_across_entries(hass: HomeAssistant):
     )
     entry1.add_to_hass(hass)
 
+    # Set up first entry
+    assert await hass.config_entries.async_setup(entry1.entry_id)
+    await hass.async_block_till_done()
+
     # Create second medication entry
     entry2 = MockConfigEntry(
         domain=DOMAIN,
@@ -54,10 +58,9 @@ async def test_storage_singleton_shared_across_entries(hass: HomeAssistant):
         },
     )
     entry2.add_to_hass(hass)
-
-    # Set up both entries
-    await hass.config_entries.async_setup(entry1.entry_id)
-    await hass.config_entries.async_setup(entry2.entry_id)
+    
+    # Set up second entry
+    assert await hass.config_entries.async_setup(entry2.entry_id)
     await hass.async_block_till_done()
 
     # Verify both entries use the same store instance
@@ -86,6 +89,10 @@ async def test_concurrent_medication_updates_no_data_loss(hass: HomeAssistant):
     )
     entry1.add_to_hass(hass)
 
+    # Set up first entry
+    assert await hass.config_entries.async_setup(entry1.entry_id)
+    await hass.async_block_till_done()
+
     entry2 = MockConfigEntry(
         domain=DOMAIN,
         data={
@@ -101,9 +108,8 @@ async def test_concurrent_medication_updates_no_data_loss(hass: HomeAssistant):
     )
     entry2.add_to_hass(hass)
 
-    # Set up both entries
-    await hass.config_entries.async_setup(entry1.entry_id)
-    await hass.config_entries.async_setup(entry2.entry_id)
+    # Set up second entry
+    assert await hass.config_entries.async_setup(entry2.entry_id)
     await hass.async_block_till_done()
 
     # Take medication A
@@ -159,6 +165,19 @@ async def test_sequential_updates_maintain_consistency(hass: HomeAssistant):
     )
     entry1.add_to_hass(hass)
 
+    # Set up first entry
+    assert await hass.config_entries.async_setup(entry1.entry_id)
+    await hass.async_block_till_done()
+
+    # Take medication from first entry
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TAKE_MEDICATION,
+        {ATTR_MEDICATION_ID: entry1.entry_id},
+        blocking=True,
+    )
+    await hass.async_block_till_done()
+
     entry2 = MockConfigEntry(
         domain=DOMAIN,
         data={
@@ -174,21 +193,8 @@ async def test_sequential_updates_maintain_consistency(hass: HomeAssistant):
     )
     entry2.add_to_hass(hass)
 
-    # Set up first entry
-    await hass.config_entries.async_setup(entry1.entry_id)
-    await hass.async_block_till_done()
-
-    # Take medication from first entry
-    await hass.services.async_call(
-        DOMAIN,
-        SERVICE_TAKE_MEDICATION,
-        {ATTR_MEDICATION_ID: entry1.entry_id},
-        blocking=True,
-    )
-    await hass.async_block_till_done()
-
     # Set up second entry
-    await hass.config_entries.async_setup(entry2.entry_id)
+    assert await hass.config_entries.async_setup(entry2.entry_id)
     await hass.async_block_till_done()
 
     # Take medication from second entry
@@ -269,6 +275,9 @@ async def test_multiple_medications_share_history(hass: HomeAssistant):
     )
     entry1.add_to_hass(hass)
 
+    assert await hass.config_entries.async_setup(entry1.entry_id)
+    await hass.async_block_till_done()
+
     entry2 = MockConfigEntry(
         domain=DOMAIN,
         data={
@@ -284,8 +293,7 @@ async def test_multiple_medications_share_history(hass: HomeAssistant):
     )
     entry2.add_to_hass(hass)
 
-    await hass.config_entries.async_setup(entry1.entry_id)
-    await hass.config_entries.async_setup(entry2.entry_id)
+    assert await hass.config_entries.async_setup(entry2.entry_id)
     await hass.async_block_till_done()
 
     # Take both medications
