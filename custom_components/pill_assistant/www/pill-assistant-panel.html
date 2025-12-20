@@ -801,7 +801,7 @@
             display: flex;
             gap: 40px;
             justify-content: center;
-            align-items: flex-start;
+            align-items: center;
             flex-wrap: wrap;
             margin-top: 20px;
         }
@@ -811,6 +811,7 @@
             flex-direction: column;
             align-items: center;
             gap: 15px;
+            min-height: 380px;
         }
 
         .clock-toggle {
@@ -860,7 +861,7 @@
             gap: 10px;
             align-items: center;
             justify-content: center;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
 
         .clock-date-picker label {
@@ -875,6 +876,32 @@
             color: var(--primary-text-color, #212121);
             border-radius: 4px;
             font-size: 1em;
+        }
+
+        .clock-view-toggle {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+
+        .clock-view-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9em;
+            cursor: pointer;
+            user-select: none;
+            color: var(--primary-text-color, #212121);
+        }
+
+        .clock-view-checkbox input[type="checkbox"] {
+            cursor: pointer;
+            width: 18px;
+            height: 18px;
+        }
+
+        body.theme-dark .clock-view-checkbox {
+            color: #e0e0e0;
         }
 
         .clock-legend {
@@ -1144,11 +1171,18 @@
                 
                 <div class="clock-date-picker">
                     <label for="clock-date-picker">Select Date:</label>
-                    <input type="date" id="clock-date-picker" onchange="renderClocks()">
+                    <input type="date" id="clock-date-picker" onchange="loadClockData(this.value)">
+                </div>
+
+                <div class="clock-view-toggle">
+                    <label class="clock-view-checkbox">
+                        <input type="checkbox" id="show-24hr-clock" onchange="toggle24HourClock()">
+                        <span>Show 24-Hour Clock</span>
+                    </label>
                 </div>
 
                 <div class="clock-container">
-                    <div class="clock-wrapper">
+                    <div class="clock-wrapper" id="clock-12hr-wrapper">
                         <div class="clock-label">12-Hour Clock</div>
                         <div class="clock-toggle">
                             <button id="am-btn" class="active" onclick="toggleClockPeriod('AM')">AM</button>
@@ -1159,7 +1193,7 @@
                         </svg>
                     </div>
                     
-                    <div class="clock-wrapper">
+                    <div class="clock-wrapper" id="clock-24hr-wrapper" style="display: none;">
                         <div class="clock-label">24-Hour Clock</div>
                         <svg id="clock-24hr" class="clock-svg" width="300" height="300" viewBox="-150 -150 300 300">
                             <!-- Clock face will be drawn here -->
@@ -1452,6 +1486,14 @@
             
             // Save preference
             localStorage.setItem('pillAssistantChartType', type);
+            
+            // Re-render charts if we have stats data
+            if (currentStats && (type === 'plot' || type === 'bar')) {
+                renderTrendsChart(currentStats);
+                if (type === 'bar') {
+                    renderAdherenceChart(currentStats);
+                }
+            }
         }
 
         function loadChartTypePreference() {
@@ -1618,7 +1660,7 @@
             }
         }
 
-        // Format schedule to show times in local format
+        // Format schedule to show times in local format and prettify days
         function formatSchedule(schedule) {
             if (!schedule || schedule === 'Not scheduled') {
                 return schedule;
@@ -1628,16 +1670,50 @@
             const timePattern = /(\d{1,2}:\d{2})/g;
             const times = schedule.match(timePattern);
             
+            let result = schedule;
+            
             if (times && times.length > 0) {
                 const formattedTimes = times.map(time => formatTimeToLocal(time));
-                let result = schedule;
                 times.forEach((time, i) => {
                     result = result.replace(time, formattedTimes[i]);
                 });
-                return result;
             }
             
-            return schedule;
+            // Format days of the week to be more readable
+            const dayMappings = {
+                'mon': 'Mon',
+                'tue': 'Tue',
+                'wed': 'Wed',
+                'thu': 'Thu',
+                'fri': 'Fri',
+                'sat': 'Sat',
+                'sun': 'Sun'
+            };
+            
+            // Replace lowercase day abbreviations with capitalized versions
+            Object.entries(dayMappings).forEach(([short, formatted]) => {
+                // Match word boundaries to avoid partial replacements
+                const regex = new RegExp('\\b' + short + '\\b', 'gi');
+                result = result.replace(regex, formatted);
+            });
+            
+            // Check if all 7 days are included - replace with "Daily"
+            const allDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            const daysInSchedule = allDays.filter(day => result.includes(day));
+            if (daysInSchedule.length === 7) {
+                // Replace the days list with "Daily"
+                result = result.replace(/on\s+Mon,?\s*Tue,?\s*Wed,?\s*Thu,?\s*Fri,?\s*Sat,?\s*Sun/i, 'Daily');
+            } else if (daysInSchedule.length >= 5) {
+                // Check for weekdays only
+                const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+                const weekdaysInSchedule = weekdays.filter(day => result.includes(day));
+                const weekendInSchedule = ['Sat', 'Sun'].filter(day => result.includes(day));
+                if (weekdaysInSchedule.length === 5 && weekendInSchedule.length === 0) {
+                    result = result.replace(/on\s+Mon,?\s*Tue,?\s*Wed,?\s*Thu,?\s*Fri/i, 'Weekdays');
+                }
+            }
+            
+            return result;
         }
 
         // Get Home Assistant connection
@@ -2477,32 +2553,57 @@
                 return;
             }
 
+            // Determine chart type based on current selection
+            const isScatterPlot = currentChartType === 'plot';
+            
             // Prepare datasets for each medication
             const datasets = Array.from(medIds).map((medId, index) => {
                 const medData = stats.medications[medId] || {};
                 const medName = medData.name || medId;
                 
-                const data = dates.map(date => {
-                    const dayData = dailyCounts[date][medId];
-                    return dayData ? dayData.taken : 0;
-                });
-
                 // Generate distinct colors for each medication using golden angle
                 // Golden angle (137.5°) provides optimal color distribution
                 const hue = (index * 137.5) % 360;
                 const color = `hsl(${hue}, 70%, 50%)`;
                 const borderColor = `hsl(${hue}, 70%, 40%)`;
                 const ALPHA_50_PERCENT = '80'; // Hex for 50% transparency
+                
+                if (isScatterPlot) {
+                    // For scatter plot, create data points with x,y coordinates
+                    const scatterData = dates.map((date, dateIndex) => {
+                        const dayData = dailyCounts[date][medId];
+                        return {
+                            x: dateIndex,
+                            y: dayData ? dayData.taken : 0
+                        };
+                    });
+                    
+                    return {
+                        label: medName,
+                        data: scatterData,
+                        backgroundColor: color,
+                        borderColor: borderColor,
+                        pointRadius: 8,
+                        pointHoverRadius: 10,
+                        showLine: false
+                    };
+                } else {
+                    // For bar/line chart
+                    const data = dates.map(date => {
+                        const dayData = dailyCounts[date][medId];
+                        return dayData ? dayData.taken : 0;
+                    });
 
-                return {
-                    label: medName,
-                    data: data,
-                    borderColor: borderColor,
-                    backgroundColor: color + ALPHA_50_PERCENT,
-                    borderWidth: 2,
-                    fill: false,
-                    tension: 0.4
-                };
+                    return {
+                        label: medName,
+                        data: data,
+                        borderColor: borderColor,
+                        backgroundColor: color + ALPHA_50_PERCENT,
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.4
+                    };
+                }
             });
 
             // Determine if we're in dark mode
@@ -2510,8 +2611,11 @@
             const textColor = isDarkMode ? '#e0e0e0' : '#212121';
             const gridColor = isDarkMode ? '#444' : '#e0e0e0';
 
+            // Use scatter type for scatter plot, line for default
+            const chartType = isScatterPlot ? 'scatter' : 'line';
+            
             trendsChart = new Chart(ctx, {
-                type: 'line',
+                type: chartType,
                 data: {
                     labels: dates,
                     datasets: datasets
@@ -2520,8 +2624,8 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     interaction: {
-                        mode: 'index',
-                        intersect: false,
+                        mode: isScatterPlot ? 'nearest' : 'index',
+                        intersect: isScatterPlot,
                     },
                     plugins: {
                         legend: {
@@ -2542,6 +2646,10 @@
                             displayColors: true,
                             callbacks: {
                                 title: function(context) {
+                                    if (isScatterPlot) {
+                                        const dateIndex = Math.round(context[0].parsed.x);
+                                        return 'Date: ' + (dates[dateIndex] || '');
+                                    }
                                     return 'Date: ' + context[0].label;
                                 },
                                 label: function(context) {
@@ -2561,7 +2669,22 @@
                                 color: gridColor
                             }
                         },
-                        x: {
+                        x: isScatterPlot ? {
+                            type: 'linear',
+                            position: 'bottom',
+                            ticks: {
+                                color: textColor,
+                                callback: function(value) {
+                                    const dateIndex = Math.round(value);
+                                    return dates[dateIndex] || '';
+                                },
+                                maxRotation: 45,
+                                minRotation: 45
+                            },
+                            grid: {
+                                color: gridColor
+                            }
+                        } : {
                             ticks: {
                                 color: textColor,
                                 maxRotation: 45,
@@ -2714,13 +2837,22 @@
         
         let clockPeriod = 'AM'; // Current selected period for 12hr clock
         let clockData = []; // Store dose events by date
+        let show24HourClock = false; // Whether to show 24-hour clock
+
+        // Get local date string in YYYY-MM-DD format
+        function getLocalDateString(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
 
         // Initialize clock date picker to today
         function initClockDatePicker() {
             const datePicker = document.getElementById('clock-date-picker');
             if (datePicker) {
                 const today = new Date();
-                const dateStr = today.toISOString().split('T')[0];
+                const dateStr = getLocalDateString(today);
                 datePicker.value = dateStr;
                 
                 // Set max date to today
@@ -2728,6 +2860,41 @@
                 
                 // Load data for today
                 loadClockData(dateStr);
+            }
+        }
+
+        // Toggle 24-hour clock visibility
+        function toggle24HourClock() {
+            const checkbox = document.getElementById('show-24hr-clock');
+            show24HourClock = checkbox ? checkbox.checked : false;
+            
+            const wrapper24hr = document.getElementById('clock-24hr-wrapper');
+            if (wrapper24hr) {
+                wrapper24hr.style.display = show24HourClock ? 'flex' : 'none';
+            }
+            
+            // Save preference
+            localStorage.setItem('pillAssistantShow24HrClock', show24HourClock ? 'true' : 'false');
+            
+            // Re-render if showing
+            if (show24HourClock) {
+                render24HourClock();
+            }
+        }
+
+        // Load 24-hour clock preference
+        function load24HourClockPreference() {
+            const saved = localStorage.getItem('pillAssistantShow24HrClock');
+            show24HourClock = saved === 'true';
+            
+            const checkbox = document.getElementById('show-24hr-clock');
+            if (checkbox) {
+                checkbox.checked = show24HourClock;
+            }
+            
+            const wrapper24hr = document.getElementById('clock-24hr-wrapper');
+            if (wrapper24hr) {
+                wrapper24hr.style.display = show24HourClock ? 'flex' : 'none';
             }
         }
 
@@ -2750,19 +2917,40 @@
                     }
                 }
 
-                // Call the statistics service for the selected date
+                // Call the statistics service for the selected date using callWS for response
                 const startDate = dateStr;
                 const endDate = dateStr;
                 
-                const response = await hass.callService('pill_assistant', 'get_statistics', {
-                    start_date: startDate,
-                    end_date: endDate
-                });
+                let response = null;
+                try {
+                    response = await hass.callWS({
+                        type: 'call_service',
+                        domain: 'pill_assistant',
+                        service: 'get_statistics',
+                        service_data: {
+                            start_date: startDate,
+                            end_date: endDate + 'T23:59:59'
+                        },
+                        return_response: true
+                    });
+                } catch (wsError) {
+                    console.warn('callWS failed for clock data:', wsError);
+                }
 
                 console.debug('Clock data loaded for', dateStr, response);
                 
+                // Handle wrapped response
+                let stats = null;
+                if (response && typeof response === 'object') {
+                    if ('response' in response && response.response) {
+                        stats = response.response;
+                    } else if ('medications' in response) {
+                        stats = response;
+                    }
+                }
+                
                 // Parse the dose events from the response
-                clockData = parseDoseEvents(response, dateStr);
+                clockData = parseDoseEvents(stats, dateStr);
                 renderClocks();
                 
             } catch (error) {
@@ -2785,10 +2973,10 @@
                 const medName = medData.name || medId;
                 
                 // Check for taken events
-                if (medData.taken_times) {
+                if (medData.taken_times && Array.isArray(medData.taken_times)) {
                     medData.taken_times.forEach(timeStr => {
                         const eventDate = new Date(timeStr);
-                        const dateOnly = eventDate.toISOString().split('T')[0];
+                        const dateOnly = getLocalDateString(eventDate);
                         if (dateOnly === dateStr) {
                             events.push({
                                 time: eventDate,
@@ -2800,10 +2988,10 @@
                 }
                 
                 // Check for skipped events
-                if (medData.skipped_times) {
+                if (medData.skipped_times && Array.isArray(medData.skipped_times)) {
                     medData.skipped_times.forEach(timeStr => {
                         const eventDate = new Date(timeStr);
-                        const dateOnly = eventDate.toISOString().split('T')[0];
+                        const dateOnly = getLocalDateString(eventDate);
                         if (dateOnly === dateStr) {
                             events.push({
                                 time: eventDate,
@@ -2815,10 +3003,10 @@
                 }
                 
                 // Check for snoozed events (treat as delayed)
-                if (medData.snoozed_times) {
+                if (medData.snoozed_times && Array.isArray(medData.snoozed_times)) {
                     medData.snoozed_times.forEach(timeStr => {
                         const eventDate = new Date(timeStr);
-                        const dateOnly = eventDate.toISOString().split('T')[0];
+                        const dateOnly = getLocalDateString(eventDate);
                         if (dateOnly === dateStr) {
                             events.push({
                                 time: eventDate,
@@ -3017,6 +3205,7 @@
             initClockDatePicker();
             loadSizingSettings();
             loadChartTypePreference();
+            load24HourClockPreference();
             
             // Re-render clocks when switching tabs
             const statsTab = document.querySelector('[data-tab="statistics-tab"]');
