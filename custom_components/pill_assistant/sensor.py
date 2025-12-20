@@ -540,10 +540,19 @@ class PillAssistantSensor(SensorEntity):
             current_value = sensor_state.attributes.get(trigger_attribute)
             if current_value is None:
                 return None
-            current_value = str(current_value).lower() if current_value else ""
+            # Safely convert to string, handling complex objects
+            try:
+                current_value = str(current_value).lower()
+            except (TypeError, AttributeError):
+                # If conversion fails, skip this trigger
+                return None
         else:
             # Check state value
-            current_value = sensor_state.state.lower() if sensor_state.state else ""
+            try:
+                current_value = str(sensor_state.state).lower() if sensor_state.state else ""
+            except (TypeError, AttributeError):
+                # If conversion fails, skip this trigger
+                return None
         
         # Ignore unavailable/unknown states if configured
         if ignore_unavailable and current_value in ['unknown', 'unavailable', 'none', '']:

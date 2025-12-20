@@ -197,3 +197,6 @@ ATTR_LOG_FILE_LOCATION = "Log file location"
 # Snooze configuration
 CONF_SNOOZE_DURATION_MINUTES = "snooze_duration_minutes"
 DEFAULT_SNOOZE_DURATION_MINUTES = 15
+
+# Sensor event history configuration
+MAX_SENSOR_HISTORY_CHANGES = 20  # Maximum number of state changes to display

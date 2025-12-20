@@ -48,6 +48,7 @@ from .const import (
     DEFAULT_IGNORE_UNAVAILABLE,
     DEFAULT_ENABLE_AUTOMATIC_NOTIFICATIONS,
     DEFAULT_ON_TIME_WINDOW_MINUTES,
+    MAX_SENSOR_HISTORY_CHANGES,
     SCHEDULE_TYPE_OPTIONS,
     SELECT_MEDICATION_TYPE,
     SELECT_DOSAGE_UNIT,
@@ -486,34 +487,38 @@ class PillAssistantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 now = dt_util.now()
                 start_time = now - timedelta(hours=24)
                 
-                # Get history using recorder component
-                from homeassistant.components import history
-                
-                history_states = await self.hass.async_add_executor_job(
-                    history.state_changes_during_period,
-                    self.hass,
-                    start_time,
-                    now,
-                    sensor_entity_id
-                )
-                
-                if history_states and sensor_entity_id in history_states:
-                    state_changes = history_states[sensor_entity_id]
+                # Get history using recorder component with error handling
+                try:
+                    from homeassistant.components import history
                     
-                    if len(state_changes) > 1:
-                        sensor_info += f"**State Changes (Last 24 Hours):**\n\n```\n"
+                    history_states = await self.hass.async_add_executor_job(
+                        history.state_changes_during_period,
+                        self.hass,
+                        start_time,
+                        now,
+                        sensor_entity_id
+                    )
+                    
+                    if history_states and sensor_entity_id in history_states:
+                        state_changes = history_states[sensor_entity_id]
                         
-                        # Show all state changes in reverse chronological order (newest first)
-                        for state in reversed(state_changes[-20:]):  # Limit to last 20 changes
-                            change_time = dt_util.as_local(state.last_changed)
-                            change_time_str = change_time.strftime("%Y-%m-%d %H:%M:%S")
-                            sensor_info += f"• {change_time_str} → {state.state}\n"
-                        
-                        sensor_info += "```\n"
+                        if len(state_changes) > 1:
+                            sensor_info += f"**State Changes (Last 24 Hours):**\n\n```\n"
+                            
+                            # Show state changes in reverse chronological order (newest first)
+                            for state in reversed(state_changes[-MAX_SENSOR_HISTORY_CHANGES:]):
+                                change_time = dt_util.as_local(state.last_changed)
+                                change_time_str = change_time.strftime("%Y-%m-%d %H:%M:%S")
+                                sensor_info += f"• {change_time_str} → {state.state}\n"
+                            
+                            sensor_info += "```\n"
+                        else:
+                            sensor_info += "*No state changes in the last 24 hours.*\n"
                     else:
-                        sensor_info += "*No state changes in the last 24 hours.*\n"
-                else:
-                    sensor_info += "*No state history available.*\n"
+                        sensor_info += "*No state history available.*\n"
+                except (ImportError, Exception) as ex:
+                    # History/recorder component not available or error fetching history
+                    sensor_info += f"*State history unavailable (recorder may be disabled).*\n"
                     
                 # Detect sensor type and offer trigger value options
                 sensor_type = self._detect_sensor_type(sensor_state)
