@@ -1103,9 +1103,9 @@
         }
         /* Clock visualization styles */
 /* 3-column grid with max-width constraints for better centering on wide screens.
-   - left spacer (1fr, max 300px)
+   - left spacer (minmax(0, 300px) - grows from 0 to max 300px)
    - clocks (auto, centered)
-   - legend (1fr, max 300px)
+   - legend (minmax(0, 300px) - grows from 0 to max 300px)
    This prevents excessive spacing on extra-wide devices like Fold 7. */
 .clock-layout {
     display: grid;
