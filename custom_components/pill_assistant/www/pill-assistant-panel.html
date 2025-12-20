@@ -897,149 +897,213 @@
         }
 
         /* Clock visualization styles */
-        .clock-container {
-            display: flex;
-            gap: 40px;
-            justify-content: center;
-            align-items: flex-start;
-            flex-wrap: wrap;
-            margin-top: 20px;
-        }
 
-        .clock-wrapper {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 15px;
-            min-height: 380px;
-            flex: 0 0 auto;
-        }
+/* 3-column grid:
+   - left spacer (1fr)
+   - clocks (auto)
+   - legend (1fr)
+   This keeps clocks centered even when the legend exists on the right. */
+.clock-layout {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    grid-template-areas: "spacer clocks legend";
+    column-gap: 32px;
+    row-gap: 16px;
+    align-items: start;
+    margin-top: 20px;
+}
 
-        .clock-toggle {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            margin-bottom: 10px;
-        }
+.clock-layout-spacer {
+    grid-area: spacer;
+}
 
-        .clock-toggle button {
-            padding: 8px 16px;
-            border: 1px solid var(--divider-color, #e0e0e0);
-            background: var(--card-background-color, #ffffff);
-            color: var(--primary-text-color, #212121);
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
+/* Keep your existing flex behavior for the clocks themselves */
+.clock-container {
+    grid-area: clocks;
+    display: flex;
+    gap: 40px;
+    justify-content: center;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    margin-top: 0; /* moved to .clock-layout */
+}
 
-        .clock-toggle button.active {
-            background: var(--primary-color, #03a9f4);
-            color: white;
-            border-color: var(--primary-color, #03a9f4);
-        }
+/* Use a grid inside each clock wrapper so both clocks reserve the same “header” space */
+.clock-wrapper {
+    display: grid;
+    grid-template-rows: auto 38px auto; /* label / toggle row / svg */
+    justify-items: center;
+    align-items: start;
+    row-gap: 12px;
 
-        .clock-svg {
-            position: relative;
-        }
+    min-height: 380px;
+    flex: 0 0 auto;
+}
 
-        .clock-wedge {
-            cursor: pointer;
-            transition: opacity 0.2s ease;
-        }
+/* Standardize the toggle row height so the SVGs align across wrappers */
+.clock-toggle {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
+    height: 38px;
+}
 
-        .clock-wedge:hover {
-            opacity: 0.8;
-        }
+.clock-toggle--spacer {
+    visibility: hidden; /* takes space, but not visible */
+}
 
-        .clock-label {
-            font-size: 0.9em;
-            font-weight: 500;
-            color: var(--primary-text-color, #212121);
-        }
+/* Keep your existing button styling */
+.clock-toggle button {
+    padding: 8px 16px;
+    border: 1px solid var(--divider-color, #e0e0e0);
+    background: var(--card-background-color, #ffffff);
+    color: var(--primary-text-color, #212121);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
 
-        .clock-date-picker {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 15px;
-        }
+.clock-toggle button.active {
+    background: var(--primary-color, #03a9f4);
+    color: white;
+    border-color: var(--primary-color, #03a9f4);
+}
 
-        .clock-date-picker label {
-            font-weight: 500;
-            color: var(--primary-text-color, #212121);
-        }
+.clock-svg {
+    position: relative;
+    display: block;
+}
 
-        .clock-date-picker input[type="date"] {
-            padding: 8px 12px;
-            border: 1px solid var(--divider-color, #e0e0e0);
-            background: var(--card-background-color, #ffffff);
-            color: var(--primary-text-color, #212121);
-            border-radius: 4px;
-            font-size: 1em;
-        }
+.clock-wedge {
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
 
-        .clock-view-toggle {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 15px;
-        }
+.clock-wedge:hover {
+    opacity: 0.8;
+}
 
-        .clock-view-checkbox {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.9em;
-            cursor: pointer;
-            user-select: none;
-            color: var(--primary-text-color, #212121);
-        }
+/* IMPORTANT: inherit text color so labels work in light/dark automatically */
+.clock-label {
+    font-size: 0.9em;
+    font-weight: 500;
+    color: inherit;
+}
 
-        .clock-view-checkbox input[type="checkbox"] {
-            cursor: pointer;
-            width: 18px;
-            height: 18px;
-        }
+.clock-date-picker {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 15px;
+}
+
+.clock-date-picker label {
+    font-weight: 500;
+    color: inherit;
+}
+
+.clock-date-picker input[type="date"] {
+    padding: 8px 12px;
+    border: 1px solid var(--divider-color, #e0e0e0);
+    background: var(--card-background-color, #ffffff);
+    color: var(--primary-text-color, #212121);
+    border-radius: 4px;
+    font-size: 1em;
+}
+
+.clock-view-toggle {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 15px;
+}
+
+.clock-view-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9em;
+    cursor: pointer;
+    user-select: none;
+    color: inherit; /* inherit for light/dark */
+}
+
+.clock-view-checkbox input[type="checkbox"] {
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+}
+
+/* Legend sits in the RIGHT grid column, but is visually right-of-clocks.
+   On wide screens: vertical list (like a sidebar legend) */
+.clock-legend {
+    grid-area: legend;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    justify-content: flex-start;
+    align-items: flex-start;
+    margin-top: 0; /* moved to .clock-layout */
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.legend-color {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+}
+
+.legend-text {
+    font-size: 0.9em;
+    color: inherit; /* inherit for light/dark */
+}
+
+/* Dark theme adjustments that your existing styles already do for inputs/buttons */
+body.theme-dark .clock-toggle button {
+    background: #2a2a2a;
+    color: #e0e0e0;
+    border-color: #444;
+}
+
+body.theme-dark .clock-date-picker input[type="date"] {
+    background: #2a2a2a;
+    color: #e0e0e0;
+    border-color: #444;
+}
+
+/* Breakpoint: stack legend under clocks (bottom-right aligned) */
+@media (max-width: 900px) {
+    .clock-layout {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+            "clocks"
+            "legend";
+        column-gap: 0;
+    }
+
+    .clock-layout-spacer {
+        display: none;
+    }
+
+    /* Legend becomes a row aligned to the right under the clocks */
+    .clock-legend {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        align-items: center;
+        width: 100%;
+        margin-top: 8px;
+    }
+}
 
         body.theme-dark .clock-view-checkbox {
             color: #e0e0e0;
-        }
-
-        .clock-legend {
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-            margin-top: 20px;
-            flex-wrap: wrap;
-        }
-
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .legend-color {
-            width: 20px;
-            height: 20px;
-            border-radius: 4px;
-        }
-
-        .legend-text {
-            font-size: 0.9em;
-            color: var(--primary-text-color, #212121);
-        }
-
-        body.theme-dark .clock-toggle button {
-            background: #2a2a2a;
-            color: #e0e0e0;
-            border-color: #444;
-        }
-
-        body.theme-dark .clock-date-picker input[type="date"] {
-            background: #2a2a2a;
-            color: #e0e0e0;
-            border-color: #444;
         }
 
         @media (max-width: 768px) {
@@ -1197,7 +1261,7 @@
             <button class="nav-tab active" onclick="switchTab('medications', event)">
                 💊 Medications
             </button>
-            <button class="nav-tab" onclick="switchTab('statistics', event)">
+            <button class="nav-tab" id="nav-statistics-tab" onclick="switchTab('statistics', event)">
                 📊 Statistics
             </button>
         </div>
@@ -1299,40 +1363,50 @@
                     </label>
                 </div>
 
-                <div class="clock-container">
-                    <div class="clock-wrapper" id="clock-12hr-wrapper">
-                        <div class="clock-label">12-Hour Clock</div>
-                        <div class="clock-toggle">
-                            <button id="am-btn" class="active" onclick="toggleClockPeriod('AM')">AM</button>
-                            <button id="pm-btn" onclick="toggleClockPeriod('PM')">PM</button>
-                        </div>
-                        <svg id="clock-12hr" class="clock-svg" width="300" height="300" viewBox="-150 -150 300 300">
-                            <!-- Clock face will be drawn here -->
-                        </svg>
-                    </div>
-                    
-                    <div class="clock-wrapper" id="clock-24hr-wrapper" style="display: none;">
-                        <div class="clock-label">24-Hour Clock</div>
-                        <svg id="clock-24hr" class="clock-svg" width="300" height="300" viewBox="-150 -150 300 300">
-                            <!-- Clock face will be drawn here -->
-                        </svg>
-                    </div>
-                </div>
+                <div class="clock-layout">
+    <div class="clock-layout-spacer" aria-hidden="true"></div>
 
-                <div class="clock-legend">
-                    <div class="legend-item">
-                        <div class="legend-color" style="background: #4caf50;"></div>
-                        <div class="legend-text">Taken</div>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color" style="background: #ffc107;"></div>
-                        <div class="legend-text">Delayed/Snoozed</div>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color" style="background: #f44336;"></div>
-                        <div class="legend-text">Skipped</div>
-                    </div>
-                </div>
+    <div class="clock-container">
+        <div class="clock-wrapper" id="clock-12hr-wrapper">
+            <div class="clock-label">12-Hour Clock</div>
+
+            <div class="clock-toggle">
+                <button id="am-btn" class="active" onclick="toggleClockPeriod('AM')">AM</button>
+                <button id="pm-btn" onclick="toggleClockPeriod('PM')">PM</button>
+            </div>
+
+            <svg id="clock-12hr" class="clock-svg" width="300" height="300" viewBox="-150 -150 300 300">
+                <!-- Clock face will be drawn here -->
+            </svg>
+        </div>
+
+        <div class="clock-wrapper" id="clock-24hr-wrapper" style="display: none;">
+            <div class="clock-label">24-Hour Clock</div>
+
+            <!-- Spacer row so the SVG lines up with the 12hr clock SVG -->
+            <div class="clock-toggle clock-toggle--spacer" aria-hidden="true"></div>
+
+            <svg id="clock-24hr" class="clock-svg" width="300" height="300" viewBox="-150 -150 300 300">
+                <!-- Clock face will be drawn here -->
+            </svg>
+        </div>
+    </div>
+
+    <div class="clock-legend">
+        <div class="legend-item">
+            <div class="legend-color" style="background: #4caf50;"></div>
+            <div class="legend-text">Taken</div>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #ffc107;"></div>
+            <div class="legend-text">Delayed/Snoozed</div>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #f44336;"></div>
+            <div class="legend-text">Skipped</div>
+        </div>
+    </div>
+</div>
             </div>
         </div>
     </div>
@@ -3449,7 +3523,7 @@
             load24HourClockPreference();
             
             // Re-render clocks when switching tabs
-            const statsTab = document.querySelector('[data-tab="statistics-tab"]');
+            const statsTab = document.getElementById('nav-statistics-tab');
             if (statsTab) {
                 statsTab.addEventListener('click', function() {
                     setTimeout(() => {
