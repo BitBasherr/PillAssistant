@@ -150,6 +150,17 @@
             font-size: 1.1em;
             font-weight: 500;
             color: var(--primary-text-color, #212121);
+            /* Default: ellipsis for overflow text */
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 100%;
+        }
+        /* When uniform sizing is enabled, allow text to wrap and remove ellipsis */
+        body.uniform-card-sizing .detail-value {
+            white-space: normal;
+            overflow: visible;
+            text-overflow: clip;
         }
         .dosage-adjuster {
             display: inline-flex;
@@ -1437,6 +1448,10 @@ body.theme-dark .clock-legend.bottom-banner {
                     <input type="checkbox" id="showConfirmationBanner" checked onchange="toggleConfirmationBanner()">
                     <span>Display Confirmation Banner</span>
                 </label>
+                <label class="settings-checkbox">
+                    <input type="checkbox" id="uniformCardSizing" onchange="toggleUniformCardSizing()">
+                    <span>Uniform Card Sizes</span>
+                </label>
                 <button class="add-medication-btn" onclick="addMedication()">
                     ➕ Add Medication
                 </button>
@@ -1779,6 +1794,16 @@ body.theme-dark .clock-legend.bottom-banner {
                 try {
                     const settings = JSON.parse(saved);
                     showConfirmationBanner = settings.showConfirmationBanner !== false;
+                    
+                    // Load uniform card sizing preference
+                    const uniformCardSizing = settings.uniformCardSizing === true;
+                    const uniformCheckbox = document.getElementById('uniformCardSizing');
+                    if (uniformCheckbox) {
+                        uniformCheckbox.checked = uniformCardSizing;
+                        if (uniformCardSizing) {
+                            document.body.classList.add('uniform-card-sizing');
+                        }
+                    }
                 } catch (e) {
                     console.error('Error loading settings:', e);
                 }
@@ -1792,8 +1817,10 @@ body.theme-dark .clock-legend.bottom-banner {
         }
         // Save settings to localStorage
         function saveSettings() {
+            const uniformCardSizing = document.getElementById('uniformCardSizing')?.checked || false;
             localStorage.setItem('pillAssistantSettings', JSON.stringify({
-                showConfirmationBanner: showConfirmationBanner
+                showConfirmationBanner: showConfirmationBanner,
+                uniformCardSizing: uniformCardSizing
             }));
         }
         // Toggle confirmation banner setting
@@ -1801,6 +1828,58 @@ body.theme-dark .clock-legend.bottom-banner {
             showConfirmationBanner = document.getElementById('showConfirmationBanner').checked;
             saveSettings();
         }
+        
+        // Toggle uniform card sizing
+        function toggleUniformCardSizing() {
+            const enabled = document.getElementById('uniformCardSizing').checked;
+            if (enabled) {
+                document.body.classList.add('uniform-card-sizing');
+                applyUniformCardSizing();
+            } else {
+                document.body.classList.remove('uniform-card-sizing');
+                removeUniformCardSizing();
+            }
+            saveSettings();
+        }
+        
+        // Apply uniform sizing to all medication cards
+        function applyUniformCardSizing() {
+            const cards = document.querySelectorAll('.medication-card');
+            if (cards.length === 0) return;
+            
+            // Find the maximum height needed for each detail-value
+            const detailValueHeights = [];
+            cards.forEach(card => {
+                const detailValues = card.querySelectorAll('.detail-value');
+                detailValues.forEach((value, index) => {
+                    // Reset height to measure natural height
+                    value.style.minHeight = '';
+                    const height = value.offsetHeight;
+                    if (!detailValueHeights[index] || height > detailValueHeights[index]) {
+                        detailValueHeights[index] = height;
+                    }
+                });
+            });
+            
+            // Apply the maximum heights to all cards
+            cards.forEach(card => {
+                const detailValues = card.querySelectorAll('.detail-value');
+                detailValues.forEach((value, index) => {
+                    if (detailValueHeights[index]) {
+                        value.style.minHeight = `${detailValueHeights[index]}px`;
+                    }
+                });
+            });
+        }
+        
+        // Remove uniform sizing
+        function removeUniformCardSizing() {
+            const detailValues = document.querySelectorAll('.detail-value');
+            detailValues.forEach(value => {
+                value.style.minHeight = '';
+            });
+        }
+        
         // ============== Sizing Controls ==============
         let buttonSizeScale = 100;
         let textSizeScale = 100;
@@ -2327,6 +2406,12 @@ body.theme-dark .clock-legend.bottom-banner {
                 html += renderMedicationCard(med);
             });
             content.innerHTML = html;
+            
+            // Apply uniform card sizing if enabled
+            if (document.getElementById('uniformCardSizing')?.checked) {
+                // Use setTimeout to ensure DOM is fully rendered
+                setTimeout(() => applyUniformCardSizing(), 0);
+            }
         }
         // Render individual medication card
         function renderMedicationCard(med) {
