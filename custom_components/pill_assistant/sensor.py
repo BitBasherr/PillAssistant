@@ -326,8 +326,47 @@ class PillAssistantSensor(SensorEntity):
             offset_hours = self._entry.data.get(CONF_RELATIVE_OFFSET_HOURS, 0)
             offset_minutes = self._entry.data.get(CONF_RELATIVE_OFFSET_MINUTES, 0)
             offset_str = self._format_time_offset(offset_hours, offset_minutes)
-            return f"{offset_str} after {sensor_id}"
+            # Use friendly name or formatted entity ID
+            sensor_display_name = self._format_entity_name(sensor_id)
+            return f"{offset_str} after {sensor_display_name}"
         return "Unknown schedule type"
+
+    def _format_entity_name(self, entity_id: str) -> str:
+        """
+        Get friendly name for entity or format entity ID nicely.
+
+        First tries to get the friendly_name attribute from the entity.
+        If that doesn't exist, formats the entity ID by:
+        - Removing domain prefix (e.g., 'binary_sensor.')
+        - Splitting on underscores
+        - Title casing each word
+
+        Args:
+            entity_id: The entity ID to format (e.g., 'binary_sensor.bedroom_motion')
+
+        Returns:
+            Friendly name or formatted entity ID (e.g., 'Bedroom Motion')
+        """
+        if not entity_id:
+            return "unknown"
+
+        # Try to get the entity state with its friendly_name attribute
+        state = self.hass.states.get(entity_id)
+        if state and state.attributes:
+            friendly_name = state.attributes.get("friendly_name")
+            if friendly_name:
+                return friendly_name
+
+        # Fallback: Format the entity ID
+        # Remove domain prefix (e.g., 'binary_sensor.bedroom_motion' -> 'bedroom_motion')
+        if "." in entity_id:
+            entity_id = entity_id.split(".", 1)[1]
+
+        # Split on underscores and title case each word
+        words = entity_id.split("_")
+        formatted = " ".join(word.capitalize() for word in words if word)
+
+        return formatted if formatted else "unknown"
 
     def _format_time_offset(self, hours: int, minutes: int) -> str:
         """Format a time offset as a human-readable string."""
