@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 import logging
-from typing import Any
 
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
@@ -17,7 +16,6 @@ import homeassistant.util.dt as dt_util
 
 from .const import (
     DOMAIN,
-    LOG_FILE_NAME,
     CONF_MEDICATION_NAME,
     CONF_DOSAGE,
     CONF_DOSAGE_UNIT,
@@ -58,7 +56,6 @@ from .const import (
     ATTR_SNOOZE_UNTIL,
     ATTR_DOSES_TAKEN_TODAY,
     ATTR_TAKEN_SCHEDULED_RATIO,
-    ATTR_LOG_FILE_LOCATION,
 )
 from . import log_utils
 
@@ -792,13 +789,13 @@ class PillAssistantSensor(SensorEntity):
                 else:
                     # Snooze period has expired, clear it
                     store = self._store_data["store"]
-                    
+
                     def clear_snooze(data: dict) -> None:
                         """Clear snooze atomically."""
                         med_data = data["medications"].get(self._medication_id)
                         if med_data:
                             med_data["snooze_until"] = None
-                    
+
                     await store.async_update(clear_snooze)
             except (ValueError, TypeError):
                 pass

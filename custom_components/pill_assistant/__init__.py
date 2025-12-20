@@ -13,7 +13,6 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.dispatcher import async_dispatcher_send
-from homeassistant.helpers.storage import Store
 from homeassistant.helpers.typing import ConfigType
 import homeassistant.util.dt as dt_util
 
@@ -50,7 +49,6 @@ from .const import (
     DEFAULT_DOSAGE_UNIT,
     DEFAULT_AVOID_DUPLICATE_TRIGGERS,
     DOMAIN,
-    LOG_FILE_NAME,
     LEGACY_DOSAGE_UNITS,
     DOSAGE_UNIT_OPTIONS,
     SERVICE_DECREMENT_DOSAGE,
@@ -66,8 +64,6 @@ from .const import (
     SERVICE_SNOOZE_MEDICATION,
     SERVICE_TAKE_MEDICATION,
     SERVICE_TEST_NOTIFICATION,
-    STORAGE_KEY,
-    STORAGE_VERSION,
 )
 from . import log_utils
 
@@ -314,9 +310,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Get or create the singleton storage instance
     if "store" not in hass.data[DOMAIN]:
         hass.data[DOMAIN]["store"] = PillAssistantStore(hass)
-    
+
     store = hass.data[DOMAIN]["store"]
-    
+
     # Load storage data (this will use the cached data from the singleton)
     storage_data = await store.async_load()
 
@@ -327,7 +323,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         starting_amount = entry.data.get(
             CONF_CURRENT_QUANTITY, entry.data.get(CONF_REFILL_AMOUNT, 0)
         )
-        
+
         # Use the async_update method for atomic updates
         def add_medication(data: dict) -> None:
             data["medications"][med_id] = {
@@ -336,7 +332,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 "last_taken": None,
                 "missed_doses": [],
             }
-        
+
         await store.async_update(add_medication)
 
     hass.data[DOMAIN][entry.entry_id] = {
@@ -407,7 +403,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             "ios.notification_action_fired",
             handle_notification_action,
         )
-        
+
         hass.data[DOMAIN]["notification_listeners_registered"] = True
         _LOGGER.debug("Notification action listeners registered globally")
 
@@ -425,14 +421,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         # Update storage using the coordinator pattern
         now = dt_util.now()
-        
+
         def update_medication(data: dict) -> None:
             """Update medication data atomically."""
             med_data = data["medications"].get(_med_id)
             if not med_data:
                 _LOGGER.error("Medication data for %s not found", _med_id)
                 return
-            
+
             # Update last taken time
             med_data["last_taken"] = now.isoformat()
 
@@ -468,9 +464,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 "dosage_unit": med_data.get(CONF_DOSAGE_UNIT, ""),
             }
             data["history"].append(history_entry)
-        
+
         await _store.async_update(update_medication)
-        
+
         # Reload storage data to get updated values for logging
         storage_data = await _store.async_load()
         med_data = storage_data["medications"].get(_med_id, {})
@@ -515,7 +511,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             med_data = data["medications"].get(_med_id)
             if not med_data:
                 return
-            
+
             # Add to history
             history_entry = {
                 "medication_id": _med_id,
@@ -524,9 +520,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 "action": "skipped",
             }
             data["history"].append(history_entry)
-        
+
         await _store.async_update(update_skip)
-        
+
         # Reload for logging
         storage_data = await _store.async_load()
         med_data = storage_data["medications"].get(_med_id, {})
@@ -571,7 +567,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             med_data = data["medications"].get(_med_id)
             if not med_data:
                 return
-            
+
             # Reset to full refill amount
             refill_amount = med_data.get(CONF_REFILL_AMOUNT, 0)
             med_data["remaining_amount"] = refill_amount
@@ -585,9 +581,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 "amount": refill_amount,
             }
             data["history"].append(history_entry)
-        
+
         await _store.async_update(update_refill)
-        
+
         # Reload for logging
         storage_data = await _store.async_load()
         med_data = storage_data["medications"].get(_med_id, {})
@@ -626,7 +622,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         entry_data = hass.data[DOMAIN][_med_id]
         _store = entry_data["store"]
-        
+
         # Load current storage data
         storage_data = await _store.async_load()
         med_data = storage_data["medications"].get(_med_id)
@@ -724,12 +720,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             med_data = data["medications"].get(_med_id)
             if not med_data:
                 return
-            
+
             # Store snooze information
             med_data["snooze_until"] = snooze_until.isoformat()
-        
+
         await _store.async_update(update_snooze)
-        
+
         # Reload for logging
         storage_data = await _store.async_load()
         med_data = storage_data["medications"].get(_med_id, {})
@@ -773,7 +769,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         # Get timestamp
         now = dt_util.now()
-        
+
         current_dosage = None
         new_dosage = None
 
@@ -783,14 +779,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             med_data = data["medications"].get(_med_id)
             if not med_data:
                 return
-            
+
             # Increment dosage by 0.5 (works for pills, tablets, etc.)
             current_dosage = float(med_data.get(CONF_DOSAGE, 1))
             new_dosage = current_dosage + 0.5
             med_data[CONF_DOSAGE] = str(new_dosage)
-        
+
         await _store.async_update(update_dosage)
-        
+
         # Reload for logging
         storage_data = await _store.async_load()
         med_data = storage_data["medications"].get(_med_id, {})
@@ -836,7 +832,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         # Get timestamp
         now = dt_util.now()
-        
+
         current_dosage = None
         new_dosage = None
 
@@ -846,14 +842,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             med_data = data["medications"].get(_med_id)
             if not med_data:
                 return
-            
+
             # Decrement dosage by 0.5 (works for pills, tablets, etc.), minimum 0.5
             current_dosage = float(med_data.get(CONF_DOSAGE, 1))
             new_dosage = max(0.5, current_dosage - 0.5)
             med_data[CONF_DOSAGE] = str(new_dosage)
-        
+
         await _store.async_update(update_dosage)
-        
+
         # Reload for logging
         storage_data = await _store.async_load()
         med_data = storage_data["medications"].get(_med_id, {})
@@ -899,7 +895,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         # Get timestamp
         now = dt_util.now()
-        
+
         current_remaining = None
         new_remaining = None
 
@@ -909,15 +905,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             med_data = data["medications"].get(_med_id)
             if not med_data:
                 return
-            
+
             # Increment remaining amount by dosage amount
             current_dosage = float(med_data.get(CONF_DOSAGE, 1))
             current_remaining = float(med_data.get("remaining_amount", 0))
             new_remaining = current_remaining + current_dosage
             med_data["remaining_amount"] = new_remaining
-        
+
         await _store.async_update(update_remaining)
-        
+
         # Reload for logging
         storage_data = await _store.async_load()
         med_data = storage_data["medications"].get(_med_id, {})
@@ -963,7 +959,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         # Get timestamp
         now = dt_util.now()
-        
+
         current_remaining = None
         new_remaining = None
 
@@ -973,15 +969,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             med_data = data["medications"].get(_med_id)
             if not med_data:
                 return
-            
+
             # Decrement remaining amount by dosage amount, minimum 0
             current_dosage = float(med_data.get(CONF_DOSAGE, 1))
             current_remaining = float(med_data.get("remaining_amount", 0))
             new_remaining = max(0, current_remaining - current_dosage)
             med_data["remaining_amount"] = new_remaining
-        
+
         await _store.async_update(update_remaining)
-        
+
         # Reload for logging
         storage_data = await _store.async_load()
         med_data = storage_data["medications"].get(_med_id, {})
@@ -1080,7 +1076,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         if not _store:
             _LOGGER.warning("No storage available")
             return {"history": [], "total_entries": 0}
-        
+
         # Load current storage data
         _storage_data = await _store.async_load()
 
@@ -1155,7 +1151,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         def update_history(data: dict) -> None:
             """Update medication history atomically."""
             nonlocal updated_entry
-            
+
             # Get all history entries
             all_history = data.get("history", [])
 
@@ -1176,9 +1172,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 entry["dosage_unit"] = new_dosage_unit
             if new_amount is not None:
                 entry["amount"] = new_amount
-            
+
             updated_entry = entry.copy()
-        
+
         await _store.async_update(update_history)
 
         if updated_entry:
@@ -1210,7 +1206,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         def delete_history(data: dict) -> None:
             """Delete medication history atomically."""
             nonlocal deleted_entry
-            
+
             # Get all history entries
             all_history = data.get("history", [])
 
@@ -1221,7 +1217,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
             # Delete the entry
             deleted_entry = all_history.pop(history_index)
-        
+
         await _store.async_update(delete_history)
 
         if deleted_entry:

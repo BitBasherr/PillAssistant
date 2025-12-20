@@ -14,7 +14,7 @@ _LOGGER = logging.getLogger(__name__)
 
 class PillAssistantStore:
     """Singleton storage manager with locking for the Pill Assistant integration.
-    
+
     This ensures that all config entries share the same storage instance and
     prevents race conditions when multiple entries try to save at the same time.
     """
@@ -33,7 +33,7 @@ class PillAssistantStore:
         """Initialize the store (only once for the singleton)."""
         if self._initialized:
             return
-        
+
         self._hass = hass
         self._store: Store[dict[str, Any]] = Store(hass, STORAGE_VERSION, STORAGE_KEY)
         self._data: dict[str, Any] | None = None
@@ -42,7 +42,7 @@ class PillAssistantStore:
 
     async def async_load(self) -> dict[str, Any]:
         """Load data from storage.
-        
+
         Returns a copy of the cached data if available, otherwise loads from disk.
         This ensures all entries work with consistent data.
         """
@@ -53,7 +53,7 @@ class PillAssistantStore:
                 self._data.setdefault("history", [])
                 self._data.setdefault("last_sensor_trigger", {})
                 _LOGGER.debug("Loaded storage data from disk")
-            
+
             # Return a reference to the shared data (not a copy)
             # All entries will share the same dict instance
             return self._data
@@ -67,10 +67,10 @@ class PillAssistantStore:
 
     async def async_update(self, update_fn: Callable[[dict[str, Any]], None]) -> None:
         """Update storage data using a callback function with proper locking.
-        
+
         This is the coordinator-style update method that ensures atomic updates.
         The update_fn receives the current data and can modify it in place.
-        
+
         Args:
             update_fn: A function that receives the storage data dict and modifies it.
         """
@@ -80,10 +80,10 @@ class PillAssistantStore:
                 self._data.setdefault("medications", {})
                 self._data.setdefault("history", [])
                 self._data.setdefault("last_sensor_trigger", {})
-            
+
             # Call the update function to modify the data
             update_fn(self._data)
-            
+
             # Save the updated data
             await self._store.async_save(self._data)
             _LOGGER.debug("Updated and saved storage data")
