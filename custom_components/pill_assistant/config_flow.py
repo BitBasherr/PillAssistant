@@ -438,8 +438,20 @@ class PillAssistantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors = {}
 
         if user_input is not None:
+            # Check if sensor is being selected for the first time
+            sensor_just_selected = (
+                CONF_RELATIVE_TO_SENSOR in user_input
+                and self._data.get(CONF_RELATIVE_TO_SENSOR) != user_input.get(CONF_RELATIVE_TO_SENSOR)
+            )
+            
             self._data.update(user_input)
-            return await self.async_step_refill()
+            
+            # If sensor was just selected, re-show form with additional options
+            if sensor_just_selected:
+                pass  # Fall through to show form again with full options
+            else:
+                # All data collected, proceed to next step
+                return await self.async_step_refill()
 
         # Build sensor information display if a sensor has been selected
         sensor_info = ""

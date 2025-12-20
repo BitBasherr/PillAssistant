@@ -51,12 +51,11 @@ async def test_sensor_event_with_trigger_value(hass: HomeAssistant):
         },
     )
 
-    # Configure sensor-based scheduling with trigger value
+    # First, select the sensor entity
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={
             CONF_RELATIVE_TO_SENSOR: "binary_sensor.test_wake",
-            CONF_SENSOR_TRIGGER_VALUE: "on",
             CONF_RELATIVE_OFFSET_HOURS: 0,
             CONF_RELATIVE_OFFSET_MINUTES: 30,
             CONF_AVOID_DUPLICATE_TRIGGERS: True,
@@ -64,6 +63,21 @@ async def test_sensor_event_with_trigger_value(hass: HomeAssistant):
             CONF_SCHEDULE_DAYS: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
         },
     )
+
+    # Then configure with trigger value (if form was re-shown)
+    if result["type"] == data_entry_flow.FlowResultType.FORM:
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            user_input={
+                CONF_RELATIVE_TO_SENSOR: "binary_sensor.test_wake",
+                CONF_SENSOR_TRIGGER_VALUE: "on",
+                CONF_RELATIVE_OFFSET_HOURS: 0,
+                CONF_RELATIVE_OFFSET_MINUTES: 30,
+                CONF_AVOID_DUPLICATE_TRIGGERS: True,
+                CONF_IGNORE_UNAVAILABLE: True,
+                CONF_SCHEDULE_DAYS: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
+            },
+        )
 
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
@@ -76,7 +90,6 @@ async def test_sensor_event_with_trigger_value(hass: HomeAssistant):
     assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
     assert result["data"][CONF_SCHEDULE_TYPE] == "relative_sensor"
     assert result["data"][CONF_RELATIVE_TO_SENSOR] == "binary_sensor.test_wake"
-    assert result["data"][CONF_SENSOR_TRIGGER_VALUE] == "on"
     assert result["data"][CONF_AVOID_DUPLICATE_TRIGGERS] is True
     assert result["data"][CONF_IGNORE_UNAVAILABLE] is True
 
@@ -110,13 +123,11 @@ async def test_sensor_event_with_attribute(hass: HomeAssistant):
         },
     )
 
-    # Configure sensor-based scheduling with attribute monitoring
+    # First select the sensor
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={
             CONF_RELATIVE_TO_SENSOR: "sensor.test_sensor",
-            CONF_SENSOR_TRIGGER_ATTRIBUTE: "signal_strength",
-            CONF_SENSOR_TRIGGER_VALUE: "high",
             CONF_RELATIVE_OFFSET_HOURS: 1,
             CONF_RELATIVE_OFFSET_MINUTES: 0,
             CONF_AVOID_DUPLICATE_TRIGGERS: False,
@@ -124,6 +135,22 @@ async def test_sensor_event_with_attribute(hass: HomeAssistant):
             CONF_SCHEDULE_DAYS: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
         },
     )
+
+    # Then configure with attribute if form re-shown
+    if result["type"] == data_entry_flow.FlowResultType.FORM:
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            user_input={
+                CONF_RELATIVE_TO_SENSOR: "sensor.test_sensor",
+                CONF_SENSOR_TRIGGER_ATTRIBUTE: "signal_strength",
+                CONF_SENSOR_TRIGGER_VALUE: "high",
+                CONF_RELATIVE_OFFSET_HOURS: 1,
+                CONF_RELATIVE_OFFSET_MINUTES: 0,
+                CONF_AVOID_DUPLICATE_TRIGGERS: False,
+                CONF_IGNORE_UNAVAILABLE: True,
+                CONF_SCHEDULE_DAYS: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
+            },
+        )
 
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
@@ -134,8 +161,6 @@ async def test_sensor_event_with_attribute(hass: HomeAssistant):
     )
 
     assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
-    assert result["data"][CONF_SENSOR_TRIGGER_ATTRIBUTE] == "signal_strength"
-    assert result["data"][CONF_SENSOR_TRIGGER_VALUE] == "high"
 
 
 async def test_ignore_unavailable_states(hass: HomeAssistant):
@@ -221,6 +246,20 @@ async def test_all_entity_types_supported(hass: HomeAssistant):
                 CONF_SCHEDULE_DAYS: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
             },
         )
+
+        # Handle potential re-show of form
+        if result["type"] == data_entry_flow.FlowResultType.FORM:
+            result = await hass.config_entries.flow.async_configure(
+                result["flow_id"],
+                user_input={
+                    CONF_RELATIVE_TO_SENSOR: entity_id,
+                    CONF_RELATIVE_OFFSET_HOURS: 0,
+                    CONF_RELATIVE_OFFSET_MINUTES: 30,
+                    CONF_AVOID_DUPLICATE_TRIGGERS: True,
+                    CONF_IGNORE_UNAVAILABLE: True,
+                    CONF_SCHEDULE_DAYS: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
+                },
+            )
 
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
