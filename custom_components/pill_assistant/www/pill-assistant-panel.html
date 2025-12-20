@@ -1239,8 +1239,10 @@
             document.body.classList.remove('theme-light', 'theme-dark', 'theme-auto');
             
             if (theme === 'auto') {
-                // Apply theme based on system preference - don't add theme-auto class
-                // since it uses incorrect fallback values
+                // For auto mode, we don't add the 'theme-auto' CSS class because it uses
+                // CSS variable fallbacks (--primary-background-color with light fallback)
+                // that don't dynamically adapt. Instead, we detect the actual system/HA
+                // preference and apply theme-light or theme-dark directly.
                 applyAutoTheme();
             } else if (theme === 'light') {
                 document.body.classList.add('theme-light');
@@ -1252,17 +1254,18 @@
         function applyAutoTheme() {
             // Check multiple methods for system dark mode preference
             // 1. CSS media query (most reliable for browsers)
-            // 2. Home Assistant theme detection
+            // 2. Home Assistant theme detection via CSS variable luminance
             let prefersDark = false;
             
-            // Check CSS media query
+            // Check CSS media query - this is the primary method
             if (darkModeMediaQuery) {
                 prefersDark = darkModeMediaQuery.matches;
             }
             
             // Also check for Home Assistant dark theme (via CSS variables if set)
-            // This helps when embedded in Home Assistant app which may not report
-            // prefers-color-scheme correctly
+            // This helps when embedded in Home Assistant app which may not correctly
+            // report prefers-color-scheme (e.g., Android WebView, iOS HA app).
+            // We detect dark mode by analyzing the computed background color luminance.
             if (!prefersDark && hass) {
                 // Check if Home Assistant has a dark theme active
                 try {
@@ -1270,11 +1273,23 @@
                     const primaryBg = computedStyle.getPropertyValue('--primary-background-color');
                     // If the primary background is very dark, assume dark mode
                     if (primaryBg && primaryBg.trim()) {
+                        // Extract RGB values - works for rgb(), rgba() formats
+                        // Note: For hex colors like #121212, getComputedStyle often returns rgb()
                         const rgb = primaryBg.match(/\d+/g);
                         if (rgb && rgb.length >= 3) {
-                            // Calculate luminance - if below 50, it's dark
-                            const luminance = (0.299 * parseInt(rgb[0]) + 0.587 * parseInt(rgb[1]) + 0.114 * parseInt(rgb[2]));
-                            if (luminance < 50) {
+                            // ITU-R BT.709 relative luminance formula coefficients
+                            // Standard weights for perceived brightness
+                            const RED_WEIGHT = 0.299;
+                            const GREEN_WEIGHT = 0.587;
+                            const BLUE_WEIGHT = 0.114;
+                            const DARK_THRESHOLD = 50; // Luminance below this is considered dark
+                            
+                            const luminance = (
+                                RED_WEIGHT * parseInt(rgb[0]) +
+                                GREEN_WEIGHT * parseInt(rgb[1]) +
+                                BLUE_WEIGHT * parseInt(rgb[2])
+                            );
+                            if (luminance < DARK_THRESHOLD) {
                                 prefersDark = true;
                             }
                         }
@@ -1425,13 +1440,15 @@
             }
             
             // Show/hide appropriate chart containers
+            // Note: Each chart is inside a .chart-container parent
             const trendsContainer = document.querySelector('#trendsChart')?.closest('.chart-container');
             const adherenceContainer = document.querySelector('#adherenceChart')?.closest('.chart-container');
-            const clockContainer = document.querySelector('.clock-container')?.closest('.chart-container');
+            // Clock is inside .chart-container > .clock-container, so query the parent
+            const clockContainerParent = document.querySelector('.clock-container')?.closest('.chart-container');
             
             if (trendsContainer) trendsContainer.style.display = (type === 'plot' || type === 'bar') ? 'block' : 'none';
             if (adherenceContainer) adherenceContainer.style.display = (type === 'bar') ? 'block' : 'none';
-            if (clockContainer) clockContainer.style.display = (type === 'clock') ? 'block' : 'none';
+            if (clockContainerParent) clockContainerParent.style.display = (type === 'clock') ? 'block' : 'none';
             
             // Save preference
             localStorage.setItem('pillAssistantChartType', type);
