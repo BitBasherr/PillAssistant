@@ -1517,23 +1517,7 @@ body.theme-dark .clock-date-picker input[type="date"] {
     color: #e0e0e0;
     border-color: #444;
 }
-/* Breakpoint: stack legend under clocks (bottom-right aligned) */
-@media (max-width: 900px) {
-    .clock-layout {
-        grid-template-columns: 1fr;
-        grid-template-areas:
-            "clocks"
-            "legend";
-        column-gap: 0;
-    }
-    .clock-layout-spacer {
-        display: none;
-    }
-    /* Legend becomes a row aligned to the right under the clocks */
-    .clock-legend {
-        flex-direction: row;
-        flex-wrap: wrap;
-        justify-content: flex-end;
+
 /* Bottom banner legend for overall statistics view */
 .clock-legend.bottom-banner {
     grid-area: auto;
@@ -1551,18 +1535,97 @@ body.theme-dark .clock-date-picker input[type="date"] {
 body.theme-dark .clock-legend.bottom-banner {
     background: #1e1e1e;
 }
+
 /* Hide legend in per-medication view when using action colors */
 .clock-legend.hidden {
     display: none;
 }
+
+body.theme-dark .clock-view-checkbox {
+    color: #e0e0e0;
+}
+
+/* Breakpoint for tablets and small laptops */
+@media (max-width: 900px) {
+    .clock-layout {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+            "clocks"
+            "legend";
+        column-gap: 0;
+        justify-content: center;
+    }
+    .clock-layout-spacer {
+        display: none;
+    }
+    /* Legend becomes a row aligned center under the clocks */
+    .clock-legend {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
         align-items: center;
         width: 100%;
         margin-top: 8px;
     }
+    .clock-container {
+        justify-content: center;
+    }
 }
-        body.theme-dark .clock-view-checkbox {
-            color: #e0e0e0;
-        }
+
+/* Specific fixes for foldable phones like Galaxy Fold 7 */
+/* Front screen (narrow): width ~320-400px */
+@media (max-width: 420px) {
+    .clock-layout {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+            "clocks"
+            "legend";
+        justify-items: center;
+        justify-content: center;
+    }
+    .clock-container {
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+        width: 100%;
+    }
+    .clock-wrapper {
+        width: 100%;
+        max-width: 280px;
+    }
+    .clock-svg {
+        max-width: 240px;
+    }
+}
+
+/* Foldable expanded view (wide but short): width ~600-900px, height ~280-400px */
+@media (min-width: 600px) and (max-width: 900px) and (max-height: 450px) {
+    .clock-layout {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+            "clocks"
+            "legend";
+        justify-items: center;
+    }
+    .clock-container {
+        justify-content: center;
+        gap: 20px;
+    }
+}
+
+/* Landscape orientation for foldables - ensure center alignment */
+@media (orientation: landscape) and (max-height: 500px) {
+    .clock-layout {
+        justify-content: center;
+        justify-items: center;
+    }
+    .clock-container {
+        justify-content: center;
+    }
+    .clock-wrapper {
+        min-height: auto;
+    }
+}
         @media (max-width: 768px) {
             body {
                 padding: 10px;

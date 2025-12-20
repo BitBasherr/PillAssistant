@@ -213,8 +213,8 @@ class PillAssistantSensor(SensorEntity):
             self.hass, self._medication_name
         )
 
-        # Use config entry data for dosage values, falling back to storage for runtime updates
-        # This ensures options flow updates are properly reflected
+        # Use config entry data for dosage values (prioritized) with storage fallback
+        # Config entry data reflects options flow changes; storage is for runtime updates
         dosage = self._entry.data.get(CONF_DOSAGE, med_data.get(CONF_DOSAGE, ""))
         dosage_unit = normalize_dosage_unit(
             self._entry.data.get(CONF_DOSAGE_UNIT, med_data.get(CONF_DOSAGE_UNIT, ""))
@@ -223,7 +223,7 @@ class PillAssistantSensor(SensorEntity):
             CONF_MEDICATION_TYPE,
             med_data.get(CONF_MEDICATION_TYPE, DEFAULT_MEDICATION_TYPE),
         )
-        # Get strength from config entry (primarily) with storage fallback
+        # Get strength from config entry (prioritized) with storage fallback
         strength = self._entry.data.get(
             CONF_STRENGTH,
             med_data.get(CONF_STRENGTH, DEFAULT_STRENGTH),
