@@ -8,6 +8,11 @@ schedules, and log medication history.
 
 > **🎉 NEW**: Complete UI-based medication management! Add, edit, and delete medications directly from the frontend panel - **no YAML configuration required!**
 
+> **✨ LATEST**: Clock visualizations and enhanced medication display!
+> - Interactive 12-hour and 24-hour clock visualizations showing medication adherence
+> - Separate medication type (pill, liquid, etc.) and dosage unit (mg, mL, etc.) displays
+> - Medications automatically sorted by next scheduled dose
+
 ## Features
 
 ### Core Features
@@ -73,6 +78,19 @@ schedules, and log medication history.
 - **Quick Actions**: Mark taken, skip, refill, test notifications
 - **Dosage Controls**: Increment/decrement with visual buttons
 - **Responsive Design**: Works on desktop and mobile browsers
+- **Smart Sorting**: Medications automatically sorted by next scheduled dose
+- **Separate Type Display**: Medication type (pill, liquid, etc.) shown separately from dosage unit
+
+### Statistics and Visualizations
+- **Clock Visualizations**: Interactive 12-hour and 24-hour clock displays
+  - Visual wedge indicators for each medication dose
+  - Color-coded status: Green (taken), Yellow (delayed/snoozed), Red (skipped)
+  - Date picker to review any historical day
+  - AM/PM toggle for 12-hour clock
+  - Wedges extend from clock center at the time doses were taken
+- **Adherence Charts**: Bar charts showing medication-specific adherence rates
+- **Trend Charts**: Line graphs of medications taken over time
+- **Summary Statistics**: Overall adherence percentages and counts
 
 ### Time Management
 - **Flexible Time Input**: 

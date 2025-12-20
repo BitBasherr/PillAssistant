@@ -1,5 +1,66 @@
 # UI Changes Summary
 
+## Latest Updates (December 2025)
+
+### Enhanced Medication Display
+Medication cards now display separate medication type and dosage unit:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  Aspirin                                          [Scheduled]    │
+├─────────────────────────────────────────────────────────────────┤
+│  Type: pill                                   ← NEW              │
+│  Schedule: 08:00, 20:00 on mon, tue, wed, thu, fri, sat, sun   │
+│  Remaining Amount: 90 mg                                        │
+│  Last Taken: 08:15 AM                                           │
+│  Next Dose: 08:00 PM                                            │
+│                                                                  │
+│  Dosage: [-] 100 pill(s) (mg) [+]             ← UPDATED         │
+│  Remaining: [-] 90 pill(s) (mg) [+]           ← UPDATED         │
+│                                                                  │
+│  [Mark as Taken] [Skip Dose] [Refill] [Test Notification]      │
+│  ─────────────────────────────────────────────────────────────  │
+│  [✏️ Edit]  [🗑️ Delete]                                         │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Key Changes:**
+- **Type Field**: Shows medication form (pill, tablet, liquid, etc.)
+- **Dosage Display**: Now shows "X type(s) (unit)" format
+- **Smart Sorting**: Medications automatically sorted by next dose time (soonest first)
+
+### New Clock Visualizations
+Added interactive clock visualizations to the Statistics tab:
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  Daily Medication Timeline                                        │
+├──────────────────────────────────────────────────────────────────┤
+│  Select Date: [2025-12-19 ▼]                                     │
+│                                                                   │
+│        12-Hour Clock                24-Hour Clock                 │
+│     [AM] [PM]                                                     │
+│                                                                   │
+│        ⚪━━━━━━━━━⚪                 ⚪━━━━━━━━━⚪              │
+│       ┃    12    ┃                  ┃     0     ┃               │
+│       ┃  9    3  ┃                  ┃  18    6  ┃               │
+│        ⚪━━━━━━━━━⚪                 ⚪━━━━━━━━━⚪              │
+│                                                                   │
+│  Legend: 🟢 Taken  🟡 Delayed/Snoozed  🔴 Skipped               │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+**Features:**
+- **12-Hour Clock**: With AM/PM toggle to view morning or evening doses
+- **24-Hour Clock**: Shows all doses in one view
+- **Wedge Indicators**: 
+  - 🟢 Green: Doses taken on time
+  - 🟡 Yellow: Doses delayed or snoozed
+  - 🔴 Red: Doses skipped
+- **Date Picker**: Select any historical date to review past medication activity
+- **Visual Wedges**: Extend from clock center outward at the time doses were taken/skipped
+- **Interactive**: Hover over wedges to see medication name, status, and time
+
 ## Frontend Panel Enhancements
 
 ### New Header Section
