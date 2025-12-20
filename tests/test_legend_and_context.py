@@ -1,7 +1,6 @@
 """Test legend rendering and view context tracking."""
 
 import os
-import pytest
 from homeassistant.core import HomeAssistant
 
 
@@ -261,7 +260,7 @@ async def test_html_panel_legend_items_removed(hass: HomeAssistant):
 
     # The legend div should exist
     assert '<div class="clock-legend">' in content, "Legend container missing"
-    
+
     # But it should not have hardcoded legend items in HTML
     # It should have a comment indicating dynamic generation
     assert (
