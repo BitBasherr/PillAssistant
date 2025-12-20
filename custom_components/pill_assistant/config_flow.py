@@ -652,7 +652,7 @@ class PillAssistantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         
         if sensor_type == "binary" or sensor_type == "binary_like":
             # Binary sensors or sensors with binary-like values
-            current_state = sensor_state.state.lower()
+            current_state = sensor_state.state.lower() if sensor_state.state else ""
             if current_state in ["on", "off"]:
                 options = [
                     {"label": "On", "value": "on"},
@@ -1292,7 +1292,7 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
         
         if sensor_type == "binary" or sensor_type == "binary_like":
             # Binary sensors or sensors with binary-like values
-            current_state = sensor_state.state.lower()
+            current_state = sensor_state.state.lower() if sensor_state.state else ""
             if current_state in ["on", "off"]:
                 options = [
                     {"label": "On", "value": "on"},
