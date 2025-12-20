@@ -135,7 +135,7 @@ class PillAssistantSensor(SensorEntity):
         self._medication_name = entry.data.get(
             CONF_MEDICATION_NAME, "Unknown Medication"
         )
-        self._attr_name = f"PA_{self._medication_name}"
+        self._attr_name = f"PA_{self._medication_name.title()}"
         self._attr_unique_id = f"{DOMAIN}_{entry.entry_id}"
         self._attr_native_value = "scheduled"
         self._medication_id = entry.entry_id

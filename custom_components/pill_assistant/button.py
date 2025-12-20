@@ -56,7 +56,7 @@ class PillAssistantTestButton(ButtonEntity):
 
         # Set unique_id and name - entity_id will be generated automatically
         self._attr_unique_id = f"{DOMAIN}_test_{config_entry.entry_id}"
-        self._attr_name = f"PA_{medication_name}"
+        self._attr_name = f"PA_{medication_name.title()}"
 
     @property
     def device_info(self) -> DeviceInfo:
