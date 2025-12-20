@@ -2255,8 +2255,16 @@ body.theme-dark .clock-legend.bottom-banner {
                 if (medicationType === 'gummy') {
                     typeDisplay = 'gummies';
                 } else if (medicationType.endsWith('y')) {
-                    // Most words ending in 'y' become 'ies'
-                    typeDisplay = medicationType.slice(0, -1) + 'ies';
+                    // Check if 'y' is preceded by a consonant
+                    const beforeY = medicationType.charAt(medicationType.length - 2).toLowerCase();
+                    const isVowel = 'aeiou'.includes(beforeY);
+                    if (!isVowel) {
+                        // Consonant + 'y' becomes 'ies'
+                        typeDisplay = medicationType.slice(0, -1) + 'ies';
+                    } else {
+                        // Vowel + 'y' just adds 's'
+                        typeDisplay = medicationType + 's';
+                    }
                 } else if (!medicationType.endsWith('s')) {
                     // Add 's' if not already plural
                     typeDisplay = medicationType + 's';
@@ -3219,7 +3227,9 @@ body.theme-dark .clock-legend.bottom-banner {
                 if (stats.dose_events) {
                     stats.dose_events.forEach(event => {
                         if (event.action === 'taken') {
+                            // Parse timestamp and convert to local time
                             const timestamp = new Date(event.timestamp);
+                            // getHours() returns local time, not UTC
                             const hour = timestamp.getHours();
                             const chunkIndex = Math.floor(hour / 4);
                             const medId = event.medication_id;
@@ -3611,7 +3621,10 @@ body.theme-dark .clock-legend.bottom-banner {
             renderClocks();
         }
         // Load medication dose data for a specific date
-        async function loadClockData(dateStr) {
+        async function loadClockData(dateStr, fallbackDepth = 0) {
+            // Limit fallback recursion depth to prevent infinite loops
+            const MAX_FALLBACK_DEPTH = 5;
+            
             try {
                 // Uncheck "View Yesterday" when manually selecting a date
                 const yesterdayCheckbox = document.getElementById('view-yesterday-clock');
@@ -3682,18 +3695,18 @@ body.theme-dark .clock-legend.bottom-banner {
                 clockData = parseDoseEvents(stats, dateStr);
                 
                 // Auto-fallback: If no data for selected date, try to find last date with data
-                if (clockData.length === 0 && currentStats && currentStats.daily_counts) {
+                if (clockData.length === 0 && fallbackDepth < MAX_FALLBACK_DEPTH && currentStats && currentStats.daily_counts) {
                     const availableDates = Object.keys(currentStats.daily_counts).sort().reverse();
                     // Find the most recent date with data that's before or equal to selected date
                     for (const availDate of availableDates) {
                         if (availDate <= dateStr) {
-                            console.debug(`No data for ${dateStr}, falling back to ${availDate}`);
+                            console.debug(`No data for ${dateStr}, falling back to ${availDate} (depth: ${fallbackDepth + 1})`);
                             // Update date picker to show the fallback date
                             if (datePicker) {
                                 datePicker.value = availDate;
                             }
-                            // Recursively load data for that date
-                            await loadClockData(availDate);
+                            // Recursively load data for that date with incremented depth
+                            await loadClockData(availDate, fallbackDepth + 1);
                             return;
                         }
                     }
