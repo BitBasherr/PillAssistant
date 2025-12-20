@@ -13,9 +13,10 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.dispatcher import async_dispatcher_send
-from homeassistant.helpers.storage import Store
 from homeassistant.helpers.typing import ConfigType
 import homeassistant.util.dt as dt_util
+
+from .store import PillAssistantStore
 
 try:  # HA version compatibility: StaticPathConfig may not exist in tests
     from homeassistant.components.http import StaticPathConfig
@@ -48,7 +49,6 @@ from .const import (
     DEFAULT_DOSAGE_UNIT,
     DEFAULT_AVOID_DUPLICATE_TRIGGERS,
     DOMAIN,
-    LOG_FILE_NAME,
     LEGACY_DOSAGE_UNITS,
     DOSAGE_UNIT_OPTIONS,
     SERVICE_DECREMENT_DOSAGE,
@@ -64,8 +64,6 @@ from .const import (
     SERVICE_SNOOZE_MEDICATION,
     SERVICE_TAKE_MEDICATION,
     SERVICE_TEST_NOTIFICATION,
-    STORAGE_KEY,
-    STORAGE_VERSION,
 )
 from . import log_utils
 
@@ -309,18 +307,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         # Update the config entry with migrated data
         hass.config_entries.async_update_entry(entry, data=migrated_data)
 
-    # Initialize storage
-    store: Store[dict[str, Any]] = Store(hass, STORAGE_VERSION, STORAGE_KEY)
-    storage_data = await store.async_load() or {}
+    # Get or create the singleton storage instance
+    if "store" not in hass.data[DOMAIN]:
+        hass.data[DOMAIN]["store"] = PillAssistantStore(hass)
 
-    if "medications" not in storage_data:
-        storage_data["medications"] = {}
+    store = hass.data[DOMAIN]["store"]
 
-    if "history" not in storage_data:
-        storage_data["history"] = []
-
-    if "last_sensor_trigger" not in storage_data:
-        storage_data["last_sensor_trigger"] = {}
+    # Load storage data (this will use the cached data from the singleton)
+    storage_data = await store.async_load()
 
     # Store the entry data in storage if not already there
     med_id = entry.entry_id
@@ -329,13 +323,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         starting_amount = entry.data.get(
             CONF_CURRENT_QUANTITY, entry.data.get(CONF_REFILL_AMOUNT, 0)
         )
-        storage_data["medications"][med_id] = {
-            **entry.data,
-            "remaining_amount": starting_amount,
-            "last_taken": None,
-            "missed_doses": [],
-        }
-        await store.async_save(storage_data)
+
+        # Use the async_update method for atomic updates
+        def add_medication(data: dict) -> None:
+            data["medications"][med_id] = {
+                **entry.data,
+                "remaining_amount": starting_amount,
+                "last_taken": None,
+                "missed_doses": [],
+            }
+
+        await store.async_update(add_medication)
 
     hass.data[DOMAIN][entry.entry_id] = {
         "entry": entry,
@@ -346,64 +344,69 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Set up platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
-    # Register event listener for notification actions
-    async def handle_notification_action(event) -> None:
-        """Handle notification action events from mobile_app."""
-        action = event.data.get("action")
-        if not action:
-            return
+    # Register notification action listener ONCE globally (not per entry)
+    if not hass.data[DOMAIN].get("notification_listeners_registered"):
 
-        # Parse the action to extract medication ID
-        if action.startswith("take_medication_"):
-            _med_id = action.replace("take_medication_", "")
-            if _med_id in hass.data[DOMAIN]:
-                await hass.services.async_call(
-                    DOMAIN,
-                    SERVICE_TAKE_MEDICATION,
-                    {ATTR_MEDICATION_ID: _med_id},
-                    blocking=True,
-                )
-                _LOGGER.info(
-                    "Medication %s marked as taken via notification action",
-                    _med_id,
-                )
-        elif action.startswith("snooze_medication_"):
-            _med_id = action.replace("snooze_medication_", "")
-            if _med_id in hass.data[DOMAIN]:
-                await hass.services.async_call(
-                    DOMAIN,
-                    SERVICE_SNOOZE_MEDICATION,
-                    {ATTR_MEDICATION_ID: _med_id},
-                    blocking=True,
-                )
-                _LOGGER.info(
-                    "Medication %s snoozed via notification action",
-                    _med_id,
-                )
-        elif action.startswith("skip_medication_"):
-            _med_id = action.replace("skip_medication_", "")
-            if _med_id in hass.data[DOMAIN]:
-                await hass.services.async_call(
-                    DOMAIN,
-                    SERVICE_SKIP_MEDICATION,
-                    {ATTR_MEDICATION_ID: _med_id},
-                    blocking=True,
-                )
-                _LOGGER.info(
-                    "Medication %s skipped via notification action",
-                    _med_id,
-                )
+        async def handle_notification_action(event) -> None:
+            """Handle notification action events from mobile_app."""
+            action = event.data.get("action")
+            if not action:
+                return
 
-    # Listen for mobile_app notification action events
-    hass.bus.async_listen(
-        "mobile_app_notification_action",
-        handle_notification_action,
-    )
-    # Also listen for ios.notification_action_fired for iOS devices
-    hass.bus.async_listen(
-        "ios.notification_action_fired",
-        handle_notification_action,
-    )
+            # Parse the action to extract medication ID
+            if action.startswith("take_medication_"):
+                _med_id = action.replace("take_medication_", "")
+                if _med_id in hass.data[DOMAIN]:
+                    await hass.services.async_call(
+                        DOMAIN,
+                        SERVICE_TAKE_MEDICATION,
+                        {ATTR_MEDICATION_ID: _med_id},
+                        blocking=True,
+                    )
+                    _LOGGER.info(
+                        "Medication %s marked as taken via notification action",
+                        _med_id,
+                    )
+            elif action.startswith("snooze_medication_"):
+                _med_id = action.replace("snooze_medication_", "")
+                if _med_id in hass.data[DOMAIN]:
+                    await hass.services.async_call(
+                        DOMAIN,
+                        SERVICE_SNOOZE_MEDICATION,
+                        {ATTR_MEDICATION_ID: _med_id},
+                        blocking=True,
+                    )
+                    _LOGGER.info(
+                        "Medication %s snoozed via notification action",
+                        _med_id,
+                    )
+            elif action.startswith("skip_medication_"):
+                _med_id = action.replace("skip_medication_", "")
+                if _med_id in hass.data[DOMAIN]:
+                    await hass.services.async_call(
+                        DOMAIN,
+                        SERVICE_SKIP_MEDICATION,
+                        {ATTR_MEDICATION_ID: _med_id},
+                        blocking=True,
+                    )
+                    _LOGGER.info(
+                        "Medication %s skipped via notification action",
+                        _med_id,
+                    )
+
+        # Listen for mobile_app notification action events
+        hass.bus.async_listen(
+            "mobile_app_notification_action",
+            handle_notification_action,
+        )
+        # Also listen for ios.notification_action_fired for iOS devices
+        hass.bus.async_listen(
+            "ios.notification_action_fired",
+            handle_notification_action,
+        )
+
+        hass.data[DOMAIN]["notification_listeners_registered"] = True
+        _LOGGER.debug("Notification action listeners registered globally")
 
     # Register services
     async def handle_take_medication(call: ServiceCall) -> None:
@@ -415,53 +418,59 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         entry_data = hass.data[DOMAIN][_med_id]
         _store = entry_data["store"]
-        _storage_data = entry_data["storage_data"]
         _entry = entry_data["entry"]
 
-        med_data = _storage_data["medications"].get(_med_id)
-        if not med_data:
-            _LOGGER.error("Medication data for %s not found", _med_id)
-            return
-
-        # Update last taken time
+        # Update storage using the coordinator pattern
         now = dt_util.now()
-        med_data["last_taken"] = now.isoformat()
 
-        # Decrease remaining amount by 1 dose (not by dosage amount)
-        remaining = float(med_data.get("remaining_amount", 0))
-        med_data["remaining_amount"] = max(0, remaining - 1)
+        def update_medication(data: dict) -> None:
+            """Update medication data atomically."""
+            med_data = data["medications"].get(_med_id)
+            if not med_data:
+                _LOGGER.error("Medication data for %s not found", _med_id)
+                return
 
-        # If this is a sensor-based schedule with duplicate avoidance, track the trigger
-        schedule_type = _entry.data.get(CONF_SCHEDULE_TYPE)
-        if schedule_type == "relative_sensor":
-            avoid_duplicates = _entry.data.get(
-                CONF_AVOID_DUPLICATE_TRIGGERS, DEFAULT_AVOID_DUPLICATE_TRIGGERS
-            )
-            if avoid_duplicates:
-                sensor_entity_id = _entry.data.get(CONF_RELATIVE_TO_SENSOR)
-                if sensor_entity_id:
-                    sensor_state = hass.states.get(sensor_entity_id)
-                    if sensor_state and sensor_state.last_changed:
-                        # Track this sensor event as triggered
-                        if "last_sensor_trigger" not in _storage_data:
-                            _storage_data["last_sensor_trigger"] = {}
-                        _storage_data["last_sensor_trigger"][
-                            _med_id
-                        ] = sensor_state.last_changed.isoformat()
+            # Update last taken time
+            med_data["last_taken"] = now.isoformat()
 
-        # Add to history
-        history_entry = {
-            "medication_id": _med_id,
-            "medication_name": med_data.get(CONF_MEDICATION_NAME, "Unknown"),
-            "timestamp": now.isoformat(),
-            "action": "taken",
-            "dosage": med_data.get(CONF_DOSAGE, ""),
-            "dosage_unit": med_data.get(CONF_DOSAGE_UNIT, ""),
-        }
-        _storage_data["history"].append(history_entry)
+            # Decrease remaining amount by 1 dose (not by dosage amount)
+            remaining = float(med_data.get("remaining_amount", 0))
+            med_data["remaining_amount"] = max(0, remaining - 1)
 
-        # Save to storage
-        await _store.async_save(_storage_data)
+            # If this is a sensor-based schedule with duplicate avoidance, track the trigger
+            schedule_type = _entry.data.get(CONF_SCHEDULE_TYPE)
+            if schedule_type == "relative_sensor":
+                avoid_duplicates = _entry.data.get(
+                    CONF_AVOID_DUPLICATE_TRIGGERS, DEFAULT_AVOID_DUPLICATE_TRIGGERS
+                )
+                if avoid_duplicates:
+                    sensor_entity_id = _entry.data.get(CONF_RELATIVE_TO_SENSOR)
+                    if sensor_entity_id:
+                        sensor_state = hass.states.get(sensor_entity_id)
+                        if sensor_state and sensor_state.last_changed:
+                            # Track this sensor event as triggered
+                            if "last_sensor_trigger" not in data:
+                                data["last_sensor_trigger"] = {}
+                            data["last_sensor_trigger"][
+                                _med_id
+                            ] = sensor_state.last_changed.isoformat()
+
+            # Add to history
+            history_entry = {
+                "medication_id": _med_id,
+                "medication_name": med_data.get(CONF_MEDICATION_NAME, "Unknown"),
+                "timestamp": now.isoformat(),
+                "action": "taken",
+                "dosage": med_data.get(CONF_DOSAGE, ""),
+                "dosage_unit": med_data.get(CONF_DOSAGE_UNIT, ""),
+            }
+            data["history"].append(history_entry)
+
+        await _store.async_update(update_medication)
+
+        # Reload storage data to get updated values for logging
+        storage_data = await _store.async_load()
+        med_data = storage_data["medications"].get(_med_id, {})
 
         # Write to CSV log files
         await log_utils.async_log_event(
@@ -495,24 +504,29 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         entry_data = hass.data[DOMAIN][_med_id]
         _store = entry_data["store"]
-        _storage_data = entry_data["storage_data"]
-
-        med_data = _storage_data["medications"].get(_med_id)
-        if not med_data:
-            return
 
         now = dt_util.now()
 
-        # Add to history
-        history_entry = {
-            "medication_id": _med_id,
-            "medication_name": med_data.get(CONF_MEDICATION_NAME, "Unknown"),
-            "timestamp": now.isoformat(),
-            "action": "skipped",
-        }
-        _storage_data["history"].append(history_entry)
+        def update_skip(data: dict) -> None:
+            """Update medication data atomically."""
+            med_data = data["medications"].get(_med_id)
+            if not med_data:
+                return
 
-        await _store.async_save(_storage_data)
+            # Add to history
+            history_entry = {
+                "medication_id": _med_id,
+                "medication_name": med_data.get(CONF_MEDICATION_NAME, "Unknown"),
+                "timestamp": now.isoformat(),
+                "action": "skipped",
+            }
+            data["history"].append(history_entry)
+
+        await _store.async_update(update_skip)
+
+        # Reload for logging
+        storage_data = await _store.async_load()
+        med_data = storage_data["medications"].get(_med_id, {})
 
         # Write to CSV log files
         await log_utils.async_log_event(
@@ -546,29 +560,35 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         entry_data = hass.data[DOMAIN][_med_id]
         _store = entry_data["store"]
-        _storage_data = entry_data["storage_data"]
-
-        med_data = _storage_data["medications"].get(_med_id)
-        if not med_data:
-            return
-
-        # Reset to full refill amount
-        refill_amount = med_data.get(CONF_REFILL_AMOUNT, 0)
-        med_data["remaining_amount"] = refill_amount
 
         now = dt_util.now()
 
-        # Add to history
-        history_entry = {
-            "medication_id": _med_id,
-            "medication_name": med_data.get(CONF_MEDICATION_NAME, "Unknown"),
-            "timestamp": now.isoformat(),
-            "action": "refilled",
-            "amount": refill_amount,
-        }
-        _storage_data["history"].append(history_entry)
+        def update_refill(data: dict) -> None:
+            """Update medication data atomically."""
+            med_data = data["medications"].get(_med_id)
+            if not med_data:
+                return
 
-        await _store.async_save(_storage_data)
+            # Reset to full refill amount
+            refill_amount = med_data.get(CONF_REFILL_AMOUNT, 0)
+            med_data["remaining_amount"] = refill_amount
+
+            # Add to history
+            history_entry = {
+                "medication_id": _med_id,
+                "medication_name": med_data.get(CONF_MEDICATION_NAME, "Unknown"),
+                "timestamp": now.isoformat(),
+                "action": "refilled",
+                "amount": refill_amount,
+            }
+            data["history"].append(history_entry)
+
+        await _store.async_update(update_refill)
+
+        # Reload for logging
+        storage_data = await _store.async_load()
+        med_data = storage_data["medications"].get(_med_id, {})
+        refill_amount = med_data.get(CONF_REFILL_AMOUNT, 0)
 
         # Write to CSV log files
         await log_utils.async_log_event(
@@ -602,9 +622,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             return
 
         entry_data = hass.data[DOMAIN][_med_id]
-        _storage_data = entry_data["storage_data"]
+        _store = entry_data["store"]
 
-        med_data = _storage_data["medications"].get(_med_id)
+        # Load current storage data
+        storage_data = await _store.async_load()
+        med_data = storage_data["medications"].get(_med_id)
         if not med_data:
             return
 
@@ -689,20 +711,25 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         entry_data = hass.data[DOMAIN][_med_id]
         _store = entry_data["store"]
-        _storage_data = entry_data["storage_data"]
-
-        med_data = _storage_data["medications"].get(_med_id)
-        if not med_data:
-            return
 
         # Calculate snooze until time
         now = dt_util.now()
         snooze_until = now + timedelta(minutes=int(snooze_duration))
 
-        # Store snooze information
-        med_data["snooze_until"] = snooze_until.isoformat()
+        def update_snooze(data: dict) -> None:
+            """Update medication data atomically."""
+            med_data = data["medications"].get(_med_id)
+            if not med_data:
+                return
 
-        await _store.async_save(_storage_data)
+            # Store snooze information
+            med_data["snooze_until"] = snooze_until.isoformat()
+
+        await _store.async_update(update_snooze)
+
+        # Reload for logging
+        storage_data = await _store.async_load()
+        med_data = storage_data["medications"].get(_med_id, {})
 
         # Write to CSV log files
         await log_utils.async_log_event(
@@ -740,21 +767,30 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         entry_data = hass.data[DOMAIN][_med_id]
         _store = entry_data["store"]
-        _storage_data = entry_data["storage_data"]
-
-        med_data = _storage_data["medications"].get(_med_id)
-        if not med_data:
-            return
-
-        # Increment dosage by 0.5 (works for pills, tablets, etc.)
-        current_dosage = float(med_data.get(CONF_DOSAGE, 1))
-        new_dosage = current_dosage + 0.5
-        med_data[CONF_DOSAGE] = str(new_dosage)
-
-        await _store.async_save(_storage_data)
 
         # Get timestamp
         now = dt_util.now()
+
+        current_dosage = None
+        new_dosage = None
+
+        def update_dosage(data: dict) -> None:
+            """Update medication data atomically."""
+            nonlocal current_dosage, new_dosage
+            med_data = data["medications"].get(_med_id)
+            if not med_data:
+                return
+
+            # Increment dosage by 0.5 (works for pills, tablets, etc.)
+            current_dosage = float(med_data.get(CONF_DOSAGE, 1))
+            new_dosage = current_dosage + 0.5
+            med_data[CONF_DOSAGE] = str(new_dosage)
+
+        await _store.async_update(update_dosage)
+
+        # Reload for logging
+        storage_data = await _store.async_load()
+        med_data = storage_data["medications"].get(_med_id, {})
 
         # Write to CSV log files
         await log_utils.async_log_event(
@@ -794,21 +830,30 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         entry_data = hass.data[DOMAIN][_med_id]
         _store = entry_data["store"]
-        _storage_data = entry_data["storage_data"]
-
-        med_data = _storage_data["medications"].get(_med_id)
-        if not med_data:
-            return
-
-        # Decrement dosage by 0.5 (works for pills, tablets, etc.), minimum 0.5
-        current_dosage = float(med_data.get(CONF_DOSAGE, 1))
-        new_dosage = max(0.5, current_dosage - 0.5)
-        med_data[CONF_DOSAGE] = str(new_dosage)
-
-        await _store.async_save(_storage_data)
 
         # Get timestamp
         now = dt_util.now()
+
+        current_dosage = None
+        new_dosage = None
+
+        def update_dosage(data: dict) -> None:
+            """Update medication data atomically."""
+            nonlocal current_dosage, new_dosage
+            med_data = data["medications"].get(_med_id)
+            if not med_data:
+                return
+
+            # Decrement dosage by 0.5 (works for pills, tablets, etc.), minimum 0.5
+            current_dosage = float(med_data.get(CONF_DOSAGE, 1))
+            new_dosage = max(0.5, current_dosage - 0.5)
+            med_data[CONF_DOSAGE] = str(new_dosage)
+
+        await _store.async_update(update_dosage)
+
+        # Reload for logging
+        storage_data = await _store.async_load()
+        med_data = storage_data["medications"].get(_med_id, {})
 
         # Write to CSV log files
         await log_utils.async_log_event(
@@ -848,22 +893,31 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         entry_data = hass.data[DOMAIN][_med_id]
         _store = entry_data["store"]
-        _storage_data = entry_data["storage_data"]
-
-        med_data = _storage_data["medications"].get(_med_id)
-        if not med_data:
-            return
-
-        # Increment remaining amount by dosage amount
-        current_dosage = float(med_data.get(CONF_DOSAGE, 1))
-        current_remaining = float(med_data.get("remaining_amount", 0))
-        new_remaining = current_remaining + current_dosage
-        med_data["remaining_amount"] = new_remaining
-
-        await _store.async_save(_storage_data)
 
         # Get timestamp
         now = dt_util.now()
+
+        current_remaining = None
+        new_remaining = None
+
+        def update_remaining(data: dict) -> None:
+            """Update medication data atomically."""
+            nonlocal current_remaining, new_remaining
+            med_data = data["medications"].get(_med_id)
+            if not med_data:
+                return
+
+            # Increment remaining amount by dosage amount
+            current_dosage = float(med_data.get(CONF_DOSAGE, 1))
+            current_remaining = float(med_data.get("remaining_amount", 0))
+            new_remaining = current_remaining + current_dosage
+            med_data["remaining_amount"] = new_remaining
+
+        await _store.async_update(update_remaining)
+
+        # Reload for logging
+        storage_data = await _store.async_load()
+        med_data = storage_data["medications"].get(_med_id, {})
 
         # Write to CSV log files
         await log_utils.async_log_event(
@@ -903,22 +957,31 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         entry_data = hass.data[DOMAIN][_med_id]
         _store = entry_data["store"]
-        _storage_data = entry_data["storage_data"]
-
-        med_data = _storage_data["medications"].get(_med_id)
-        if not med_data:
-            return
-
-        # Decrement remaining amount by dosage amount, minimum 0
-        current_dosage = float(med_data.get(CONF_DOSAGE, 1))
-        current_remaining = float(med_data.get("remaining_amount", 0))
-        new_remaining = max(0, current_remaining - current_dosage)
-        med_data["remaining_amount"] = new_remaining
-
-        await _store.async_save(_storage_data)
 
         # Get timestamp
         now = dt_util.now()
+
+        current_remaining = None
+        new_remaining = None
+
+        def update_remaining(data: dict) -> None:
+            """Update medication data atomically."""
+            nonlocal current_remaining, new_remaining
+            med_data = data["medications"].get(_med_id)
+            if not med_data:
+                return
+
+            # Decrement remaining amount by dosage amount, minimum 0
+            current_dosage = float(med_data.get(CONF_DOSAGE, 1))
+            current_remaining = float(med_data.get("remaining_amount", 0))
+            new_remaining = max(0, current_remaining - current_dosage)
+            med_data["remaining_amount"] = new_remaining
+
+        await _store.async_update(update_remaining)
+
+        # Reload for logging
+        storage_data = await _store.async_load()
+        med_data = storage_data["medications"].get(_med_id, {})
 
         # Write to CSV log files
         await log_utils.async_log_event(
@@ -1002,18 +1065,26 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 _LOGGER.warning("Invalid end_date format: %s", end_date_str)
 
         # Get storage data from any medication entry (they all share the same storage)
-        _storage_data = None
+        _store = None
         for entry_id in hass.data.get(DOMAIN, {}):
-            if entry_id not in ["panel_registered", "sidebar_registered"]:
+            if entry_id not in [
+                "panel_registered",
+                "sidebar_registered",
+                "store",
+                "notification_listeners_registered",
+            ]:
                 entry_data = hass.data[DOMAIN].get(entry_id)
                 if entry_data and isinstance(entry_data, dict):
-                    _storage_data = entry_data.get("storage_data")
-                    if _storage_data:
+                    _store = entry_data.get("store")
+                    if _store:
                         break
 
-        if not _storage_data:
-            _LOGGER.warning("No storage data available")
+        if not _store:
+            _LOGGER.warning("No storage available")
             return {"history": [], "total_entries": 0}
+
+        # Load current storage data
+        _storage_data = await _store.async_load()
 
         # Get all history entries
         all_history = _storage_data.get("history", [])
@@ -1067,85 +1138,113 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         new_dosage_unit = call.data.get(ATTR_DOSAGE_UNIT)
         new_amount = call.data.get(ATTR_AMOUNT)
 
-        # Get storage data from any medication entry
+        # Get storage from any medication entry
         _store = None
-        _storage_data = None
         for entry_id in hass.data.get(DOMAIN, {}):
-            if entry_id not in ["panel_registered", "sidebar_registered"]:
+            if entry_id not in [
+                "panel_registered",
+                "sidebar_registered",
+                "store",
+                "notification_listeners_registered",
+            ]:
                 entry_data = hass.data[DOMAIN].get(entry_id)
                 if entry_data and isinstance(entry_data, dict):
                     _store = entry_data.get("store")
-                    _storage_data = entry_data.get("storage_data")
-                    if _store and _storage_data:
+                    if _store:
                         break
 
-        if not _store or not _storage_data:
+        if not _store:
             _LOGGER.error("Storage not available for editing history")
             return {"success": False, "error": "Storage not available"}
 
-        # Get all history entries
-        all_history = _storage_data.get("history", [])
+        updated_entry = None
 
-        # Validate index
-        if history_index < 0 or history_index >= len(all_history):
-            _LOGGER.error("Invalid history index: %s", history_index)
+        def update_history(data: dict) -> None:
+            """Update medication history atomically."""
+            nonlocal updated_entry
+
+            # Get all history entries
+            all_history = data.get("history", [])
+
+            # Validate index
+            if history_index < 0 or history_index >= len(all_history):
+                _LOGGER.error("Invalid history index: %s", history_index)
+                return
+
+            # Update the entry
+            entry = all_history[history_index]
+            if new_timestamp:
+                entry["timestamp"] = new_timestamp
+            if new_action:
+                entry["action"] = new_action
+            if new_dosage is not None:
+                entry["dosage"] = new_dosage
+            if new_dosage_unit:
+                entry["dosage_unit"] = new_dosage_unit
+            if new_amount is not None:
+                entry["amount"] = new_amount
+
+            updated_entry = entry.copy()
+
+        await _store.async_update(update_history)
+
+        if updated_entry:
+            _LOGGER.info(
+                "Medication history entry %s edited successfully", history_index
+            )
+            return {"success": True, "updated_entry": updated_entry}
+        else:
             return {"success": False, "error": "Invalid history index"}
-
-        # Update the entry
-        entry = all_history[history_index]
-        if new_timestamp:
-            entry["timestamp"] = new_timestamp
-        if new_action:
-            entry["action"] = new_action
-        if new_dosage is not None:
-            entry["dosage"] = new_dosage
-        if new_dosage_unit:
-            entry["dosage_unit"] = new_dosage_unit
-        if new_amount is not None:
-            entry["amount"] = new_amount
-
-        # Save to storage
-        await _store.async_save(_storage_data)
-
-        _LOGGER.info("Medication history entry %s edited successfully", history_index)
-        return {"success": True, "updated_entry": entry}
 
     async def handle_delete_medication_history(call: ServiceCall) -> dict:
         """Handle delete medication history service."""
         history_index = call.data.get(ATTR_HISTORY_INDEX)
 
-        # Get storage data from any medication entry
+        # Get storage from any medication entry
         _store = None
-        _storage_data = None
         for entry_id in hass.data.get(DOMAIN, {}):
-            if entry_id not in ["panel_registered", "sidebar_registered"]:
+            if entry_id not in [
+                "panel_registered",
+                "sidebar_registered",
+                "store",
+                "notification_listeners_registered",
+            ]:
                 entry_data = hass.data[DOMAIN].get(entry_id)
                 if entry_data and isinstance(entry_data, dict):
                     _store = entry_data.get("store")
-                    _storage_data = entry_data.get("storage_data")
-                    if _store and _storage_data:
+                    if _store:
                         break
 
-        if not _store or not _storage_data:
+        if not _store:
             _LOGGER.error("Storage not available for deleting history")
             return {"success": False, "error": "Storage not available"}
 
-        # Get all history entries
-        all_history = _storage_data.get("history", [])
+        deleted_entry = None
 
-        # Validate index
-        if history_index < 0 or history_index >= len(all_history):
-            _LOGGER.error("Invalid history index: %s", history_index)
+        def delete_history(data: dict) -> None:
+            """Delete medication history atomically."""
+            nonlocal deleted_entry
+
+            # Get all history entries
+            all_history = data.get("history", [])
+
+            # Validate index
+            if history_index < 0 or history_index >= len(all_history):
+                _LOGGER.error("Invalid history index: %s", history_index)
+                return
+
+            # Delete the entry
+            deleted_entry = all_history.pop(history_index)
+
+        await _store.async_update(delete_history)
+
+        if deleted_entry:
+            _LOGGER.info(
+                "Medication history entry %s deleted successfully", history_index
+            )
+            return {"success": True, "deleted_entry": deleted_entry}
+        else:
             return {"success": False, "error": "Invalid history index"}
-
-        # Delete the entry
-        deleted_entry = all_history.pop(history_index)
-
-        # Save to storage
-        await _store.async_save(_storage_data)
-
-        _LOGGER.info("Medication history entry %s deleted successfully", history_index)
-        return {"success": True, "deleted_entry": deleted_entry}
 
     # Register services only once
     if not hass.services.has_service(DOMAIN, SERVICE_TAKE_MEDICATION):

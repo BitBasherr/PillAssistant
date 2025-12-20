@@ -7,6 +7,7 @@ import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.pill_assistant.log_utils import get_logs_dir
+from custom_components.pill_assistant.store import PillAssistantStore
 
 
 @pytest.fixture(autouse=True)
@@ -24,6 +25,14 @@ def cleanup_log_files(hass):
     yield
     if os.path.exists(logs_dir):
         shutil.rmtree(logs_dir, ignore_errors=True)
+
+
+@pytest.fixture(autouse=True)
+def reset_storage_singleton():
+    """Reset the storage singleton between tests to ensure test isolation."""
+    PillAssistantStore.reset_instance()
+    yield
+    PillAssistantStore.reset_instance()
 
 
 @pytest.fixture
