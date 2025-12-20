@@ -1650,6 +1650,8 @@ body.theme-dark .clock-legend.bottom-banner {
         let dateChangeDebounceTimer = null; // Timer for debouncing date/time changes
         let currentStatsSubtab = 'graphs'; // Current statistics sub-tab: 'graphs' or 'table'
         let currentBarMode = 'time'; // Current bar chart mode: 'time' or 'quantity'
+        let currentViewContext = 'overall'; // Current view context: 'overall' or 'per-medication'
+        let currentMedicationId = null; // Track current medication ID when in per-medication view
         // Helper function to unwrap service response from various formats
         function unwrapServiceResponse(response) {
             if (!response || typeof response !== 'object') {
@@ -3524,8 +3526,6 @@ body.theme-dark .clock-legend.bottom-banner {
         let clockPeriod = 'AM'; // Current selected period for 12hr clock
         let clockData = []; // Store dose events by date
         let show24HourClock = false; // Whether to show 24-hour clock
-        let currentViewContext = 'overall'; // 'overall' or 'per-medication'
-        let currentMedicationId = null; // Track current medication ID when in per-medication view
         // Get local date string in YYYY-MM-DD format
         function getLocalDateString(date) {
             const year = date.getFullYear();
