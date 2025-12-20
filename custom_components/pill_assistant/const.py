@@ -177,12 +177,21 @@ SERVICE_DECREMENT_DOSAGE = "decrement_dosage"
 SERVICE_INCREMENT_REMAINING = "increment_remaining"
 SERVICE_DECREMENT_REMAINING = "decrement_remaining"
 SERVICE_GET_STATISTICS = "get_statistics"
+SERVICE_GET_MEDICATION_HISTORY = "get_medication_history"
+SERVICE_EDIT_MEDICATION_HISTORY = "edit_medication_history"
+SERVICE_DELETE_MEDICATION_HISTORY = "delete_medication_history"
 
 # Service parameter keys (for service calls)
 ATTR_MEDICATION_ID = "medication_id"
 ATTR_SNOOZE_DURATION = "snooze_duration"
 ATTR_START_DATE = "start_date"
 ATTR_END_DATE = "end_date"
+ATTR_HISTORY_INDEX = "history_index"
+ATTR_TIMESTAMP = "timestamp"
+ATTR_ACTION = "action"
+ATTR_DOSAGE = "dosage"
+ATTR_DOSAGE_UNIT = "dosage_unit"
+ATTR_AMOUNT = "amount"
 
 # Display attribute names (for entity state attributes - human-friendly)
 ATTR_DISPLAY_MEDICATION_ID = "Medication ID"
