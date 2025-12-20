@@ -29,6 +29,8 @@ from .const import (
     CONF_IGNORE_UNAVAILABLE,
     CONF_REFILL_AMOUNT,
     CONF_REFILL_REMINDER_DAYS,
+    CONF_CURRENT_QUANTITY,
+    CONF_USE_CUSTOM_QUANTITY,
     CONF_NOTES,
     CONF_NOTIFY_SERVICES,
     CONF_SNOOZE_DURATION_MINUTES,
@@ -690,44 +692,77 @@ class PillAssistantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors = {}
 
         if user_input is not None:
-            self._data.update(user_input)
+            # Check if user wants custom quantity and hasn't provided it yet
+            use_custom = user_input.get(CONF_USE_CUSTOM_QUANTITY, False)
+            has_custom_quantity = CONF_CURRENT_QUANTITY in user_input
+            
+            if use_custom and not has_custom_quantity:
+                # Re-show form with current quantity field
+                self._data.update(user_input)
+                pass  # Fall through to show form again
+            else:
+                self._data.update(user_input)
+                
+                # If not using custom quantity, set current quantity to refill amount
+                if not use_custom:
+                    self._data[CONF_CURRENT_QUANTITY] = self._data.get(CONF_REFILL_AMOUNT, 30)
 
-            # Create unique ID based on medication name
-            await self.async_set_unique_id(
-                f"{DOMAIN}_{self._data[CONF_MEDICATION_NAME].lower().replace(' ', '_')}"
-            )
-            self._abort_if_unique_id_configured()
+                # Create unique ID based on medication name
+                await self.async_set_unique_id(
+                    f"{DOMAIN}_{self._data[CONF_MEDICATION_NAME].lower().replace(' ', '_')}"
+                )
+                self._abort_if_unique_id_configured()
 
-            # Create the entry - button entity will be automatically created by button platform
-            return self.async_create_entry(
-                title=self._data[CONF_MEDICATION_NAME],
-                data=self._data,
-            )
+                # Create the entry - button entity will be automatically created by button platform
+                return self.async_create_entry(
+                    title=self._data[CONF_MEDICATION_NAME],
+                    data=self._data,
+                )
 
         # Get available notification services
         notify_services = self._get_notify_services()
         notify_options = [{"label": svc, "value": svc} for svc in notify_services]
+        
+        # Check if we should show the custom quantity field
+        use_custom = self._data.get(CONF_USE_CUSTOM_QUANTITY, False)
 
         schema_dict = {
-            vol.Required(CONF_REFILL_AMOUNT, default=30): vol.Coerce(int),
+            vol.Required(CONF_REFILL_AMOUNT, default=self._data.get(CONF_REFILL_AMOUNT, 30)): vol.Coerce(int),
             vol.Required(
-                CONF_REFILL_REMINDER_DAYS, default=DEFAULT_REFILL_REMINDER_DAYS
+                CONF_REFILL_REMINDER_DAYS, 
+                default=self._data.get(CONF_REFILL_REMINDER_DAYS, DEFAULT_REFILL_REMINDER_DAYS)
             ): vol.Coerce(int),
             vol.Optional(
-                CONF_SNOOZE_DURATION_MINUTES, default=DEFAULT_SNOOZE_DURATION_MINUTES
+                CONF_USE_CUSTOM_QUANTITY,
+                default=self._data.get(CONF_USE_CUSTOM_QUANTITY, False),
+            ): selector({"boolean": {}}),
+        }
+        
+        # Add current quantity field if checkbox is checked
+        if use_custom:
+            schema_dict[vol.Required(
+                CONF_CURRENT_QUANTITY,
+                default=self._data.get(CONF_CURRENT_QUANTITY, self._data.get(CONF_REFILL_AMOUNT, 30)),
+            )] = vol.Coerce(int)
+        
+        schema_dict.update({
+            vol.Optional(
+                CONF_SNOOZE_DURATION_MINUTES, 
+                default=self._data.get(CONF_SNOOZE_DURATION_MINUTES, DEFAULT_SNOOZE_DURATION_MINUTES)
             ): vol.Coerce(int),
             vol.Optional(
                 CONF_ENABLE_AUTOMATIC_NOTIFICATIONS,
-                default=DEFAULT_ENABLE_AUTOMATIC_NOTIFICATIONS,
+                default=self._data.get(CONF_ENABLE_AUTOMATIC_NOTIFICATIONS, DEFAULT_ENABLE_AUTOMATIC_NOTIFICATIONS),
             ): selector({"boolean": {}}),
             vol.Optional(
-                CONF_ON_TIME_WINDOW_MINUTES, default=DEFAULT_ON_TIME_WINDOW_MINUTES
+                CONF_ON_TIME_WINDOW_MINUTES, 
+                default=self._data.get(CONF_ON_TIME_WINDOW_MINUTES, DEFAULT_ON_TIME_WINDOW_MINUTES)
             ): vol.Coerce(int),
-        }
+        })
 
         # Add notification service selector if services are available
         if notify_options:
-            schema_dict[vol.Optional(CONF_NOTIFY_SERVICES, default=[])] = selector(
+            schema_dict[vol.Optional(CONF_NOTIFY_SERVICES, default=self._data.get(CONF_NOTIFY_SERVICES, []))] = selector(
                 {
                     "select": {
                         "options": notify_options,
@@ -741,6 +776,9 @@ class PillAssistantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="refill",
             data_schema=vol.Schema(schema_dict),
             errors=errors,
+            description_placeholders={
+                "help": "Configure refill settings.\n\n**Use Custom Starting Quantity**: Check this box if you're not starting with a full bottle at the refill amount. When checked, you can enter the actual current quantity you have."
+            },
         )
 
     @staticmethod
@@ -851,6 +889,9 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
                         return await self.async_step_time_clarification_options()
 
             if not errors:
+                # Get medication ID
+                med_id = self._config_entry.entry_id
+                
                 # Update the config entry with new data
                 # Clear temp schedule type since we're saving now
                 self._temp_schedule_type = None
@@ -858,12 +899,38 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
                     self._config_entry,
                     data={**self._config_entry.data, **user_input},
                 )
+                
+                # If remaining_amount was changed, update it in storage
+                if CONF_CURRENT_QUANTITY in user_input:
+                    from .const import DOMAIN as PILL_DOMAIN
+                    if PILL_DOMAIN in self.hass.data and med_id in self.hass.data[PILL_DOMAIN]:
+                        entry_data = self.hass.data[PILL_DOMAIN][med_id]
+                        storage_data = entry_data.get("storage_data", {})
+                        medications = storage_data.get("medications", {})
+                        
+                        if med_id in medications:
+                            medications[med_id]["remaining_amount"] = user_input[CONF_CURRENT_QUANTITY]
+                            # Save to storage
+                            store = entry_data.get("store")
+                            if store:
+                                await store.async_save(storage_data)
 
                 return self.async_create_entry(title="", data={})
 
         # Get available notification services
         notify_services = self._get_notify_services()
         notify_options = [{"label": svc, "value": svc} for svc in notify_services]
+        
+        # Get current remaining amount from storage
+        remaining_amount = 0
+        med_id = self._config_entry.entry_id
+        from .const import DOMAIN as PILL_DOMAIN
+        if PILL_DOMAIN in self.hass.data and med_id in self.hass.data[PILL_DOMAIN]:
+            entry_data = self.hass.data[PILL_DOMAIN][med_id]
+            storage_data = entry_data.get("storage_data", {})
+            medications = storage_data.get("medications", {})
+            if med_id in medications:
+                remaining_amount = medications[med_id].get("remaining_amount", 0)
 
         # Base schema
         schema_dict = {
@@ -880,6 +947,10 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
                 CONF_DOSAGE_UNIT,
                 default=current_data.get(CONF_DOSAGE_UNIT, DEFAULT_DOSAGE_UNIT),
             ): SELECT_DOSAGE_UNIT,
+            vol.Required(
+                CONF_CURRENT_QUANTITY,
+                default=remaining_amount,
+            ): vol.Coerce(int),
             vol.Required(
                 CONF_SCHEDULE_TYPE,
                 default=schedule_type,

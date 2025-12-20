@@ -17,6 +17,8 @@ CONF_SCHEDULE_TIMES = "schedule_times"  # List of times in HH:MM format
 CONF_SCHEDULE_DAYS = "schedule_days"  # List of days (mon, tue, wed, thu, fri, sat, sun)
 CONF_REFILL_AMOUNT = "refill_amount"
 CONF_REFILL_REMINDER_DAYS = "refill_reminder_days"
+CONF_CURRENT_QUANTITY = "current_quantity"  # Current/starting quantity
+CONF_USE_CUSTOM_QUANTITY = "use_custom_quantity"  # Use custom starting quantity instead of refill amount
 CONF_NOTES = "notes"
 CONF_NOTIFY_SERVICES = "notify_services"  # List of notification services to use
 

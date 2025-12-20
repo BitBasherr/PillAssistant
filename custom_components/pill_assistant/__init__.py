@@ -33,6 +33,7 @@ from .const import (
     CONF_MEDICATION_TYPE,
     CONF_NOTIFY_SERVICES,
     CONF_REFILL_AMOUNT,
+    CONF_CURRENT_QUANTITY,
     CONF_SCHEDULE_TYPE,
     CONF_RELATIVE_TO_SENSOR,
     CONF_AVOID_DUPLICATE_TRIGGERS,
@@ -290,9 +291,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Store the entry data in storage if not already there
     med_id = entry.entry_id
     if med_id not in storage_data["medications"]:
+        # Use current_quantity if provided (from custom starting amount), otherwise use refill_amount
+        starting_amount = entry.data.get(CONF_CURRENT_QUANTITY, entry.data.get(CONF_REFILL_AMOUNT, 0))
         storage_data["medications"][med_id] = {
             **entry.data,
-            "remaining_amount": entry.data.get(CONF_REFILL_AMOUNT, 0),
+            "remaining_amount": starting_amount,
             "last_taken": None,
             "missed_doses": [],
         }
