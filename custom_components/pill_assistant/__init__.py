@@ -968,35 +968,39 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     async def handle_get_medication_history(call: ServiceCall) -> dict:
         """Handle get medication history service."""
         from datetime import datetime
-        
+
         _med_id = call.data.get(ATTR_MEDICATION_ID)
         start_date_str = call.data.get(ATTR_START_DATE)
         end_date_str = call.data.get(ATTR_END_DATE)
-        
+
         # Parse date filters if provided (make them timezone-aware)
         start_date = None
         end_date = None
         if start_date_str:
             try:
-                parsed = datetime.fromisoformat(start_date_str.replace('Z', '+00:00'))
+                parsed = datetime.fromisoformat(start_date_str.replace("Z", "+00:00"))
                 # If naive, make it timezone-aware using the system timezone
                 if parsed.tzinfo is None:
-                    start_date = dt_util.as_local(dt_util.utc_from_timestamp(parsed.timestamp()))
+                    start_date = dt_util.as_local(
+                        dt_util.utc_from_timestamp(parsed.timestamp())
+                    )
                 else:
                     start_date = parsed
             except (ValueError, OSError):
                 _LOGGER.warning("Invalid start_date format: %s", start_date_str)
         if end_date_str:
             try:
-                parsed = datetime.fromisoformat(end_date_str.replace('Z', '+00:00'))
+                parsed = datetime.fromisoformat(end_date_str.replace("Z", "+00:00"))
                 # If naive, make it timezone-aware using the system timezone
                 if parsed.tzinfo is None:
-                    end_date = dt_util.as_local(dt_util.utc_from_timestamp(parsed.timestamp()))
+                    end_date = dt_util.as_local(
+                        dt_util.utc_from_timestamp(parsed.timestamp())
+                    )
                 else:
                     end_date = parsed
             except (ValueError, OSError):
                 _LOGGER.warning("Invalid end_date format: %s", end_date_str)
-        
+
         # Get storage data from any medication entry (they all share the same storage)
         _storage_data = None
         for entry_id in hass.data.get(DOMAIN, {}):
@@ -1006,60 +1010,53 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                     _storage_data = entry_data.get("storage_data")
                     if _storage_data:
                         break
-        
+
         if not _storage_data:
             _LOGGER.warning("No storage data available")
             return {"history": [], "total_entries": 0}
-        
+
         # Get all history entries
         all_history = _storage_data.get("history", [])
-        
+
         # Filter by medication_id if provided
         filtered_history = []
         for idx, entry in enumerate(all_history):
             # Add index to each entry for editing/deletion
             entry_with_index = entry.copy()
             entry_with_index["history_index"] = idx
-            
+
             # Filter by medication_id
             if _med_id and entry.get("medication_id") != _med_id:
                 continue
-            
+
             # Filter by date range
             if start_date or end_date:
                 try:
                     parsed = datetime.fromisoformat(
-                        entry.get("timestamp", "").replace('Z', '+00:00')
+                        entry.get("timestamp", "").replace("Z", "+00:00")
                     )
                     # Ensure timestamp is timezone-aware
                     if parsed.tzinfo is None:
-                        entry_timestamp = dt_util.as_local(dt_util.utc_from_timestamp(parsed.timestamp()))
+                        entry_timestamp = dt_util.as_local(
+                            dt_util.utc_from_timestamp(parsed.timestamp())
+                        )
                     else:
                         entry_timestamp = parsed
-                    
+
                     if start_date and entry_timestamp < start_date:
                         continue
                     if end_date and entry_timestamp > end_date:
                         continue
                 except (ValueError, AttributeError, OSError):
                     continue
-            
+
             filtered_history.append(entry_with_index)
-        
+
         # Sort by timestamp descending (most recent first)
-        filtered_history.sort(
-            key=lambda x: x.get("timestamp", ""),
-            reverse=True
-        )
-        
-        _LOGGER.info(
-            "Medication history retrieved: %s entries",
-            len(filtered_history)
-        )
-        return {
-            "history": filtered_history,
-            "total_entries": len(filtered_history)
-        }
+        filtered_history.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
+
+        _LOGGER.info("Medication history retrieved: %s entries", len(filtered_history))
+        return {"history": filtered_history, "total_entries": len(filtered_history)}
 
     async def handle_edit_medication_history(call: ServiceCall) -> dict:
         """Handle edit medication history service."""
@@ -1069,7 +1066,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         new_dosage = call.data.get(ATTR_DOSAGE)
         new_dosage_unit = call.data.get(ATTR_DOSAGE_UNIT)
         new_amount = call.data.get(ATTR_AMOUNT)
-        
+
         # Get storage data from any medication entry
         _store = None
         _storage_data = None
@@ -1081,19 +1078,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                     _storage_data = entry_data.get("storage_data")
                     if _store and _storage_data:
                         break
-        
+
         if not _store or not _storage_data:
             _LOGGER.error("Storage not available for editing history")
             return {"success": False, "error": "Storage not available"}
-        
+
         # Get all history entries
         all_history = _storage_data.get("history", [])
-        
+
         # Validate index
         if history_index < 0 or history_index >= len(all_history):
             _LOGGER.error("Invalid history index: %s", history_index)
             return {"success": False, "error": "Invalid history index"}
-        
+
         # Update the entry
         entry = all_history[history_index]
         if new_timestamp:
@@ -1106,20 +1103,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             entry["dosage_unit"] = new_dosage_unit
         if new_amount is not None:
             entry["amount"] = new_amount
-        
+
         # Save to storage
         await _store.async_save(_storage_data)
-        
-        _LOGGER.info(
-            "Medication history entry %s edited successfully",
-            history_index
-        )
+
+        _LOGGER.info("Medication history entry %s edited successfully", history_index)
         return {"success": True, "updated_entry": entry}
 
     async def handle_delete_medication_history(call: ServiceCall) -> dict:
         """Handle delete medication history service."""
         history_index = call.data.get(ATTR_HISTORY_INDEX)
-        
+
         # Get storage data from any medication entry
         _store = None
         _storage_data = None
@@ -1131,29 +1125,26 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                     _storage_data = entry_data.get("storage_data")
                     if _store and _storage_data:
                         break
-        
+
         if not _store or not _storage_data:
             _LOGGER.error("Storage not available for deleting history")
             return {"success": False, "error": "Storage not available"}
-        
+
         # Get all history entries
         all_history = _storage_data.get("history", [])
-        
+
         # Validate index
         if history_index < 0 or history_index >= len(all_history):
             _LOGGER.error("Invalid history index: %s", history_index)
             return {"success": False, "error": "Invalid history index"}
-        
+
         # Delete the entry
         deleted_entry = all_history.pop(history_index)
-        
+
         # Save to storage
         await _store.async_save(_storage_data)
-        
-        _LOGGER.info(
-            "Medication history entry %s deleted successfully",
-            history_index
-        )
+
+        _LOGGER.info("Medication history entry %s deleted successfully", history_index)
         return {"success": True, "deleted_entry": deleted_entry}
 
     # Register services only once
