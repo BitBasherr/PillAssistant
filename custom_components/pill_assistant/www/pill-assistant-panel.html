@@ -1439,6 +1439,10 @@ body.theme-dark .clock-legend.bottom-banner {
                         <input type="checkbox" id="show-24hr-clock" onchange="toggle24HourClock()">
                         <span>Show 24-Hour Clock</span>
                     </label>
+                    <label class="clock-view-checkbox">
+                        <input type="checkbox" id="view-yesterday-clock" onchange="toggleYesterdayView()">
+                        <span>View Yesterday</span>
+                    </label>
                 </div>
                 <div class="clock-layout">
     <div class="clock-layout-spacer" aria-hidden="true"></div>
@@ -1965,6 +1969,15 @@ body.theme-dark .clock-legend.bottom-banner {
                 .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
                 .join(' ');
         }
+        // Format medication name with proper capitalization
+        function formatMedicationName(name) {
+            if (!name) return '';
+            // Replace underscores with spaces, then capitalize each word
+            return name
+                .split('_')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                .join(' ');
+        }
         // Get Home Assistant connection
         function getHassConnection() {
             if (window.parent && window.parent.document) {
@@ -2114,7 +2127,7 @@ body.theme-dark .clock-legend.bottom-banner {
             nextDose = formatTimeToLocal(nextDose);
             
             const refillAmount = attrs['Refill amount'] || 0;
-            const medName = med.entityId.replace('sensor.pa_', '').replace(/_/g, ' ');
+            const medName = formatMedicationName(med.entityId.replace('sensor.pa_', '').replace(/_/g, ' '));
             
             // Helper to check if decrement button should be disabled
             const isDecrementDisabled = parseFloat(dosage) <= 0.5;
@@ -3128,6 +3141,28 @@ body.theme-dark .clock-legend.bottom-banner {
                 render24HourClock();
             }
         }
+        // Toggle yesterday view for clock
+        function toggleYesterdayView() {
+            const checkbox = document.getElementById('view-yesterday-clock');
+            const datePicker = document.getElementById('clock-date-picker');
+            
+            if (!datePicker) return;
+            
+            if (checkbox && checkbox.checked) {
+                // Set to yesterday
+                const yesterday = new Date();
+                yesterday.setDate(yesterday.getDate() - 1);
+                const yesterdayStr = getLocalDateString(yesterday);
+                datePicker.value = yesterdayStr;
+                loadClockData(yesterdayStr);
+            } else {
+                // Set to today
+                const today = new Date();
+                const todayStr = getLocalDateString(today);
+                datePicker.value = todayStr;
+                loadClockData(todayStr);
+            }
+        }
         // Load 24-hour clock preference
         function load24HourClockPreference() {
             const saved = localStorage.getItem('pillAssistantShow24HrClock');
@@ -3153,6 +3188,19 @@ body.theme-dark .clock-legend.bottom-banner {
         // Load medication dose data for a specific date
         async function loadClockData(dateStr) {
             try {
+                // Uncheck "View Yesterday" when manually selecting a date
+                const yesterdayCheckbox = document.getElementById('view-yesterday-clock');
+                const datePicker = document.getElementById('clock-date-picker');
+                if (yesterdayCheckbox && datePicker) {
+                    const yesterday = new Date();
+                    yesterday.setDate(yesterday.getDate() - 1);
+                    const yesterdayStr = getLocalDateString(yesterday);
+                    // Only uncheck if the selected date is not yesterday
+                    if (dateStr !== yesterdayStr) {
+                        yesterdayCheckbox.checked = false;
+                    }
+                }
+                
                 if (!hass) {
                     hass = getHassConnection();
                     if (!hass) {
@@ -3670,7 +3718,7 @@ body.theme-dark .clock-legend.bottom-banner {
                     <span class="view-mode">${formattedDateTime}</span>
                     <input type="datetime-local" class="edit-mode" value="${isoDateTime}" style="display: none;" />
                 </td>
-                <td>${entry.medication_name || 'Unknown'}</td>
+                <td>${formatMedicationName(entry.medication_name) || 'Unknown'}</td>
                 <td>
                     <span class="view-mode">${entry.action || 'N/A'}</span>
                     <select class="edit-mode" style="display: none;">
