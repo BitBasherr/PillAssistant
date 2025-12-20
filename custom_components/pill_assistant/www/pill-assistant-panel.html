@@ -12,14 +12,12 @@
             padding: 0;
             -webkit-tap-highlight-color: transparent;
         }
-
         html {
             height: 100%;
             /* Allow touch scrolling on the document */
             touch-action: pan-y pan-x;
             -webkit-overflow-scrolling: touch;
         }
-
         body {
             font-family: 'Roboto', sans-serif;
             padding: 20px;
@@ -31,25 +29,21 @@
             /* Ensure touch scrolling works without needing an initial click */
             touch-action: pan-y pan-x;
         }
-
         /* Light theme (default) */
         body.theme-light {
             background-color: #fafafa;
             color: #212121;
         }
-
         /* Dark theme */
         body.theme-dark {
             background-color: #121212;
             color: #e0e0e0;
         }
-
         /* Auto theme - will be set by JavaScript based on system preference */
         body.theme-auto {
             background-color: var(--primary-background-color, #fafafa);
             color: var(--primary-text-color, #212121);
         }
-
         .container {
             max-width: 1200px;
             margin: 0 auto;
@@ -57,20 +51,17 @@
             touch-action: auto;
             overflow: visible;
         }
-
         h1 {
             font-size: 2em;
             margin-bottom: 20px;
             color: var(--primary-color, #03a9f4);
         }
-
         .header-section {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
         }
-
         .add-medication-btn {
             background-color: var(--primary-color, #03a9f4);
             color: white;
@@ -83,17 +74,14 @@
             transition: all 0.3s ease;
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
-
         .add-medication-btn:hover {
             background-color: var(--dark-primary-color, #0288d1);
             box-shadow: 0 4px 8px rgba(0,0,0,0.3);
             transform: translateY(-2px);
         }
-
         .add-medication-btn:active {
             transform: translateY(0);
         }
-
         .medication-card {
             background: var(--card-background-color, #ffffff);
             border-radius: 8px;
@@ -103,12 +91,10 @@
             transition: all 0.3s ease;
             position: relative;
         }
-
         .medication-card.updating {
             opacity: 0.7;
             pointer-events: none;
         }
-
         .medication-card.updating::after {
             content: '';
             position: absolute;
@@ -119,7 +105,6 @@
             background: rgba(255, 255, 255, 0.3);
             border-radius: 8px;
         }
-
         .medication-header {
             display: flex;
             justify-content: space-between;
@@ -128,13 +113,11 @@
             border-bottom: 2px solid var(--divider-color, #e0e0e0);
             padding-bottom: 10px;
         }
-
         .medication-name {
             font-size: 1.5em;
             font-weight: 500;
             color: var(--primary-text-color, #212121);
         }
-
         .medication-status {
             padding: 5px 15px;
             border-radius: 20px;
@@ -142,38 +125,32 @@
             font-weight: 500;
             text-transform: uppercase;
         }
-
         .status-scheduled { background-color: #81c784; color: white; }
         .status-due { background-color: #ff9800; color: white; }
         .status-overdue { background-color: #f44336; color: white; }
         .status-taken { background-color: #4caf50; color: white; }
         .status-refill_needed { background-color: #9c27b0; color: white; }
-
         .medication-details {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 15px;
             margin-bottom: 20px;
         }
-
         .detail-item {
             padding: 10px;
             background: var(--secondary-background-color, #f5f5f5);
             border-radius: 4px;
         }
-
         .detail-label {
             font-size: 0.85em;
             color: var(--secondary-text-color, #757575);
             margin-bottom: 5px;
         }
-
         .detail-value {
             font-size: 1.1em;
             font-weight: 500;
             color: var(--primary-text-color, #212121);
         }
-
         .dosage-adjuster {
             display: inline-flex;
             align-items: center;
@@ -184,26 +161,22 @@
             margin-bottom: 12px;
             margin-right: 10px;
         }
-
         .dosage-label {
             font-weight: 500;
             font-size: 0.9em;
             margin-right: 4px;
         }
-
         .adjusters-container {
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
             margin-bottom: 15px;
         }
-
         .dosage-controls {
             display: flex;
             align-items: center;
             gap: 6px;
         }
-
         .dosage-btn {
             background: var(--primary-color, #03a9f4);
             color: white;
@@ -222,29 +195,24 @@
             -webkit-user-select: none;
             user-select: none;
         }
-
         .dosage-btn:hover {
             background: var(--dark-primary-color, #0288d1);
         }
-
         .dosage-btn:disabled {
             background: var(--disabled-text-color, #9e9e9e);
             cursor: not-allowed;
         }
-
         .dosage-value {
             font-size: 1.1em;
             font-weight: 500;
             min-width: 80px;
             text-align: center;
         }
-
         .action-buttons {
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
         }
-
         .action-btn {
             flex: 1 1 auto;
             min-width: 120px;
@@ -261,68 +229,54 @@
             -webkit-user-select: none;
             user-select: none;
         }
-
         .btn-take {
             background: #4caf50;
             color: white;
         }
-
         .btn-take:hover {
             background: #45a049;
         }
-
         .btn-skip {
             background: #ff9800;
             color: white;
         }
-
         .btn-skip:hover {
             background: #f57c00;
         }
-
         .btn-refill {
             background: #9c27b0;
             color: white;
         }
-
         .btn-refill:hover {
             background: #7b1fa2;
         }
-
         .btn-test {
             background: #03a9f4;
             color: white;
         }
-
         .btn-test:hover {
             background: #0288d1;
         }
-
         .btn-edit {
             background: #2196f3;
             color: white;
         }
-
         .btn-edit:hover {
             background: #1976d2;
         }
-
         .btn-delete {
             background: #f44336;
             color: white;
         }
-
         .btn-delete:hover {
             background: #d32f2f;
         }
-
         .card-actions {
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
             margin-top: 15px;
         }
-
         .card-management-actions {
             display: flex;
             gap: 10px;
@@ -330,7 +284,6 @@
             padding-top: 10px;
             border-top: 1px solid var(--divider-color, #e0e0e0);
         }
-
         .settings-checkbox {
             display: flex;
             align-items: center;
@@ -339,34 +292,28 @@
             cursor: pointer;
             user-select: none;
         }
-
         .settings-checkbox input[type="checkbox"] {
             cursor: pointer;
             width: 18px;
             height: 18px;
         }
-
         .theme-switcher {
             display: flex;
             gap: 8px;
             align-items: center;
         }
-
         .theme-switcher-label {
             font-size: 0.9em;
             margin-right: 4px;
         }
-
         .theme-option {
             position: relative;
         }
-
         .theme-option input[type="radio"] {
             position: absolute;
             opacity: 0;
             pointer-events: none;
         }
-
         .theme-option label {
             display: inline-block;
             padding: 6px 14px;
@@ -380,26 +327,21 @@
             background: var(--card-background-color, #ffffff);
             color: var(--primary-text-color, #212121);
         }
-
         .theme-option input[type="radio"]:checked + label {
             background: var(--primary-color, #03a9f4);
             color: white;
             border-color: var(--primary-color, #03a9f4);
         }
-
         .theme-option input[type="radio"]:disabled + label {
             opacity: 0.5;
             cursor: not-allowed;
         }
-
         .theme-option label:hover {
             border-color: var(--primary-color, #03a9f4);
         }
-
         .theme-option input[type="radio"]:checked + label:hover {
             background: var(--dark-primary-color, #0288d1);
         }
-
         /* Sizing controls */
         .sizing-controls {
             display: none;
@@ -411,11 +353,9 @@
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-
         .sizing-controls.visible {
             display: flex;
         }
-
         .sizing-slider-group {
             display: flex;
             flex-direction: column;
@@ -423,18 +363,15 @@
             flex: 1;
             min-width: 200px;
         }
-
         .sizing-slider-group label {
             font-size: 0.85em;
             font-weight: 500;
             color: var(--secondary-text-color, #757575);
         }
-
         .sizing-slider-group input[type="range"] {
             width: 100%;
             cursor: pointer;
         }
-
         .sizing-toggle {
             display: flex;
             align-items: center;
@@ -444,21 +381,17 @@
             user-select: none;
             color: var(--secondary-text-color, #757575);
         }
-
         .sizing-toggle input[type="checkbox"] {
             cursor: pointer;
             width: 16px;
             height: 16px;
         }
-
         body.theme-dark .sizing-controls {
             background: #1e1e1e;
         }
-
         body.theme-dark .sizing-slider-group label {
             color: #b0b0b0;
         }
-
         /* Chart type toggle */
         .chart-type-toggle {
             display: flex;
@@ -467,14 +400,12 @@
             margin-bottom: 15px;
             flex-wrap: wrap;
         }
-
         .chart-type-toggle label {
             font-size: 0.85em;
             font-weight: 500;
             color: var(--secondary-text-color, #757575);
             margin-right: 8px;
         }
-
         .chart-type-btn {
             padding: 6px 14px;
             border: 2px solid var(--divider-color, #e0e0e0);
@@ -486,104 +417,83 @@
             background: var(--card-background-color, #ffffff);
             color: var(--primary-text-color, #212121);
         }
-
         .chart-type-btn.active {
             background: var(--primary-color, #03a9f4);
             color: white;
             border-color: var(--primary-color, #03a9f4);
         }
-
         .chart-type-btn:hover:not(.active) {
             border-color: var(--primary-color, #03a9f4);
         }
-
         body.theme-dark .chart-type-btn {
             background: #2a2a2a;
             color: #e0e0e0;
             border-color: #444;
         }
-
         body.theme-dark .chart-type-btn.active {
             background: var(--primary-color, #03a9f4);
             color: white;
             border-color: var(--primary-color, #03a9f4);
         }
-
         body.theme-dark .chart-type-toggle label {
             color: #b0b0b0;
         }
-
         /* Per-medication statistics button */
         .btn-stats {
             background: #673ab7;
             color: white;
         }
-
         .btn-stats:hover {
             background: #512da8;
         }
-
         /* Theme-specific card backgrounds */
         body.theme-dark .medication-card {
             background: #1e1e1e;
         }
-
         body.theme-dark .detail-item {
             background: #2a2a2a;
         }
-
         body.theme-dark .dosage-adjuster {
             background: #2a2a2a;
         }
-
         body.theme-dark .theme-option label {
             background: #2a2a2a;
             color: #e0e0e0;
             border-color: #444;
         }
-
         body.theme-dark .theme-option input[type="radio"]:checked + label {
             background: var(--primary-color, #03a9f4);
             color: white;
             border-color: var(--primary-color, #03a9f4);
         }
-
         /* Theme-specific text colors */
         body.theme-dark .medication-name {
             color: #ffffff;
         }
-
         body.theme-dark .detail-label {
             color: #b0b0b0;
         }
-
         body.theme-dark .detail-value {
             color: #ffffff;
         }
-
         body.theme-dark .dosage-label {
             color: #e0e0e0;
         }
-
         body.theme-dark .dosage-value {
             color: #ffffff;
         }
-
         body.theme-dark .theme-switcher-label {
             color: #e0e0e0;
         }
-
         body.theme-dark .settings-checkbox {
             color: #e0e0e0;
         }
-
         .loading {
             text-align: center;
             padding: 40px;
             font-size: 1.2em;
             color: var(--secondary-text-color, #757575);
         }
-
         .error {
             background: #ffebee;
             color: #c62828;
@@ -591,7 +501,6 @@
             border-radius: 6px;
             margin-bottom: 20px;
         }
-
         .success-message {
             position: fixed;
             top: 20px;
@@ -604,7 +513,6 @@
             z-index: 1000;
             animation: slideIn 0.3s ease-out;
         }
-
         .error-message {
             position: fixed;
             top: 20px;
@@ -617,7 +525,6 @@
             z-index: 1000;
             animation: slideIn 0.3s ease-out;
         }
-
         @keyframes slideIn {
             from {
                 transform: translateX(400px);
@@ -628,20 +535,17 @@
                 opacity: 1;
             }
         }
-
         .empty-state {
             text-align: center;
             padding: 60px 20px;
             color: var(--secondary-text-color, #757575);
         }
-
         .empty-state svg {
             width: 100px;
             height: 100px;
             opacity: 0.5;
             margin-bottom: 20px;
         }
-
         /* Navigation tabs */
         .nav-tabs {
             display: flex;
@@ -649,7 +553,6 @@
             margin-bottom: 20px;
             border-bottom: 2px solid var(--divider-color, #e0e0e0);
         }
-
         .nav-tab {
             padding: 12px 24px;
             background: none;
@@ -663,24 +566,19 @@
             position: relative;
             top: 2px;
         }
-
         .nav-tab:hover {
             color: var(--primary-color, #03a9f4);
         }
-
         .nav-tab.active {
             color: var(--primary-color, #03a9f4);
             border-bottom-color: var(--primary-color, #03a9f4);
         }
-
         .tab-content {
             display: none;
         }
-
         .tab-content.active {
             display: block;
         }
-
         /* Statistics section */
         .statistics-header {
             display: flex;
@@ -690,21 +588,18 @@
             flex-wrap: wrap;
             gap: 15px;
         }
-
         .date-range-picker-container {
             display: flex;
             flex-direction: column;
             gap: 12px;
             align-items: flex-start;
         }
-
         .date-preset-options {
             display: flex;
             gap: 10px;
             align-items: center;
             flex-wrap: wrap;
         }
-
         .date-preset-checkbox {
             display: flex;
             align-items: center;
@@ -714,13 +609,11 @@
             user-select: none;
             color: var(--primary-text-color, #212121);
         }
-
         .date-preset-checkbox input[type="checkbox"] {
             cursor: pointer;
             width: 16px;
             height: 16px;
         }
-
         .date-preset-btn {
             padding: 6px 12px;
             background: var(--secondary-background-color, #f5f5f5);
@@ -732,44 +625,36 @@
             font-weight: 500;
             transition: all 0.2s;
         }
-
         .date-preset-btn:hover {
             background: var(--primary-color, #03a9f4);
             color: white;
             border-color: var(--primary-color, #03a9f4);
         }
-
         body.theme-dark .date-preset-btn {
             background: #2a2a2a;
             color: #e0e0e0;
             border-color: #444;
         }
-
         body.theme-dark .date-preset-btn:hover {
             background: var(--primary-color, #03a9f4);
             color: white;
         }
-
         body.theme-dark .date-preset-checkbox {
             color: #e0e0e0;
         }
-
         .date-time-group {
             display: flex;
             flex-direction: column;
             gap: 8px;
         }
-
         .date-input-group {
             display: flex;
             align-items: center;
             gap: 8px;
         }
-
         .date-input-group label {
             min-width: 40px;
         }
-
         .date-range-picker input[type="time"] {
             padding: 8px 8px;
             border: 2px solid var(--divider-color, #e0e0e0);
@@ -779,29 +664,24 @@
             font-size: 0.85em;
             width: 90px;
         }
-
         body.theme-dark .date-range-picker input[type="time"] {
             background: #2a2a2a;
             color: #e0e0e0;
             border-color: #444;
         }
-
         .update-btn {
             align-self: flex-end;
         }
-
         .date-range-picker {
             display: flex;
             gap: 15px;
             align-items: flex-end;
             flex-wrap: wrap;
         }
-
         .date-range-picker label {
             font-size: 0.9em;
             color: var(--secondary-text-color, #757575);
         }
-
         .date-range-picker input[type="date"] {
             padding: 8px 12px;
             border: 2px solid var(--divider-color, #e0e0e0);
@@ -810,7 +690,6 @@
             color: var(--primary-text-color, #212121);
             font-size: 0.9em;
         }
-
         .date-range-picker button {
             padding: 8px 16px;
             background: var(--primary-color, #03a9f4);
@@ -822,38 +701,32 @@
             font-weight: 500;
             transition: background 0.3s;
         }
-
         .date-range-picker button:hover {
             background: var(--dark-primary-color, #0288d1);
         }
-
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 20px;
             margin-bottom: 30px;
         }
-
         .stat-card {
             background: var(--card-background-color, #ffffff);
             border-radius: 8px;
             padding: 20px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-
         .stat-card h3 {
             font-size: 0.9em;
             color: var(--secondary-text-color, #757575);
             margin-bottom: 10px;
             text-transform: uppercase;
         }
-
         .stat-card .stat-value {
             font-size: 2em;
             font-weight: 600;
             color: var(--primary-text-color, #212121);
         }
-
         .chart-container {
             background: var(--card-background-color, #ffffff);
             border-radius: 8px;
@@ -861,43 +734,34 @@
             margin-bottom: 20px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-
         .chart-container h2 {
             font-size: 1.3em;
             margin-bottom: 15px;
             color: var(--primary-text-color, #212121);
         }
-
         .chart-wrapper {
             position: relative;
             height: 400px;
         }
-
         /* Dark theme adjustments for statistics */
         body.theme-dark .stat-card {
             background: #1e1e1e;
         }
-
         body.theme-dark .chart-container {
             background: #1e1e1e;
         }
-
         body.theme-dark .date-range-picker input[type="date"] {
             background: #2a2a2a;
             color: #e0e0e0;
             border-color: #444;
         }
-
         body.theme-dark .stat-card .stat-value {
             color: #ffffff;
         }
-
         body.theme-dark .chart-container h2 {
             color: #ffffff;
         }
-
         /* Clock visualization styles */
-
 /* 3-column grid:
    - left spacer (1fr)
    - clocks (auto)
@@ -912,11 +776,16 @@
     align-items: start;
     margin-top: 20px;
 }
-
+/* When legend is bottom banner, use single column layout */
+.clock-layout.legend-bottom {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+        "clocks"
+        "legend";
+}
 .clock-layout-spacer {
     grid-area: spacer;
 }
-
 /* Keep your existing flex behavior for the clocks themselves */
 .clock-container {
     grid-area: clocks;
@@ -927,7 +796,6 @@
     flex-wrap: wrap;
     margin-top: 0; /* moved to .clock-layout */
 }
-
 /* Use a grid inside each clock wrapper so both clocks reserve the same “header” space */
 .clock-wrapper {
     display: grid;
@@ -935,11 +803,13 @@
     justify-items: center;
     align-items: start;
     row-gap: 12px;
-
     min-height: 380px;
     flex: 0 0 auto;
 }
-
+/* 24-hour clock wrapper should maintain grid display when shown */
+#clock-24hr-wrapper {
+    display: grid;
+}
 /* Standardize the toggle row height so the SVGs align across wrappers */
 .clock-toggle {
     display: flex;
@@ -948,11 +818,9 @@
     justify-content: center;
     height: 38px;
 }
-
 .clock-toggle--spacer {
     visibility: hidden; /* takes space, but not visible */
 }
-
 /* Keep your existing button styling */
 .clock-toggle button {
     padding: 8px 16px;
@@ -963,34 +831,28 @@
     cursor: pointer;
     transition: all 0.2s ease;
 }
-
 .clock-toggle button.active {
     background: var(--primary-color, #03a9f4);
     color: white;
     border-color: var(--primary-color, #03a9f4);
 }
-
 .clock-svg {
     position: relative;
     display: block;
 }
-
 .clock-wedge {
     cursor: pointer;
     transition: opacity 0.2s ease;
 }
-
 .clock-wedge:hover {
     opacity: 0.8;
 }
-
 /* IMPORTANT: inherit text color so labels work in light/dark automatically */
 .clock-label {
     font-size: 0.9em;
     font-weight: 500;
     color: inherit;
 }
-
 .clock-date-picker {
     display: flex;
     gap: 10px;
@@ -998,12 +860,10 @@
     justify-content: center;
     margin-bottom: 15px;
 }
-
 .clock-date-picker label {
     font-weight: 500;
     color: inherit;
 }
-
 .clock-date-picker input[type="date"] {
     padding: 8px 12px;
     border: 1px solid var(--divider-color, #e0e0e0);
@@ -1012,13 +872,11 @@
     border-radius: 4px;
     font-size: 1em;
 }
-
 .clock-view-toggle {
     display: flex;
     justify-content: center;
     margin-bottom: 15px;
 }
-
 .clock-view-checkbox {
     display: flex;
     align-items: center;
@@ -1028,13 +886,11 @@
     user-select: none;
     color: inherit; /* inherit for light/dark */
 }
-
 .clock-view-checkbox input[type="checkbox"] {
     cursor: pointer;
     width: 18px;
     height: 18px;
 }
-
 /* Legend sits in the RIGHT grid column, but is visually right-of-clocks.
    On wide screens: vertical list (like a sidebar legend) */
 .clock-legend {
@@ -1046,37 +902,31 @@
     align-items: flex-start;
     margin-top: 0; /* moved to .clock-layout */
 }
-
 .legend-item {
     display: flex;
     align-items: center;
     gap: 8px;
 }
-
 .legend-color {
     width: 20px;
     height: 20px;
     border-radius: 4px;
 }
-
 .legend-text {
     font-size: 0.9em;
     color: inherit; /* inherit for light/dark */
 }
-
 /* Dark theme adjustments that your existing styles already do for inputs/buttons */
 body.theme-dark .clock-toggle button {
     background: #2a2a2a;
     color: #e0e0e0;
     border-color: #444;
 }
-
 body.theme-dark .clock-date-picker input[type="date"] {
     background: #2a2a2a;
     color: #e0e0e0;
     border-color: #444;
 }
-
 /* Breakpoint: stack legend under clocks (bottom-right aligned) */
 @media (max-width: 900px) {
     .clock-layout {
@@ -1086,139 +936,134 @@ body.theme-dark .clock-date-picker input[type="date"] {
             "legend";
         column-gap: 0;
     }
-
     .clock-layout-spacer {
         display: none;
     }
-
     /* Legend becomes a row aligned to the right under the clocks */
     .clock-legend {
         flex-direction: row;
         flex-wrap: wrap;
         justify-content: flex-end;
+/* Bottom banner legend for overall statistics view */
+.clock-legend.bottom-banner {
+    grid-area: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    padding: 15px;
+    background: var(--card-background-color, #ffffff);
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-top: 20px;
+}
+body.theme-dark .clock-legend.bottom-banner {
+    background: #1e1e1e;
+}
+/* Hide legend in per-medication view when using action colors */
+.clock-legend.hidden {
+    display: none;
+}
         align-items: center;
         width: 100%;
         margin-top: 8px;
     }
 }
-
         body.theme-dark .clock-view-checkbox {
             color: #e0e0e0;
         }
-
         @media (max-width: 768px) {
             body {
                 padding: 10px;
             }
-
             h1 {
                 font-size: 1.5em;
                 margin-bottom: 15px;
             }
-
             .medication-card {
                 padding: 15px;
                 margin-bottom: 15px;
             }
-
             .medication-details {
                 grid-template-columns: 1fr;
                 gap: 10px;
             }
-
             .action-buttons {
                 flex-direction: column;
                 gap: 8px;
             }
-
             .action-btn {
                 min-width: 100%;
                 width: 100%;
             }
-
             .adjusters-container {
                 flex-direction: column;
                 width: 100%;
                 gap: 10px;
             }
-
             .dosage-adjuster {
                 width: 100%;
                 margin-right: 0;
             }
-
             .success-message,
             .error-message {
                 left: 10px;
                 right: 10px;
                 top: 10px;
             }
-
             .header-section > div {
                 width: 100%;
                 justify-content: space-between;
             }
-
             .theme-switcher {
                 order: -1;
                 width: 100%;
                 justify-content: center;
                 margin-bottom: 10px;
             }
-
             .nav-tabs {
                 overflow-x: auto;
                 flex-wrap: nowrap;
             }
-
             .nav-tab {
                 white-space: nowrap;
             }
-
             .statistics-header {
                 flex-direction: column;
                 align-items: flex-start;
             }
-
             .date-range-picker {
                 width: 100%;
             }
-
             .date-range-picker input[type="date"] {
                 flex: 1;
             }
-
             .chart-wrapper {
                 height: 300px;
             }
-
             .clock-container {
                 flex-direction: column;
                 gap: 30px;
             }
-
             /* Ensure management buttons (Edit/Delete) are visible on mobile */
             .card-management-actions {
                 flex-direction: column;
                 gap: 8px;
                 width: 100%;
             }
-
             .card-management-actions .action-btn {
                 min-width: 100%;
                 width: 100%;
             }
-
             /* Sizing controls for mobile */
             .sizing-controls {
                 flex-direction: column;
                 gap: 10px;
             }
-
             .sizing-slider-group {
                 width: 100%;
             }
-
             .sizing-slider-group input[type="range"] {
                 width: 100%;
             }
@@ -1255,7 +1100,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
                 </button>
             </div>
         </div>
-
         <!-- Navigation Tabs -->
         <div class="nav-tabs">
             <button class="nav-tab active" onclick="switchTab('medications', event)">
@@ -1265,13 +1109,11 @@ body.theme-dark .clock-date-picker input[type="date"] {
                 📊 Statistics
             </button>
         </div>
-
         <!-- Sizing Controls Toggle -->
         <label class="sizing-toggle">
             <input type="checkbox" id="editSizingSliders" onchange="toggleSizingControls()">
             <span>Edit Sizing Sliders</span>
         </label>
-
         <!-- Sizing Controls (hidden by default) -->
         <div id="sizingControls" class="sizing-controls">
             <div class="sizing-slider-group">
@@ -1283,14 +1125,12 @@ body.theme-dark .clock-date-picker input[type="date"] {
                 <input type="range" id="textSizeSlider" min="50" max="150" value="100" onchange="updateTextSize(this.value)">
             </div>
         </div>
-
         <!-- Medications Tab -->
         <div id="medications-tab" class="tab-content active">
             <div id="content">
                 <div class="loading">Loading medications...</div>
             </div>
         </div>
-
         <!-- Statistics Tab -->
         <div id="statistics-tab" class="tab-content">
             <div class="statistics-header">
@@ -1321,7 +1161,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
                     </div>
                 </div>
             </div>
-
             <!-- Chart Type Toggle -->
             <div class="chart-type-toggle">
                 <label>Chart Type:</label>
@@ -1329,25 +1168,21 @@ body.theme-dark .clock-date-picker input[type="date"] {
                 <button class="chart-type-btn" id="chart-type-bar" onclick="setChartType('bar')">📊 Bar</button>
                 <button class="chart-type-btn" id="chart-type-plot" onclick="setChartType('plot')">📈 Plot</button>
             </div>
-
             <div id="stats-summary" class="stats-grid">
                 <!-- Summary stats will be inserted here -->
             </div>
-
             <div class="chart-container">
                 <h2>Medications Taken Over Time</h2>
                 <div class="chart-wrapper">
                     <canvas id="trendsChart"></canvas>
                 </div>
             </div>
-
             <div class="chart-container">
                 <h2>Adherence by Medication</h2>
                 <div class="chart-wrapper">
                     <canvas id="adherenceChart"></canvas>
                 </div>
             </div>
-
             <div class="chart-container">
                 <h2>Daily Medication Timeline</h2>
                 
@@ -1355,62 +1190,41 @@ body.theme-dark .clock-date-picker input[type="date"] {
                     <label for="clock-date-picker">Select Date:</label>
                     <input type="date" id="clock-date-picker" onchange="loadClockData(this.value)">
                 </div>
-
                 <div class="clock-view-toggle">
                     <label class="clock-view-checkbox">
                         <input type="checkbox" id="show-24hr-clock" onchange="toggle24HourClock()">
                         <span>Show 24-Hour Clock</span>
                     </label>
                 </div>
-
                 <div class="clock-layout">
     <div class="clock-layout-spacer" aria-hidden="true"></div>
-
     <div class="clock-container">
         <div class="clock-wrapper" id="clock-12hr-wrapper">
             <div class="clock-label">12-Hour Clock</div>
-
             <div class="clock-toggle">
                 <button id="am-btn" class="active" onclick="toggleClockPeriod('AM')">AM</button>
                 <button id="pm-btn" onclick="toggleClockPeriod('PM')">PM</button>
             </div>
-
             <svg id="clock-12hr" class="clock-svg" width="300" height="300" viewBox="-150 -150 300 300">
                 <!-- Clock face will be drawn here -->
             </svg>
         </div>
-
         <div class="clock-wrapper" id="clock-24hr-wrapper" style="display: none;">
             <div class="clock-label">24-Hour Clock</div>
-
             <!-- Spacer row so the SVG lines up with the 12hr clock SVG -->
             <div class="clock-toggle clock-toggle--spacer" aria-hidden="true"></div>
-
             <svg id="clock-24hr" class="clock-svg" width="300" height="300" viewBox="-150 -150 300 300">
                 <!-- Clock face will be drawn here -->
             </svg>
         </div>
     </div>
-
     <div class="clock-legend">
-        <div class="legend-item">
-            <div class="legend-color" style="background: #4caf50;"></div>
-            <div class="legend-text">Taken</div>
-        </div>
-        <div class="legend-item">
-            <div class="legend-color" style="background: #ffc107;"></div>
-            <div class="legend-text">Delayed/Snoozed</div>
-        </div>
-        <div class="legend-item">
-            <div class="legend-color" style="background: #f44336;"></div>
-            <div class="legend-text">Skipped</div>
-        </div>
+        <!-- Legend items will be dynamically generated based on view context -->
     </div>
 </div>
             </div>
         </div>
     </div>
-
     <script>
         // Configuration constants
         const SUBSCRIPTION_MAX_ATTEMPTS = 10;
@@ -1420,7 +1234,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
         const POLL_INTERVAL_MS = 30000;
         const STATE_UPDATE_DELAY_MS = 100; // Delay to allow backend state propagation
         const DATE_CHANGE_DEBOUNCE_MS = 300; // Debounce delay for date/time changes
-
         let hass = null;
         let medications = [];
         let showConfirmationBanner = true;
@@ -1428,7 +1241,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
         let nextScheduleCache = {}; // Cache for next scheduled times
         let darkModeMediaQuery = null; // Media query for system dark mode
         let dateChangeDebounceTimer = null; // Timer for debouncing date/time changes
-
         // Helper function to unwrap service response from various formats
         function unwrapServiceResponse(response) {
             if (!response || typeof response !== 'object') {
@@ -1444,7 +1256,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
             }
             return null;
         }
-
         // Theme management functions
         function initTheme() {
             // Load saved theme preference
@@ -1464,20 +1275,17 @@ body.theme-dark .clock-date-picker input[type="date"] {
                 radio.checked = true;
             }
         }
-
         function handleSystemThemeChange(e) {
             // Only apply if we're in auto mode
             if (currentTheme === 'auto') {
                 applyAutoTheme();
             }
         }
-
         function setTheme(theme) {
             currentTheme = theme;
             localStorage.setItem('pillAssistantTheme', theme);
             applyTheme(theme);
         }
-
         function applyTheme(theme) {
             // Remove all theme classes
             document.body.classList.remove('theme-light', 'theme-dark', 'theme-auto');
@@ -1494,7 +1302,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
                 document.body.classList.add('theme-dark');
             }
         }
-
         function applyAutoTheme() {
             // Check multiple methods for system dark mode preference
             // 1. CSS media query (most reliable for browsers)
@@ -1552,7 +1359,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
                 document.body.classList.add('theme-light');
             }
         }
-
         // Load settings from localStorage
         function loadSettings() {
             const saved = localStorage.getItem('pillAssistantSettings');
@@ -1571,25 +1377,21 @@ body.theme-dark .clock-date-picker input[type="date"] {
                 checkbox.checked = showConfirmationBanner;
             }
         }
-
         // Save settings to localStorage
         function saveSettings() {
             localStorage.setItem('pillAssistantSettings', JSON.stringify({
                 showConfirmationBanner: showConfirmationBanner
             }));
         }
-
         // Toggle confirmation banner setting
         function toggleConfirmationBanner() {
             showConfirmationBanner = document.getElementById('showConfirmationBanner').checked;
             saveSettings();
         }
-
         // ============== Sizing Controls ==============
         let buttonSizeScale = 100;
         let textSizeScale = 100;
         let currentChartType = 'clock';
-
         function toggleSizingControls() {
             const checkbox = document.getElementById('editSizingSliders');
             const controls = document.getElementById('sizingControls');
@@ -1597,7 +1399,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
                 controls.classList.toggle('visible', checkbox.checked);
             }
         }
-
         function updateButtonSize(value) {
             buttonSizeScale = parseInt(value);
             document.getElementById('buttonSizeValue').textContent = value;
@@ -1612,7 +1413,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
             // Save preference
             saveSizingSettings();
         }
-
         function updateTextSize(value) {
             textSizeScale = parseInt(value);
             document.getElementById('textSizeValue').textContent = value;
@@ -1635,14 +1435,12 @@ body.theme-dark .clock-date-picker input[type="date"] {
             // Save preference
             saveSizingSettings();
         }
-
         function saveSizingSettings() {
             localStorage.setItem('pillAssistantSizing', JSON.stringify({
                 buttonSize: buttonSizeScale,
                 textSize: textSizeScale
             }));
         }
-
         function loadSizingSettings() {
             const saved = localStorage.getItem('pillAssistantSizing');
             if (saved) {
@@ -1669,7 +1467,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
                 }
             }
         }
-
         // ============== Chart Type Toggle ==============
         function setChartType(type) {
             currentChartType = type;
@@ -1705,7 +1502,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
                 }
             }
         }
-
         function loadChartTypePreference() {
             const saved = localStorage.getItem('pillAssistantChartType');
             if (saved && ['clock', 'bar', 'plot'].includes(saved)) {
@@ -1714,9 +1510,12 @@ body.theme-dark .clock-date-picker input[type="date"] {
                 setChartType('clock');
             }
         }
-
         // ============== Per-Medication Statistics ==============
         function showMedicationStats(medId, medName) {
+            // Set context to per-medication view
+            currentViewContext = 'per-medication';
+            currentMedicationId = medId;
+            
             // Switch to statistics tab
             switchTab('statistics');
             
@@ -1734,7 +1533,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
             // Load statistics with medication filter
             loadStatisticsForMedication(medId, medName);
         }
-
         async function loadStatisticsForMedication(medId, medName) {
             try {
                 if (!hass) {
@@ -1744,10 +1542,8 @@ body.theme-dark .clock-date-picker input[type="date"] {
                         return;
                     }
                 }
-
                 const startDate = document.getElementById('stats-start-date').value;
                 const endDate = document.getElementById('stats-end-date').value;
-
                 const response = await hass.callWS({
                     type: 'call_service',
                     domain: 'pill_assistant',
@@ -1759,13 +1555,11 @@ body.theme-dark .clock-date-picker input[type="date"] {
                     },
                     return_response: true
                 });
-
                 // Update the header to show it's filtered
                 const header = document.querySelector('.statistics-header h2');
                 if (header) {
                     header.textContent = `Statistics for ${medName}`;
                 }
-
                 // Use centralized helper to unwrap response
                 const stats = unwrapServiceResponse(response) || { total_entries: 0, medications: {}, daily_counts: {} };
                 currentStats = stats;
@@ -1776,7 +1570,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
                 console.error('Error loading medication statistics:', error);
             }
         }
-
         // Load next schedule cache from localStorage
         function loadNextScheduleCache() {
             const saved = localStorage.getItem('pillAssistantNextScheduleCache');
@@ -1789,23 +1582,19 @@ body.theme-dark .clock-date-picker input[type="date"] {
                 }
             }
         }
-
         // Save next schedule cache to localStorage
         function saveNextScheduleCache() {
             localStorage.setItem('pillAssistantNextScheduleCache', JSON.stringify(nextScheduleCache));
         }
-
         // Update next schedule cache for a medication
         function updateNextScheduleCache(medId, nextDoseTime) {
             nextScheduleCache[medId] = nextDoseTime;
             saveNextScheduleCache();
         }
-
         // Get cached next schedule for a medication
         function getCachedNextSchedule(medId) {
             return nextScheduleCache[medId];
         }
-
         // Helper function to refresh hass connection
         function refreshHassConnection() {
             const newHass = getHassConnection();
@@ -1814,7 +1603,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
             }
             return hass;
         }
-
         // Helper function to find medication card by ID
         function findMedicationCard(medId) {
             const cards = document.querySelectorAll('[data-entity-id]');
@@ -1834,7 +1622,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
             }
             return null;
         }
-
         // Format time to local 12-hour format with AM/PM
         function formatTimeToLocal(timeStr) {
             if (!timeStr || timeStr === 'Never' || timeStr === 'Unknown' || timeStr === 'Not scheduled') {
@@ -1870,7 +1657,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
                 return timeStr;
             }
         }
-
         // Format schedule to show times in local format and prettify days
         function formatSchedule(schedule) {
             if (!schedule || schedule === 'Not scheduled') {
@@ -1926,7 +1712,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
             
             return result;
         }
-
         // Format medication type from snake_case to Title Case
         function formatMedicationType(type) {
             if (!type) return '';
@@ -1936,7 +1721,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
                 .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
                 .join(' ');
         }
-
         // Get Home Assistant connection
         function getHassConnection() {
             if (window.parent && window.parent.document) {
@@ -1947,7 +1731,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
             }
             return null;
         }
-
         // Initialize connection to Home Assistant
         let retryCount = 0;
         function initConnection() {
@@ -1986,7 +1769,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
                 }
             }
         }
-
         // Load medications from Home Assistant
         async function loadMedications() {
             try {
@@ -1996,11 +1778,9 @@ body.theme-dark .clock-date-picker input[type="date"] {
                         throw new Error('Home Assistant connection not available');
                     }
                 }
-
                 // Get all entities
                 const states = hass.states;
                 medications = [];
-
                 // Filter for pill assistant sensors
                 for (const entityId in states) {
                     if (entityId.startsWith('sensor.pa_')) {
@@ -2019,7 +1799,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
                         }
                     }
                 }
-
                 renderMedications();
             } catch (error) {
                 console.error('Error loading medications:', error);
@@ -2030,11 +1809,9 @@ body.theme-dark .clock-date-picker input[type="date"] {
                 `;
             }
         }
-
         // Render medications
         function renderMedications() {
             const content = document.getElementById('content');
-
             if (medications.length === 0) {
                 content.innerHTML = `
                     <div class="empty-state">
@@ -2047,7 +1824,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
                 `;
                 return;
             }
-
             // Sort medications by next_dose_time (next scheduled first)
             const sortedMedications = [...medications].sort((a, b) => {
                 const aNextDose = a.attributes['Next dose time'] || a.attributes['next_dose_time'];
@@ -2067,15 +1843,12 @@ body.theme-dark .clock-date-picker input[type="date"] {
                 
                 return aDate - bDate;
             });
-
             let html = '';
             sortedMedications.forEach(med => {
                 html += renderMedicationCard(med);
             });
-
             content.innerHTML = html;
         }
-
         // Render individual medication card
         function renderMedicationCard(med) {
             const attrs = med.attributes;
@@ -2102,14 +1875,12 @@ body.theme-dark .clock-date-picker input[type="date"] {
             // Helper to check if decrement button should be disabled
             const isDecrementDisabled = parseFloat(dosage) <= 0.5;
             const isRemainingDecrementDisabled = parseFloat(remaining) <= 0;
-
             return `
                 <div class="medication-card" data-entity-id="${med.entityId}">
                     <div class="medication-header">
                         <div class="medication-name">${medName}</div>
                         <div class="medication-status status-${med.state}">${med.state}</div>
                     </div>
-
                     <div class="medication-details">
                         <div class="detail-item">
                             <div class="detail-label">Type</div>
@@ -2132,7 +1903,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
                             <div class="detail-value">${nextDose}</div>
                         </div>
                     </div>
-
                     <div class="adjusters-container">
                         <div class="dosage-adjuster">
                             <div class="dosage-label">Dosage:</div>
@@ -2142,7 +1912,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
                                 <button class="dosage-btn" onclick="adjustDosage('${medId}', 1)">+</button>
                             </div>
                         </div>
-
                         <div class="dosage-adjuster">
                             <div class="dosage-label">Remaining:</div>
                             <div class="dosage-controls">
@@ -2152,7 +1921,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
                             </div>
                         </div>
                     </div>
-
                     <div class="action-buttons">
                         <button class="action-btn btn-take" onclick="takeMedication('${medId}')">
                             Mark as Taken
@@ -2167,7 +1935,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
                             Test Notification
                         </button>
                     </div>
-
                     <div class="card-management-actions">
                         <button class="action-btn btn-stats" onclick="showMedicationStats('${medId}', '${medName}')">
                             📊 Statistics
@@ -2182,7 +1949,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
                 </div>
             `;
         }
-
         // Call Home Assistant service
         async function callService(domain, service, serviceData) {
             try {
@@ -2192,7 +1958,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
                         throw new Error('Home Assistant connection not available');
                     }
                 }
-
                 // Mark card as updating using exact entity ID match
                 const medId = serviceData.medication_id;
                 const targetCard = findMedicationCard(medId);
@@ -2200,7 +1965,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
                 if (targetCard) {
                     targetCard.classList.add('updating');
                 }
-
                 await hass.callService(domain, service, serviceData);
                 
                 // Wait a bit for state to update in backend
@@ -2230,17 +1994,14 @@ body.theme-dark .clock-date-picker input[type="date"] {
                 }
             }
         }
-
         // Show success message
         function showSuccessMessage(message) {
             showNotification(message, 'success');
         }
-
         // Show error message
         function showErrorMessage(message) {
             showNotification(message, 'error');
         }
-
         // Show notification message
         function showNotification(message, type = 'success') {
             // Only show success notifications if the banner is enabled
@@ -2252,12 +2013,10 @@ body.theme-dark .clock-date-picker input[type="date"] {
             msgEl.className = type === 'error' ? 'error-message' : 'success-message';
             msgEl.textContent = message;
             document.body.appendChild(msgEl);
-
             setTimeout(() => {
                 msgEl.remove();
             }, 3000);
         }
-
         // Medication actions
         async function takeMedication(medId) {
             await callService('pill_assistant', 'take_medication', { medication_id: medId });
@@ -2267,7 +2026,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
                 await checkAndPromptNextSchedule(medId);
             }, STATE_UPDATE_DELAY_MS + 200);
         }
-
         // Check if medication has no next schedule and prompt user
         async function checkAndPromptNextSchedule(medId) {
             try {
@@ -2341,36 +2099,29 @@ body.theme-dark .clock-date-picker input[type="date"] {
                 console.error('Error checking next schedule:', error);
             }
         }
-
         async function skipMedication(medId) {
             await callService('pill_assistant', 'skip_medication', { medication_id: medId });
         }
-
         async function refillMedication(medId) {
             await callService('pill_assistant', 'refill_medication', { medication_id: medId });
         }
-
         async function testNotification(medId) {
             await callService('pill_assistant', 'test_notification', { medication_id: medId });
         }
-
         async function adjustDosage(medId, change) {
             const service = change > 0 ? 'increment_dosage' : 'decrement_dosage';
             await callService('pill_assistant', service, { medication_id: medId });
         }
-
         async function adjustRemaining(medId, change) {
             const service = change > 0 ? 'increment_remaining' : 'decrement_remaining';
             await callService('pill_assistant', service, { medication_id: medId });
         }
-
         // Add medication - opens config flow
         async function addMedication() {
             try {
                 if (!hass) {
                     throw new Error('Home Assistant connection not available');
                 }
-
                 // Navigate to the config flow for adding a new medication
                 const domain = 'pill_assistant';
                 const path = `/config/integrations/dashboard/add?domain=${domain}`;
@@ -2394,14 +2145,12 @@ body.theme-dark .clock-date-picker input[type="date"] {
                 showErrorMessage(`Error: ${error.message}. Please add medication through Settings → Devices & Services → Add Integration → Pill Assistant`);
             }
         }
-
         // Edit medication - opens options flow
         async function editMedication(medId) {
             try {
                 if (!hass) {
                     throw new Error('Home Assistant connection not available');
                 }
-
                 // Note: medId is the medication_id attribute, which is actually the entry_id
                 // We need to navigate to the config entry's options flow
                 // The correct URL format is: /config/integrations/config_entry/{entry_id}
@@ -2449,19 +2198,16 @@ body.theme-dark .clock-date-picker input[type="date"] {
                 showErrorMessage(`Error: ${error.message}. Please edit medication through Settings → Devices & Services → Configure`);
             }
         }
-
         // Delete medication - removes config entry
         async function deleteMedication(medId, medName) {
             try {
                 if (!hass) {
                     throw new Error('Home Assistant connection not available');
                 }
-
                 // Confirm deletion
                 if (!confirm(`Are you sure you want to delete ${medName}? This will remove all data for this medication.`)) {
                     return;
                 }
-
                 // Note: medId is the config entry ID (entry_id)
                 // Call the config_entries.remove service to delete the medication
                 await hass.callService('config_entries', 'remove', {
@@ -2477,16 +2223,13 @@ body.theme-dark .clock-date-picker input[type="date"] {
                 showErrorMessage(`Error deleting medication: ${error.message}`);
             }
         }
-
         // Initialize on load
         initConnection();
-
         // Subscribe to Home Assistant state changes for real-time updates
         function subscribeToStateChanges() {
             if (!hass) {
                 return false;
             }
-
             // Subscribe to state changes using hass connection
             if (hass.connection && hass.connection.subscribeEvents) {
                 hass.connection.subscribeEvents(
@@ -2511,7 +2254,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
             }
             return false;
         }
-
         // Try to subscribe with retry logic
         let subscribeAttempts = 0;
         function attemptSubscription() {
@@ -2535,22 +2277,32 @@ body.theme-dark .clock-date-picker input[type="date"] {
         
         // Start subscription attempts after connection is ready
         attemptSubscription();
-
         // Refresh medications every 30 seconds as fallback
         setInterval(() => {
             if (hass) {
                 loadMedications();
             }
         }, POLL_INTERVAL_MS);
-
         // ============== Statistics and Visualization Functions ==============
         
         let trendsChart = null;
         let adherenceChart = null;
         let currentStats = null;
-
         // Switch between tabs
         function switchTab(tabName, event) {
+            // Reset to overall view when switching to statistics tab via top nav
+            // (not from a medication card)
+            if (tabName === 'statistics' && event && event.target) {
+                currentViewContext = 'overall';
+                currentMedicationId = null;
+                
+                // Reset header
+                const header = document.querySelector('.statistics-header h2');
+                if (header) {
+                    header.textContent = 'Medication Statistics';
+                }
+            }
+            
             // Update tab buttons
             const tabs = document.querySelectorAll('.nav-tab');
             tabs.forEach(tab => tab.classList.remove('active'));
@@ -2564,24 +2316,20 @@ body.theme-dark .clock-date-picker input[type="date"] {
                     }
                 });
             }
-
             // Update tab content
             const contents = document.querySelectorAll('.tab-content');
             contents.forEach(content => content.classList.remove('active'));
             document.getElementById(`${tabName}-tab`).classList.add('active');
-
             // Load statistics when switching to statistics tab
             if (tabName === 'statistics') {
                 initStatistics();
             }
         }
-
         // Initialize statistics section
         function initStatistics() {
             // Set default to today (with checkbox checked)
             setToday();
         }
-
         // Set date range to today only
         function setToday() {
             const today = new Date();
@@ -2601,13 +2349,11 @@ body.theme-dark .clock-date-picker input[type="date"] {
             // Auto-load statistics
             loadStatistics();
         }
-
         // Set date range to last 7 days
         function setLast7Days() {
             const endDate = new Date();
             const startDate = new Date();
             startDate.setDate(startDate.getDate() - 7);
-
             document.getElementById('stats-start-date').valueAsDate = startDate;
             document.getElementById('stats-end-date').valueAsDate = endDate;
             
@@ -2624,13 +2370,11 @@ body.theme-dark .clock-date-picker input[type="date"] {
             // Auto-load statistics
             loadStatistics();
         }
-
         // Set date range to last 30 days
         function setLast30Days() {
             const endDate = new Date();
             const startDate = new Date();
             startDate.setDate(startDate.getDate() - 30);
-
             document.getElementById('stats-start-date').valueAsDate = startDate;
             document.getElementById('stats-end-date').valueAsDate = endDate;
             
@@ -2647,7 +2391,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
             // Auto-load statistics
             loadStatistics();
         }
-
         // Handle date range change - auto-refresh when dates are manually changed
         function onDateRangeChange() {
             // Uncheck the today checkbox since user is manually selecting dates
@@ -2664,28 +2407,23 @@ body.theme-dark .clock-date-picker input[type="date"] {
                 loadStatistics();
             }, DATE_CHANGE_DEBOUNCE_MS);
         }
-
         // Load statistics from backend
         async function loadStatistics() {
             try {
                 if (!hass) {
                     throw new Error('Home Assistant connection not available');
                 }
-
                 const startDate = document.getElementById('stats-start-date').value;
                 const endDate = document.getElementById('stats-end-date').value;
                 const startTime = document.getElementById('stats-start-time').value || '00:00';
                 const endTime = document.getElementById('stats-end-time').value || '23:59';
-
                 if (!startDate || !endDate) {
                     showErrorMessage('Please select both start and end dates');
                     return;
                 }
-
                 // Combine date and time for full datetime
                 const startDateTime = new Date(`${startDate}T${startTime}:00`);
                 const endDateTime = new Date(`${endDate}T${endTime}:59`);
-
                 // Use callWS with return_response: true to properly receive service responses
                 // This is the correct method for services that support response data
                 let response = null;
@@ -2712,7 +2450,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
                         }
                     );
                 }
-
                 // Use centralized helper to unwrap response
                 if (response && typeof response === 'object') {
                     console.debug('Pill Assistant: Statistics service response received', response);
@@ -2742,14 +2479,11 @@ body.theme-dark .clock-date-picker input[type="date"] {
                 showErrorMessage(`Failed to load statistics: ${error.message}`);
             }
         }
-
         // Render statistics summary and charts
         function renderStatistics(stats) {
             if (!stats) return;
-
             // Render summary cards
             renderSummaryStats(stats);
-
             // Render charts
             renderTrendsChart(stats);
             renderAdherenceChart(stats);
@@ -2760,7 +2494,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
                 loadClockData(datePicker.value);
             }
         }
-
         // Render summary statistics cards
         function renderSummaryStats(stats) {
             const summaryEl = document.getElementById('stats-summary');
@@ -2775,7 +2508,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
             const adherenceRate = totalTaken + totalSkipped > 0
                 ? Math.round((totalTaken / (totalTaken + totalSkipped)) * 100)
                 : 0;
-
             summaryEl.innerHTML = `
                 <div class="stat-card">
                     <h3>Total Medications</h3>
@@ -2795,18 +2527,15 @@ body.theme-dark .clock-date-picker input[type="date"] {
                 </div>
             `;
         }
-
         // Render trends chart (medications taken over time)
         function renderTrendsChart(stats) {
             const ctx = document.getElementById('trendsChart');
             if (!ctx) return;
-
             // Destroy existing chart
             if (trendsChart) {
                 trendsChart.destroy();
                 trendsChart = null;
             }
-
             // Prepare data by date
             const dailyCounts = stats.daily_counts || {};
             const dates = Object.keys(dailyCounts).sort();
@@ -2838,7 +2567,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
                 });
                 return;
             }
-
             // Determine chart type based on current selection
             const isScatterPlot = currentChartType === 'plot';
             
@@ -2879,7 +2607,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
                         const dayData = dailyCounts[date][medId];
                         return dayData ? dayData.taken : 0;
                     });
-
                     return {
                         label: medName,
                         data: data,
@@ -2891,12 +2618,10 @@ body.theme-dark .clock-date-picker input[type="date"] {
                     };
                 }
             });
-
             // Determine if we're in dark mode
             const isDarkMode = document.body.classList.contains('theme-dark');
             const textColor = isDarkMode ? '#e0e0e0' : '#212121';
             const gridColor = isDarkMode ? '#444' : '#e0e0e0';
-
             // Use scatter type for scatter plot, line for default
             const chartType = isScatterPlot ? 'scatter' : 'line';
             
@@ -2984,24 +2709,20 @@ body.theme-dark .clock-date-picker input[type="date"] {
                 }
             });
         }
-
         // Render adherence chart (taken vs scheduled by medication)
         function renderAdherenceChart(stats) {
             const ctx = document.getElementById('adherenceChart');
             if (!ctx) return;
-
             // Destroy existing chart
             if (adherenceChart) {
                 adherenceChart.destroy();
                 adherenceChart = null;
             }
-
             const medications = stats.medications || {};
             const medNames = [];
             const takenCounts = [];
             const skippedCounts = [];
             const colors = [];
-
             Object.entries(medications).forEach(([medId, medData], index) => {
                 medNames.push(medData.name || medId);
                 takenCounts.push(medData.taken_count || 0);
@@ -3033,12 +2754,10 @@ body.theme-dark .clock-date-picker input[type="date"] {
                 });
                 return;
             }
-
             // Determine if we're in dark mode
             const isDarkMode = document.body.classList.contains('theme-dark');
             const textColor = isDarkMode ? '#e0e0e0' : '#212121';
             const gridColor = isDarkMode ? '#444' : '#e0e0e0';
-
             adherenceChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
@@ -3118,13 +2837,13 @@ body.theme-dark .clock-date-picker input[type="date"] {
                 }
             });
         }
-
         // ============== Clock Visualization Functions ==============
         
         let clockPeriod = 'AM'; // Current selected period for 12hr clock
         let clockData = []; // Store dose events by date
         let show24HourClock = false; // Whether to show 24-hour clock
-
+        let currentViewContext = 'overall'; // 'overall' or 'per-medication'
+        let currentMedicationId = null; // Track current medication ID when in per-medication view
         // Get local date string in YYYY-MM-DD format
         function getLocalDateString(date) {
             const year = date.getFullYear();
@@ -3132,7 +2851,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
             const day = String(date.getDate()).padStart(2, '0');
             return `${year}-${month}-${day}`;
         }
-
         // Initialize clock date picker to today
         function initClockDatePicker() {
             const datePicker = document.getElementById('clock-date-picker');
@@ -3148,7 +2866,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
                 loadClockData(dateStr);
             }
         }
-
         // Toggle 24-hour clock visibility
         function toggle24HourClock() {
             const checkbox = document.getElementById('show-24hr-clock');
@@ -3156,7 +2873,7 @@ body.theme-dark .clock-date-picker input[type="date"] {
             
             const wrapper24hr = document.getElementById('clock-24hr-wrapper');
             if (wrapper24hr) {
-                wrapper24hr.style.display = show24HourClock ? 'flex' : 'none';
+                wrapper24hr.style.display = show24HourClock ? 'grid' : 'none';
             }
             
             // Save preference
@@ -3167,7 +2884,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
                 render24HourClock();
             }
         }
-
         // Load 24-hour clock preference
         function load24HourClockPreference() {
             const saved = localStorage.getItem('pillAssistantShow24HrClock');
@@ -3180,10 +2896,9 @@ body.theme-dark .clock-date-picker input[type="date"] {
             
             const wrapper24hr = document.getElementById('clock-24hr-wrapper');
             if (wrapper24hr) {
-                wrapper24hr.style.display = show24HourClock ? 'flex' : 'none';
+                wrapper24hr.style.display = show24HourClock ? 'grid' : 'none';
             }
         }
-
         // Toggle between AM/PM for 12hr clock
         function toggleClockPeriod(period) {
             clockPeriod = period;
@@ -3191,7 +2906,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
             document.getElementById('pm-btn').classList.toggle('active', period === 'PM');
             renderClocks();
         }
-
         // Load medication dose data for a specific date
         async function loadClockData(dateStr) {
             try {
@@ -3202,7 +2916,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
                         return;
                     }
                 }
-
                 // Call the statistics service for the selected date using callWS for response
                 // Convert date strings to ISO format to match how bar/scatter charts fetch data
                 const datePattern = /^\d{4}-\d{2}-\d{2}$/;
@@ -3243,7 +2956,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
                         console.warn('callService also failed for clock data:', serviceError);
                     }
                 }
-
                 console.debug('Clock data loaded for', dateStr, response);
                 
                 // Use centralized helper to unwrap response
@@ -3259,7 +2971,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
                 renderClocks();
             }
         }
-
         // Parse dose events from statistics response
         function parseDoseEvents(stats, dateStr) {
             const events = [];
@@ -3267,7 +2978,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
             if (!stats || !stats.medications) {
                 return events;
             }
-
             // Iterate through each medication's events
             Object.entries(stats.medications).forEach(([medId, medData]) => {
                 const medName = medData.name || medId;
@@ -3335,7 +3045,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
             
             return events;
         }
-
         // Render both clock visualizations
         function renderClocks() {
             const datePicker = document.getElementById('clock-date-picker');
@@ -3345,8 +3054,75 @@ body.theme-dark .clock-date-picker input[type="date"] {
             
             render12HourClock();
             render24HourClock();
+            renderClockLegend();
         }
-
+        // Render clock legend based on view context
+        function renderClockLegend() {
+            const legendEl = document.querySelector('.clock-legend');
+            const layoutEl = document.querySelector('.clock-layout');
+            if (!legendEl) return;
+            
+            // Clear existing legend items
+            legendEl.innerHTML = '';
+            
+            if (currentViewContext === 'per-medication') {
+                // Per-medication view: show action-based legend (taken/delayed/skipped)
+                legendEl.classList.remove('bottom-banner');
+                legendEl.classList.remove('hidden');
+                if (layoutEl) layoutEl.classList.remove('legend-bottom');
+                
+                const actionLegend = [
+                    { color: '#4caf50', text: 'Taken' },
+                    { color: '#ffc107', text: 'Delayed/Snoozed' },
+                    { color: '#f44336', text: 'Skipped' }
+                ];
+                
+                actionLegend.forEach(item => {
+                    const legendItem = document.createElement('div');
+                    legendItem.className = 'legend-item';
+                    legendItem.innerHTML = `
+                        <div class="legend-color" style="background: ${item.color};"></div>
+                        <div class="legend-text">${item.text}</div>
+                    `;
+                    legendEl.appendChild(legendItem);
+                });
+            } else {
+                // Overall view: show medication-based legend with distinct colors
+                // Get unique medications from clockData
+                const medications = new Map();
+                clockData.forEach(event => {
+                    if (!medications.has(event.medication)) {
+                        medications.set(event.medication, medications.size);
+                    }
+                });
+                
+                if (medications.size === 0) {
+                    // No data, hide legend
+                    legendEl.classList.add('hidden');
+                    if (layoutEl) layoutEl.classList.remove('legend-bottom');
+                    return;
+                }
+                
+                // Add bottom-banner class for overall view
+                legendEl.classList.add('bottom-banner');
+                legendEl.classList.remove('hidden');
+                if (layoutEl) layoutEl.classList.add('legend-bottom');
+                
+                // Generate distinct colors for each medication using golden angle
+                medications.forEach((index, medName) => {
+                    const hue = (index * 137.5) % 360;
+                    const color = `hsl(${hue}, 70%, 50%)`;
+                    
+                    const legendItem = document.createElement('div');
+                    legendItem.className = 'legend-item';
+                    legendItem.innerHTML = `
+                        <div class="legend-color" style="background: ${color};"></div>
+                        <div class="legend-text">${medName}</div>
+                    `;
+                    legendEl.appendChild(legendItem);
+                });
+            }
+        }
         // Render 12-hour clock with wedges
         function render12HourClock() {
             const svg = document.getElementById('clock-12hr');
@@ -3377,7 +3153,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
                 drawWedge(svg, angle, event.type, event.medication, event.time);
             });
         }
-
         // Render 24-hour clock with wedges
         function render24HourClock() {
             const svg = document.getElementById('clock-24hr');
@@ -3398,7 +3173,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
                 drawWedge(svg, angle, event.type, event.medication, event.time);
             });
         }
-
         // Draw clock face with hour markers
         function drawClockFace(svg, maxHours) {
             const isDarkMode = document.body.classList.contains('theme-dark');
@@ -3455,23 +3229,32 @@ body.theme-dark .clock-date-picker input[type="date"] {
                 }
             }
         }
-
         // Draw a wedge for a dose event extending from center outward
         function drawWedge(svg, angle, type, medication, eventTime) {
-            // Determine color based on type
             let color;
-            switch (type) {
-                case 'taken':
-                    color = '#4caf50'; // Green
-                    break;
-                case 'delayed':
-                    color = '#ffc107'; // Yellow
-                    break;
-                case 'skipped':
-                    color = '#f44336'; // Red
-                    break;
-                default:
-                    color = '#9e9e9e'; // Gray for unknown
+            
+            if (currentViewContext === 'per-medication') {
+                // Per-medication view: use action-based colors
+                switch (type) {
+                    case 'taken':
+                        color = '#4caf50'; // Green
+                        break;
+                    case 'delayed':
+                        color = '#ffc107'; // Yellow
+                        break;
+                    case 'skipped':
+                        color = '#f44336'; // Red
+                        break;
+                    default:
+                        color = '#9e9e9e'; // Gray for unknown
+                }
+            } else {
+                // Overall view: use medication-based colors
+                // Get all unique medications to determine the color index
+                const medications = Array.from(new Set(clockData.map(e => e.medication)));
+                const medIndex = medications.indexOf(medication);
+                const hue = (medIndex * 137.5) % 360;
+                color = `hsl(${hue}, 70%, 50%)`;
             }
             
             // Wedge parameters - wedge extends FROM CENTER outward past clock face
@@ -3514,7 +3297,6 @@ body.theme-dark .clock-date-picker input[type="date"] {
             
             svg.appendChild(path);
         }
-
         // Event handler for date picker change
         document.addEventListener('DOMContentLoaded', function() {
             initClockDatePicker();
