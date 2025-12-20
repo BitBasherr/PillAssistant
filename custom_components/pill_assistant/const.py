@@ -37,8 +37,14 @@ CONF_RELATIVE_OFFSET_MINUTES = (
 CONF_SENSOR_TRIGGER_VALUE = (
     "sensor_trigger_value"  # Specific sensor value to trigger on
 )
+CONF_SENSOR_TRIGGER_ATTRIBUTE = (
+    "sensor_trigger_attribute"  # Specific sensor attribute to monitor (optional)
+)
 CONF_AVOID_DUPLICATE_TRIGGERS = (
     "avoid_duplicate_triggers"  # Avoid triggering multiple times for same sensor event
+)
+CONF_IGNORE_UNAVAILABLE = (
+    "ignore_unavailable"  # Ignore 'unknown' and 'unavailable' states when monitoring for changes
 )
 CONF_ENABLE_AUTOMATIC_NOTIFICATIONS = "enable_automatic_notifications"  # Enable automatic notifications at scheduled times
 CONF_ON_TIME_WINDOW_MINUTES = (
@@ -54,7 +60,9 @@ DEFAULT_SCHEDULE_TYPE = "fixed_time"
 DEFAULT_RELATIVE_OFFSET_HOURS = 0
 DEFAULT_RELATIVE_OFFSET_MINUTES = 0
 DEFAULT_SENSOR_TRIGGER_VALUE = ""
+DEFAULT_SENSOR_TRIGGER_ATTRIBUTE = ""
 DEFAULT_AVOID_DUPLICATE_TRIGGERS = True
+DEFAULT_IGNORE_UNAVAILABLE = True
 DEFAULT_ENABLE_AUTOMATIC_NOTIFICATIONS = True
 DEFAULT_ON_TIME_WINDOW_MINUTES = 30
 

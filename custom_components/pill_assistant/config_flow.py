@@ -24,7 +24,9 @@ from .const import (
     CONF_RELATIVE_OFFSET_HOURS,
     CONF_RELATIVE_OFFSET_MINUTES,
     CONF_SENSOR_TRIGGER_VALUE,
+    CONF_SENSOR_TRIGGER_ATTRIBUTE,
     CONF_AVOID_DUPLICATE_TRIGGERS,
+    CONF_IGNORE_UNAVAILABLE,
     CONF_REFILL_AMOUNT,
     CONF_REFILL_REMINDER_DAYS,
     CONF_NOTES,
@@ -41,7 +43,9 @@ from .const import (
     DEFAULT_RELATIVE_OFFSET_HOURS,
     DEFAULT_RELATIVE_OFFSET_MINUTES,
     DEFAULT_SENSOR_TRIGGER_VALUE,
+    DEFAULT_SENSOR_TRIGGER_ATTRIBUTE,
     DEFAULT_AVOID_DUPLICATE_TRIGGERS,
+    DEFAULT_IGNORE_UNAVAILABLE,
     DEFAULT_ENABLE_AUTOMATIC_NOTIFICATIONS,
     DEFAULT_ON_TIME_WINDOW_MINUTES,
     SCHEDULE_TYPE_OPTIONS,
@@ -453,9 +457,18 @@ class PillAssistantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 last_changed_str = local_time.strftime("%Y-%m-%d %H:%M:%S")
                 
                 # Build sensor info display
-                sensor_info = f"**Current Sensor Information:**\n\n"
-                sensor_info += f"**Current Value:** `{current_value}`\n"
-                sensor_info += f"**Last Changed:** {last_changed_str}\n\n"
+                sensor_info = f"**Current Entity Information:**\n\n"
+                sensor_info += f"**Entity ID:** `{sensor_entity_id}`\n"
+                sensor_info += f"**Current State:** `{current_value}`\n"
+                sensor_info += f"**Last Changed:** {last_changed_str}\n"
+                
+                # Show available attributes
+                if sensor_state.attributes:
+                    sensor_info += f"**Available Attributes:**\n"
+                    for attr_name, attr_value in list(sensor_state.attributes.items())[:10]:  # Limit to first 10
+                        if attr_name not in ['friendly_name', 'icon', 'device_class']:
+                            sensor_info += f"  • `{attr_name}`: {attr_value}\n"
+                    sensor_info += "\n"
                 
                 # Get state history for last 24 hours
                 now = dt_util.now()
@@ -494,13 +507,11 @@ class PillAssistantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 sensor_type = self._detect_sensor_type(sensor_state)
                 trigger_value_options = self._get_trigger_value_options(sensor_state, sensor_type)
                 
-        # Build schema
+        # Build schema - allow ALL entity types
         schema_dict = {
             vol.Required(CONF_RELATIVE_TO_SENSOR): selector(
                 {
-                    "entity": {
-                        "domain": ["binary_sensor", "sensor"],
-                    }
+                    "entity": {}  # No domain restriction - all entities allowed
                 }
             ),
         }
@@ -525,6 +536,27 @@ class PillAssistantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     CONF_SENSOR_TRIGGER_VALUE,
                     default=DEFAULT_SENSOR_TRIGGER_VALUE,
                 )] = selector({"text": {}})
+            
+            # Add attribute selector if entity has attributes
+            if sensor_state.attributes:
+                # Get list of non-standard attributes
+                available_attrs = [
+                    {"label": "State (default)", "value": ""},
+                ]
+                for attr_name in sensor_state.attributes.keys():
+                    if attr_name not in ['friendly_name', 'icon', 'device_class', 'unit_of_measurement']:
+                        available_attrs.append({"label": attr_name, "value": attr_name})
+                
+                if len(available_attrs) > 1:  # More than just "State"
+                    schema_dict[vol.Optional(
+                        CONF_SENSOR_TRIGGER_ATTRIBUTE,
+                        default=DEFAULT_SENSOR_TRIGGER_ATTRIBUTE,
+                    )] = selector({
+                        "select": {
+                            "options": available_attrs,
+                            "mode": "dropdown",
+                        }
+                    })
         
         schema_dict.update({
             vol.Required(
@@ -539,6 +571,10 @@ class PillAssistantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 CONF_AVOID_DUPLICATE_TRIGGERS,
                 default=DEFAULT_AVOID_DUPLICATE_TRIGGERS,
             ): selector({"boolean": {}}),
+            vol.Optional(
+                CONF_IGNORE_UNAVAILABLE,
+                default=DEFAULT_IGNORE_UNAVAILABLE,
+            ): selector({"boolean": {}}),
             vol.Required(
                 CONF_SCHEDULE_DAYS, default=DEFAULT_SCHEDULE_DAYS
             ): SELECT_DAYS,
@@ -549,7 +585,7 @@ class PillAssistantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema(schema_dict),
             errors=errors,
             description_placeholders={
-                "help": f"{sensor_info}\nTake this medication X hours/minutes after a sensor changes state to a specific value (e.g., wake-up sensor).\n\n**Trigger Value:** Specify which sensor value should trigger the medication schedule (leave empty to trigger on any change).\n\n**Avoid Duplicate Triggers:** When enabled, prevents multiple medication schedules from being created for the same sensor event."
+                "help": f"{sensor_info}\n**Configure Entity-Based Scheduling:**\n\nTake this medication X hours/minutes after an entity changes state.\n\n**Trigger Value:** Specify which value should trigger the schedule (leave empty to trigger on any change).\n\n**Trigger Attribute:** Monitor a specific attribute instead of the entity state (optional).\n\n**Avoid Duplicate Triggers:** Prevents multiple schedules for the same event.\n\n**Ignore Unavailable:** When enabled, ignores 'unknown' and 'unavailable' states when monitoring for changes."
             },
         )
     
@@ -907,9 +943,7 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
                 )
             ] = selector(
                 {
-                    "entity": {
-                        "domain": ["binary_sensor", "sensor"],
-                    }
+                    "entity": {}  # Allow all entity types
                 }
             )
             
@@ -937,6 +971,26 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
                             CONF_SENSOR_TRIGGER_VALUE,
                             default=current_data.get(CONF_SENSOR_TRIGGER_VALUE, DEFAULT_SENSOR_TRIGGER_VALUE),
                         )] = selector({"text": {}})
+                    
+                    # Add attribute selector if entity has attributes
+                    if sensor_state.attributes:
+                        available_attrs = [
+                            {"label": "State (default)", "value": ""},
+                        ]
+                        for attr_name in sensor_state.attributes.keys():
+                            if attr_name not in ['friendly_name', 'icon', 'device_class', 'unit_of_measurement']:
+                                available_attrs.append({"label": attr_name, "value": attr_name})
+                        
+                        if len(available_attrs) > 1:
+                            schema_dict[vol.Optional(
+                                CONF_SENSOR_TRIGGER_ATTRIBUTE,
+                                default=current_data.get(CONF_SENSOR_TRIGGER_ATTRIBUTE, DEFAULT_SENSOR_TRIGGER_ATTRIBUTE),
+                            )] = selector({
+                                "select": {
+                                    "options": available_attrs,
+                                    "mode": "dropdown",
+                                }
+                            })
             
             schema_dict[
                 vol.Required(
@@ -959,6 +1013,14 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
                     CONF_AVOID_DUPLICATE_TRIGGERS,
                     default=current_data.get(
                         CONF_AVOID_DUPLICATE_TRIGGERS, DEFAULT_AVOID_DUPLICATE_TRIGGERS
+                    ),
+                )
+            ] = selector({"boolean": {}})
+            schema_dict[
+                vol.Optional(
+                    CONF_IGNORE_UNAVAILABLE,
+                    default=current_data.get(
+                        CONF_IGNORE_UNAVAILABLE, DEFAULT_IGNORE_UNAVAILABLE
                     ),
                 )
             ] = selector({"boolean": {}})
