@@ -91,6 +91,13 @@ schedules, and log medication history.
 - **Adherence Charts**: Bar charts showing medication-specific adherence rates
 - **Trend Charts**: Line graphs of medications taken over time
 - **Summary Statistics**: Overall adherence percentages and counts
+- **Medication History Editor**: 📝 **NEW**
+  - View all medication events in a responsive table
+  - Edit timestamps, action types, dosage, and units
+  - Delete incorrect entries with optional confirmation
+  - Filter by date range
+  - Inline editing with save/cancel controls
+  - Works seamlessly on desktop, tablet, and mobile
 
 ### Time Management
 - **Flexible Time Input**: 
@@ -290,6 +297,59 @@ Decrease remaining medication amount by dosage amount (minimum 0). Useful for ma
 service: pill_assistant.decrement_remaining
 data:
   medication_id: "abc123def456"
+```
+
+### pill_assistant.get_medication_history
+
+Retrieve medication history entries from storage. Returns a list of history entries with timestamps, actions, dosages, and more.
+
+```yaml
+service: pill_assistant.get_medication_history
+data:
+  # Optional: Filter by medication
+  medication_id: "abc123def456"
+  # Optional: Filter by date range (ISO format)
+  start_date: "2024-01-01T00:00:00"
+  end_date: "2024-01-31T23:59:59"
+```
+
+### pill_assistant.edit_medication_history
+
+Edit an existing medication history entry. Useful for correcting mistakes or updating event details.
+
+```yaml
+service: pill_assistant.edit_medication_history
+data:
+  history_index: 42  # Required: index of the entry to edit
+  # Optional: fields to update
+  timestamp: "2024-01-15T12:00:00"
+  action: "taken"  # taken, skipped, snoozed, or refilled
+  dosage: 2.0
+  dosage_unit: "mL"
+```
+
+### pill_assistant.delete_medication_history
+
+Delete a medication history entry from storage.
+
+```yaml
+service: pill_assistant.delete_medication_history
+data:
+  history_index: 42  # Required: index of the entry to delete
+```
+
+### pill_assistant.get_statistics
+
+Get medication statistics for a date range from CSV log files. Returns adherence rates, counts, and detailed event information.
+
+```yaml
+service: pill_assistant.get_statistics
+data:
+  # Optional: Filter by medication
+  medication_id: "abc123def456"
+  # Optional: Date range (ISO format, defaults to last 30 days)
+  start_date: "2024-01-01T00:00:00"
+  end_date: "2024-01-31T23:59:59"
 ```
 
 ## Frontend Panel
