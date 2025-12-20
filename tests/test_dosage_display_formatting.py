@@ -31,7 +31,6 @@ from custom_components.pill_assistant.const import (
         ("1", "gummy", "each", ["1", "gummy"]),
         ("2", "gummy", "each", ["2", "gummies"]),
         ("1.5", "tablet", "each", ["1.5", "tablets"]),
-        
         # Test with specific units - should show unit, not type
         ("5", "tablet", "mg", ["5", "mg"]),
         ("10", "liquid", "mL", ["10", "mL"]),
@@ -66,18 +65,18 @@ async def test_medication_entity_attributes_format(
     entry.add_to_hass(hass)
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
-    
+
     # Get the sensor entity
     entity_id = "sensor.pa_test_med"
     state = hass.states.get(entity_id)
-    
+
     assert state is not None
-    
+
     # Verify the entity has the correct attributes
     assert state.attributes.get("dosage") == dosage  # Stored as string
     assert state.attributes.get("dosage_unit") == unit
     assert state.attributes.get("medication_type") == med_type
-    
+
     # Note: The frontend will use formatDosageDisplay() to create the display string
     # We verify the backend provides the correct raw data
 
@@ -101,13 +100,13 @@ async def test_legacy_dosage_unit_migration(hass: HomeAssistant):
     entry.add_to_hass(hass)
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
-    
+
     # Get the sensor entity
     entity_id = "sensor.pa_legacy_med"
     state = hass.states.get(entity_id)
-    
+
     assert state is not None
-    
+
     # Should have migrated to new format
     assert state.attributes.get("medication_type") == "tablet"
     assert state.attributes.get("dosage_unit") == "each"
@@ -132,15 +131,15 @@ async def test_medication_with_mg_unit(hass: HomeAssistant):
     entry.add_to_hass(hass)
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
-    
+
     entity_id = "sensor.pa_aspirin"
     state = hass.states.get(entity_id)
-    
+
     assert state is not None
     assert state.attributes.get("dosage") == "500"
     assert state.attributes.get("dosage_unit") == "mg"
     assert state.attributes.get("medication_type") == "tablet"
-    
+
     # Frontend should display as "500 mg" not "500 tablets (mg)"
 
 
@@ -163,15 +162,15 @@ async def test_medication_with_ml_unit(hass: HomeAssistant):
     entry.add_to_hass(hass)
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
-    
+
     entity_id = "sensor.pa_cough_syrup"
     state = hass.states.get(entity_id)
-    
+
     assert state is not None
     assert state.attributes.get("dosage") == "10"
     assert state.attributes.get("dosage_unit") == "mL"
     assert state.attributes.get("medication_type") == "liquid"
-    
+
     # Frontend should display as "10 mL" not "10 liquids (mL)"
 
 
@@ -194,15 +193,15 @@ async def test_medication_with_each_unit_singular(hass: HomeAssistant):
     entry.add_to_hass(hass)
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
-    
+
     entity_id = "sensor.pa_vitamin"
     state = hass.states.get(entity_id)
-    
+
     assert state is not None
     assert state.attributes.get("dosage") == "1"
     assert state.attributes.get("dosage_unit") == "each"
     assert state.attributes.get("medication_type") == "capsule"
-    
+
     # Frontend should display as "1 capsule" not "1 capsule(s) (each)"
 
 
@@ -225,15 +224,15 @@ async def test_medication_with_each_unit_plural(hass: HomeAssistant):
     entry.add_to_hass(hass)
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
-    
+
     entity_id = "sensor.pa_vitamin_multi"
     state = hass.states.get(entity_id)
-    
+
     assert state is not None
     assert state.attributes.get("dosage") == "2"
     assert state.attributes.get("dosage_unit") == "each"
     assert state.attributes.get("medication_type") == "tablet"
-    
+
     # Frontend should display as "2 tablets" not "2 tablet(s) (each)"
 
 
@@ -256,14 +255,14 @@ async def test_medication_with_gummy_pluralization(hass: HomeAssistant):
     entry.add_to_hass(hass)
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
-    
+
     entity_id = "sensor.pa_gummy_vitamin"
     state = hass.states.get(entity_id)
-    
+
     assert state is not None
     assert state.attributes.get("dosage") == "2"
     assert state.attributes.get("medication_type") == "gummy"
-    
+
     # Frontend should display as "2 gummies" not "2 gummys"
 
 
@@ -286,12 +285,12 @@ async def test_medication_decimal_dosage(hass: HomeAssistant):
     entry.add_to_hass(hass)
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
-    
+
     entity_id = "sensor.pa_half_tablet"
     state = hass.states.get(entity_id)
-    
+
     assert state is not None
     assert state.attributes.get("dosage") == "0.5"
     assert state.attributes.get("medication_type") == "tablet"
-    
+
     # Frontend should display as "0.5 tablets" (plural since not exactly 1)

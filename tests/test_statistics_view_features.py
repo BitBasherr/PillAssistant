@@ -53,7 +53,7 @@ async def test_statistics_service_returns_data(
 ):
     """Test that statistics service returns data structure needed for UI."""
     entry = setup_test_medication
-    
+
     # Take medication a few times
     for _ in range(3):
         await hass.services.async_call(
@@ -63,12 +63,12 @@ async def test_statistics_service_returns_data(
             blocking=True,
         )
         await hass.async_block_till_done()
-    
+
     # Get statistics
     now = dt_util.now()
     start_date = (now - timedelta(days=7)).isoformat()
     end_date = now.isoformat()
-    
+
     response = await hass.services.async_call(
         DOMAIN,
         SERVICE_GET_STATISTICS,
@@ -79,14 +79,14 @@ async def test_statistics_service_returns_data(
         blocking=True,
         return_response=True,
     )
-    
+
     # Verify response structure for UI
     assert response is not None
     assert isinstance(response, dict)
     assert "medications" in response
     assert "daily_counts" in response
     assert "total_entries" in response
-    
+
     # Verify medication data
     assert entry.entry_id in response["medications"]
     med_stats = response["medications"][entry.entry_id]
@@ -100,7 +100,7 @@ async def test_statistics_per_medication_filter(
 ):
     """Test that statistics returns medication data structure."""
     entry = setup_test_medication
-    
+
     # Take medication
     await hass.services.async_call(
         DOMAIN,
@@ -109,12 +109,12 @@ async def test_statistics_per_medication_filter(
         blocking=True,
     )
     await hass.async_block_till_done()
-    
+
     # Get statistics with wide date range
     now = dt_util.now()
     start_date = (now - timedelta(days=30)).isoformat()
     end_date = now.isoformat()
-    
+
     response = await hass.services.async_call(
         DOMAIN,
         SERVICE_GET_STATISTICS,
@@ -125,18 +125,20 @@ async def test_statistics_per_medication_filter(
         blocking=True,
         return_response=True,
     )
-    
+
     # Verify response contains medication data structure
     assert response is not None
     assert "medications" in response
     # Frontend can filter the displayed data by medication_id client-side
 
 
-async def test_statistics_empty_data_handling(hass: HomeAssistant, setup_test_medication):
+async def test_statistics_empty_data_handling(
+    hass: HomeAssistant, setup_test_medication
+):
     """Test that statistics handles empty data gracefully."""
     # Don't take any medication, just get statistics
     now = dt_util.now()
-    
+
     response = await hass.services.async_call(
         DOMAIN,
         SERVICE_GET_STATISTICS,
@@ -147,7 +149,7 @@ async def test_statistics_empty_data_handling(hass: HomeAssistant, setup_test_me
         blocking=True,
         return_response=True,
     )
-    
+
     # Should return valid structure even with no data
     assert response is not None
     assert "medications" in response
@@ -160,7 +162,7 @@ async def test_statistics_date_range_handling(
 ):
     """Test that statistics properly handles different date ranges."""
     entry = setup_test_medication
-    
+
     # Take medication today
     await hass.services.async_call(
         DOMAIN,
@@ -169,9 +171,9 @@ async def test_statistics_date_range_handling(
         blocking=True,
     )
     await hass.async_block_till_done()
-    
+
     now = dt_util.now()
-    
+
     # Get statistics with wide range including today
     wide_range_response = await hass.services.async_call(
         DOMAIN,
@@ -183,7 +185,7 @@ async def test_statistics_date_range_handling(
         blocking=True,
         return_response=True,
     )
-    
+
     # Verify response has data
     assert "medications" in wide_range_response
     assert wide_range_response["total_entries"] >= 1
@@ -212,7 +214,7 @@ async def test_statistics_with_multiple_medications(hass: HomeAssistant):
         await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
         entries.append(entry)
-    
+
     # Take each medication once
     for entry in entries:
         await hass.services.async_call(
@@ -222,7 +224,7 @@ async def test_statistics_with_multiple_medications(hass: HomeAssistant):
             blocking=True,
         )
         await hass.async_block_till_done()
-    
+
     # Get overall statistics with wide date range
     now = dt_util.now()
     response = await hass.services.async_call(
@@ -235,7 +237,7 @@ async def test_statistics_with_multiple_medications(hass: HomeAssistant):
         blocking=True,
         return_response=True,
     )
-    
+
     # Verify response structure
     assert response["total_entries"] >= 3
 
@@ -245,7 +247,7 @@ async def test_dose_events_include_timestamps(
 ):
     """Test that dose events include timestamps for time-based charts."""
     entry = setup_test_medication
-    
+
     # Take medication
     before_time = dt_util.now()
     await hass.services.async_call(
@@ -256,7 +258,7 @@ async def test_dose_events_include_timestamps(
     )
     await hass.async_block_till_done()
     after_time = dt_util.now()
-    
+
     # Get statistics
     response = await hass.services.async_call(
         DOMAIN,
@@ -268,7 +270,7 @@ async def test_dose_events_include_timestamps(
         blocking=True,
         return_response=True,
     )
-    
+
     # Verify dose events have timestamps
     if "dose_events" in response:
         for event in response["dose_events"]:
@@ -276,7 +278,9 @@ async def test_dose_events_include_timestamps(
             assert "action" in event
             assert "medication_id" in event
             # Timestamp should be parseable
-            event_time = datetime.fromisoformat(event["timestamp"].replace("Z", "+00:00"))
+            event_time = datetime.fromisoformat(
+                event["timestamp"].replace("Z", "+00:00")
+            )
             assert before_time <= event_time <= after_time
 
 
@@ -284,7 +288,7 @@ def test_dosage_display_formatting():
     """Test dosage display formatting with proper pluralization."""
     # Note: This is a frontend function test - normally would be done in JS tests
     # But we can verify the backend provides correct data structure
-    
+
     test_cases = [
         # (amount, med_type, unit, expected_format_contains)
         ("1", "tablet", "each", ["1", "tablet"]),
@@ -296,7 +300,7 @@ def test_dosage_display_formatting():
         ("5", "tablet", "mg", ["5", "mg"]),  # Should show unit, not type
         ("10", "liquid", "mL", ["10", "mL"]),  # Should show unit
     ]
-    
+
     # This test documents expected behavior
     # Frontend formatDosageDisplay function should handle these cases
     assert True  # Placeholder for frontend validation
@@ -307,7 +311,7 @@ async def test_statistics_daily_counts_structure(
 ):
     """Test that daily_counts has correct structure for charts."""
     entry = setup_test_medication
-    
+
     # Take medication
     await hass.services.async_call(
         DOMAIN,
@@ -316,7 +320,7 @@ async def test_statistics_daily_counts_structure(
         blocking=True,
     )
     await hass.async_block_till_done()
-    
+
     # Get statistics with wide date range
     now = dt_util.now()
     response = await hass.services.async_call(
@@ -329,11 +333,11 @@ async def test_statistics_daily_counts_structure(
         blocking=True,
         return_response=True,
     )
-    
+
     # Verify daily_counts structure exists
     assert "daily_counts" in response
     assert "medications" in response
-    
+
     # Verify we have some data
     assert response["total_entries"] >= 1
 
@@ -343,7 +347,7 @@ async def test_statistics_adherence_calculation(
 ):
     """Test that statistics provide data for adherence calculations."""
     entry = setup_test_medication
-    
+
     # Take medication
     await hass.services.async_call(
         DOMAIN,
@@ -352,7 +356,7 @@ async def test_statistics_adherence_calculation(
         blocking=True,
     )
     await hass.async_block_till_done()
-    
+
     # Get statistics
     now = dt_util.now()
     response = await hass.services.async_call(
@@ -365,16 +369,16 @@ async def test_statistics_adherence_calculation(
         blocking=True,
         return_response=True,
     )
-    
+
     # Verify response structure
     assert "medications" in response
-    
+
     # If our medication appears in the results, verify adherence data
     if entry.entry_id in response["medications"]:
         med_stats = response["medications"][entry.entry_id]
         assert "taken_count" in med_stats
         assert "skipped_count" in med_stats
-        
+
         # Verify counts are reasonable
         assert med_stats["taken_count"] >= 0
         assert med_stats["skipped_count"] >= 0
