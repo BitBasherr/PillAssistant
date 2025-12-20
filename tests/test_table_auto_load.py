@@ -7,29 +7,29 @@ import re
 def _extract_function_body(content, func_pattern):
     """
     Extract a function body from content using a more robust method.
-    
+
     This handles nested braces properly by finding the function start
     and then counting braces to find the matching end brace.
     """
     match = re.search(func_pattern, content)
     if not match:
         return None
-    
+
     # Find the opening brace position
     start_pos = match.end()
-    
+
     # Count braces to find the matching closing brace
     brace_count = 1
     pos = start_pos
     while pos < len(content) and brace_count > 0:
-        if content[pos] == '{':
+        if content[pos] == "{":
             brace_count += 1
-        elif content[pos] == '}':
+        elif content[pos] == "}":
             brace_count -= 1
         pos += 1
-    
+
     if brace_count == 0:
-        return content[start_pos:pos - 1]
+        return content[start_pos : pos - 1]
     return None
 
 
@@ -212,6 +212,4 @@ def test_table_respects_medication_context():
     assert function_body, "loadMedicationHistory function not found"
 
     # Should use hass to call service - basic check that function works
-    assert (
-        "hass" in function_body
-    ), "loadMedicationHistory should use hass connection"
+    assert "hass" in function_body, "loadMedicationHistory should use hass connection"
