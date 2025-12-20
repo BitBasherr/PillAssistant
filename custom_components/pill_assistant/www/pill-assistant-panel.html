@@ -2919,7 +2919,9 @@
 
                 // Call the statistics service for the selected date using callWS for response
                 const startDate = dateStr;
-                const endDate = dateStr;
+                // Validate date format (YYYY-MM-DD) before using
+                const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+                const endDate = datePattern.test(dateStr) ? dateStr + 'T23:59:59' : dateStr;
                 
                 let response = null;
                 try {
@@ -2929,7 +2931,7 @@
                         service: 'get_statistics',
                         service_data: {
                             start_date: startDate,
-                            end_date: endDate + 'T23:59:59'
+                            end_date: endDate
                         },
                         return_response: true
                     });
@@ -2975,14 +2977,19 @@
                 // Check for taken events
                 if (medData.taken_times && Array.isArray(medData.taken_times)) {
                     medData.taken_times.forEach(timeStr => {
-                        const eventDate = new Date(timeStr);
-                        const dateOnly = getLocalDateString(eventDate);
-                        if (dateOnly === dateStr) {
-                            events.push({
-                                time: eventDate,
-                                type: 'taken',
-                                medication: medName
-                            });
+                        try {
+                            const eventDate = new Date(timeStr);
+                            if (isNaN(eventDate.getTime())) return;
+                            const dateOnly = getLocalDateString(eventDate);
+                            if (dateOnly === dateStr) {
+                                events.push({
+                                    time: eventDate,
+                                    type: 'taken',
+                                    medication: medName
+                                });
+                            }
+                        } catch (e) {
+                            console.warn('Error parsing taken time:', timeStr, e);
                         }
                     });
                 }
@@ -2990,14 +2997,19 @@
                 // Check for skipped events
                 if (medData.skipped_times && Array.isArray(medData.skipped_times)) {
                     medData.skipped_times.forEach(timeStr => {
-                        const eventDate = new Date(timeStr);
-                        const dateOnly = getLocalDateString(eventDate);
-                        if (dateOnly === dateStr) {
-                            events.push({
-                                time: eventDate,
-                                type: 'skipped',
-                                medication: medName
-                            });
+                        try {
+                            const eventDate = new Date(timeStr);
+                            if (isNaN(eventDate.getTime())) return;
+                            const dateOnly = getLocalDateString(eventDate);
+                            if (dateOnly === dateStr) {
+                                events.push({
+                                    time: eventDate,
+                                    type: 'skipped',
+                                    medication: medName
+                                });
+                            }
+                        } catch (e) {
+                            console.warn('Error parsing skipped time:', timeStr, e);
                         }
                     });
                 }
@@ -3005,14 +3017,19 @@
                 // Check for snoozed events (treat as delayed)
                 if (medData.snoozed_times && Array.isArray(medData.snoozed_times)) {
                     medData.snoozed_times.forEach(timeStr => {
-                        const eventDate = new Date(timeStr);
-                        const dateOnly = getLocalDateString(eventDate);
-                        if (dateOnly === dateStr) {
-                            events.push({
-                                time: eventDate,
-                                type: 'delayed',
-                                medication: medName
-                            });
+                        try {
+                            const eventDate = new Date(timeStr);
+                            if (isNaN(eventDate.getTime())) return;
+                            const dateOnly = getLocalDateString(eventDate);
+                            if (dateOnly === dateStr) {
+                                events.push({
+                                    time: eventDate,
+                                    type: 'delayed',
+                                    medication: medName
+                                });
+                            }
+                        } catch (e) {
+                            console.warn('Error parsing snoozed time:', timeStr, e);
                         }
                     });
                 }

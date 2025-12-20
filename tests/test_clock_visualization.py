@@ -294,7 +294,6 @@ async def test_time_offset_format_readable(hass: HomeAssistant):
     """Test that relative schedule time offset is human-readable."""
     # Create a sensor for reference
     hass.states.async_set("sensor.test_sensor", "on")
-    
     config_entry = MockConfigEntry(
         domain=DOMAIN,
         data={
