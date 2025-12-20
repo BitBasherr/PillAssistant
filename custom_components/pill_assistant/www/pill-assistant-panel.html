@@ -3251,7 +3251,7 @@ body.theme-dark .clock-legend.bottom-banner {
                 labels = dates;
                 
                 // Prepare datasets for each medication
-            const datasets = Array.from(medIds).map((medId, index) => {
+                datasets = Array.from(medIds).map((medId, index) => {
                 const medData = stats.medications[medId] || {};
                 const medName = medData.name || medId;
                 

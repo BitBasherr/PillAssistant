@@ -292,7 +292,7 @@ def test_dosage_display_formatting():
         ("1", "pill", "each", ["1", "pill"]),
         ("2", "pill", "each", ["2", "pill"]),
         ("1", "gummy", "each", ["1", "gummy"]),
-        ("2", "gummy", "each", ["2", "gumm"]),  # Should pluralize to gummies
+        ("2", "gummy", "each", ["2", "gummies"]),  # Should pluralize to gummies
         ("5", "tablet", "mg", ["5", "mg"]),  # Should show unit, not type
         ("10", "liquid", "mL", ["10", "mL"]),  # Should show unit
     ]
