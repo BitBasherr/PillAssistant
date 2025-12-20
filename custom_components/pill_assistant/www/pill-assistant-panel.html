@@ -3096,7 +3096,6 @@ body.theme-dark .clock-legend.bottom-banner {
                     console.warn('No statistics data for selected date range');
                     
                     // Try expanding the date range backwards to find data
-                    const today = new Date();
                     const searchEndDate = new Date(endDateTime);
                     let foundData = false;
                     
@@ -3783,9 +3782,9 @@ body.theme-dark .clock-legend.bottom-banner {
                     
                     // If currentStats doesn't help, search backwards day by day
                     console.debug('Searching backwards for date with data...');
-                    const searchDate = new Date(dateStr);
                     for (let daysBack = 1; daysBack <= 30 && fallbackDepth + daysBack <= MAX_FALLBACK_DEPTH; daysBack++) {
-                        searchDate.setDate(searchDate.getDate() - 1);
+                        const searchDate = new Date(dateStr);
+                        searchDate.setDate(searchDate.getDate() - daysBack);
                         const searchDateStr = getLocalDateString(searchDate);
                         
                         try {
