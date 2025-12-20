@@ -6,8 +6,10 @@
         "description": "Enter the medication details",
         "data": {
           "medication_name": "Medication Name",
-          "dosage": "Dosage Amount",
-          "dosage_unit": "Dosage Unit",
+          "dosage": "Dose (units per dose)",
+          "medication_type": "Medication Type",
+          "strength": "Strength (e.g., 500 for 500mg)",
+          "dosage_unit": "Strength Unit (mg, mL, etc.)",
           "notes": "Notes (optional)"
         }
       },
@@ -25,6 +27,7 @@
         "data": {
           "refill_amount": "Initial/Refill Amount",
           "refill_reminder_days": "Days Before Refill Reminder",
+          "current_quantity": "Current Quantity",
           "notify_services": "Notification Services (optional)"
         }
       },
@@ -49,8 +52,11 @@
         "description": "Modify medication details and schedule",
         "data": {
           "medication_name": "Medication Name",
-          "dosage": "Dosage Amount",
-          "dosage_unit": "Dosage Unit",
+          "dosage": "Dose (units per dose)",
+          "medication_type": "Medication Type",
+          "strength": "Strength (e.g., 500 for 500mg)",
+          "dosage_unit": "Strength Unit (mg, mL, etc.)",
+          "current_quantity": "Current Quantity",
           "schedule_times": "Times to Take Medication",
           "schedule_days": "Days of the Week",
           "refill_amount": "Refill Amount",

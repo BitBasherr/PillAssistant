@@ -16,6 +16,7 @@ from .const import (
     CONF_DOSAGE,
     CONF_DOSAGE_UNIT,
     CONF_MEDICATION_TYPE,
+    CONF_STRENGTH,
     CONF_SCHEDULE_TIMES,
     CONF_SCHEDULE_DAYS,
     CONF_SCHEDULE_TYPE,
@@ -38,6 +39,7 @@ from .const import (
     CONF_ON_TIME_WINDOW_MINUTES,
     DEFAULT_DOSAGE_UNIT,
     DEFAULT_MEDICATION_TYPE,
+    DEFAULT_STRENGTH,
     DEFAULT_REFILL_REMINDER_DAYS,
     DEFAULT_SCHEDULE_DAYS,
     DEFAULT_SCHEDULE_TYPE,
@@ -221,6 +223,7 @@ class PillAssistantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     vol.Required(
                         CONF_MEDICATION_TYPE, default=DEFAULT_MEDICATION_TYPE
                     ): SELECT_MEDICATION_TYPE,
+                    vol.Optional(CONF_STRENGTH, default=DEFAULT_STRENGTH): str,
                     vol.Required(
                         CONF_DOSAGE_UNIT, default=DEFAULT_DOSAGE_UNIT
                     ): SELECT_DOSAGE_UNIT,
@@ -1004,6 +1007,10 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
                 CONF_MEDICATION_TYPE,
                 default=current_data.get(CONF_MEDICATION_TYPE, DEFAULT_MEDICATION_TYPE),
             ): SELECT_MEDICATION_TYPE,
+            vol.Optional(
+                CONF_STRENGTH,
+                default=current_data.get(CONF_STRENGTH, DEFAULT_STRENGTH),
+            ): str,
             vol.Required(
                 CONF_DOSAGE_UNIT,
                 default=current_data.get(CONF_DOSAGE_UNIT, DEFAULT_DOSAGE_UNIT),

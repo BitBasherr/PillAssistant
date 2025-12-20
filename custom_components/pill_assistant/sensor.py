@@ -20,6 +20,7 @@ from .const import (
     CONF_DOSAGE,
     CONF_DOSAGE_UNIT,
     CONF_MEDICATION_TYPE,
+    CONF_STRENGTH,
     CONF_SCHEDULE_TIMES,
     CONF_SCHEDULE_DAYS,
     CONF_SCHEDULE_TYPE,
@@ -40,6 +41,7 @@ from .const import (
     DEFAULT_SCHEDULE_TYPE,
     DEFAULT_DOSAGE_UNIT,
     DEFAULT_MEDICATION_TYPE,
+    DEFAULT_STRENGTH,
     DEFAULT_SENSOR_TRIGGER_VALUE,
     DEFAULT_SENSOR_TRIGGER_ATTRIBUTE,
     DEFAULT_AVOID_DUPLICATE_TRIGGERS,
@@ -211,14 +213,20 @@ class PillAssistantSensor(SensorEntity):
             self.hass, self._medication_name
         )
 
-        # Use med_data for dosage so increment/decrement reflects in UI
-        dosage = med_data.get(CONF_DOSAGE, self._entry.data.get(CONF_DOSAGE, ""))
+        # Use config entry data for dosage values (prioritized) with storage fallback
+        # Config entry data reflects options flow changes; storage is for runtime updates
+        dosage = self._entry.data.get(CONF_DOSAGE, med_data.get(CONF_DOSAGE, ""))
         dosage_unit = normalize_dosage_unit(
-            med_data.get(CONF_DOSAGE_UNIT, self._entry.data.get(CONF_DOSAGE_UNIT, ""))
+            self._entry.data.get(CONF_DOSAGE_UNIT, med_data.get(CONF_DOSAGE_UNIT, ""))
         )
-        medication_type = med_data.get(
+        medication_type = self._entry.data.get(
             CONF_MEDICATION_TYPE,
-            self._entry.data.get(CONF_MEDICATION_TYPE, DEFAULT_MEDICATION_TYPE),
+            med_data.get(CONF_MEDICATION_TYPE, DEFAULT_MEDICATION_TYPE),
+        )
+        # Get strength from config entry (prioritized) with storage fallback
+        strength = self._entry.data.get(
+            CONF_STRENGTH,
+            med_data.get(CONF_STRENGTH, DEFAULT_STRENGTH),
         )
 
         # Format dosage display with type and unit
@@ -242,7 +250,11 @@ class PillAssistantSensor(SensorEntity):
             # If dosage is not a number, keep medication type as-is
             type_display = medication_type
 
-        dosage_display = f"{dosage} {type_display} ({dosage_unit})"
+        # Build dosage display with optional strength
+        if strength:
+            dosage_display = f"{dosage} {type_display} ({strength} {dosage_unit})"
+        else:
+            dosage_display = f"{dosage} {type_display} ({dosage_unit})"
 
         # Use human-friendly keys as per requirements but keep backward compatibility
         attributes = {
@@ -250,6 +262,7 @@ class PillAssistantSensor(SensorEntity):
             ATTR_DISPLAY_MEDICATION_ID: self._medication_id,
             "Dosage": dosage_display,
             "Medication Type": medication_type,
+            "Strength": f"{strength} {dosage_unit}" if strength else dosage_unit,
             ATTR_SCHEDULE: schedule_str,
             ATTR_REMAINING_AMOUNT: med_data.get("remaining_amount", 0),
             ATTR_LAST_TAKEN: med_data.get("last_taken") or "Never",
@@ -272,6 +285,7 @@ class PillAssistantSensor(SensorEntity):
             "dosage": dosage,
             "dosage_unit": dosage_unit,
             "medication_type": medication_type,
+            "strength": strength,
             "log_file_location": global_log_path,  # Backward compatibility
         }
 

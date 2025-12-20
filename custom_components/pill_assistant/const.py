@@ -8,11 +8,12 @@ DOMAIN = "pill_assistant"
 
 # ---------------- Config keys (stored in entry.data) ----------------
 CONF_MEDICATION_NAME = "medication_name"
-CONF_DOSAGE = "dosage"
-CONF_DOSAGE_UNIT = "dosage_unit"
+CONF_DOSAGE = "dosage"  # Number of units taken per dose (e.g., 2 pills)
+CONF_DOSAGE_UNIT = "dosage_unit"  # Unit of measurement for strength (mg, mL, etc.)
 CONF_MEDICATION_TYPE = (
     "medication_type"  # Type of medication (pill, tablet, liquid, etc.)
 )
+CONF_STRENGTH = "strength"  # Medication strength/potency (e.g., "150" for 150mg)
 CONF_SCHEDULE_TIMES = "schedule_times"  # List of times in HH:MM format
 CONF_SCHEDULE_DAYS = "schedule_days"  # List of days (mon, tue, wed, thu, fri, sat, sun)
 CONF_REFILL_AMOUNT = "refill_amount"
@@ -56,6 +57,7 @@ CONF_ON_TIME_WINDOW_MINUTES = (
 # Default values
 DEFAULT_DOSAGE_UNIT = "each"
 DEFAULT_MEDICATION_TYPE = "pill"
+DEFAULT_STRENGTH = ""  # Medication strength (e.g., "150" for 150mg)
 DEFAULT_REFILL_REMINDER_DAYS = 7
 DEFAULT_SCHEDULE_DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
 DEFAULT_SCHEDULE_TYPE = "fixed_time"

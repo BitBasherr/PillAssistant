@@ -295,6 +295,243 @@
             padding-top: 10px;
             border-top: 1px solid var(--divider-color, #e0e0e0);
         }
+        /* Edit controls container */
+        .edit-controls-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: var(--secondary-background-color, #f5f5f5);
+            border-radius: 6px;
+        }
+        body.theme-dark .edit-controls-container {
+            background: #2a2a2a;
+        }
+        .enable-edits-checkbox {
+            font-size: 0.85em;
+        }
+        .inline-edit-controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .btn-edit-field {
+            background: #607d8b;
+            color: white;
+            padding: 8px 12px;
+            font-size: 0.85em;
+            min-width: 100px;
+        }
+        .btn-edit-field:hover {
+            background: #546e7a;
+        }
+        /* Scrollable wheel popup overlay */
+        .edit-popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+        .edit-popup {
+            background: var(--card-background-color, #ffffff);
+            border-radius: 12px;
+            padding: 20px;
+            min-width: 280px;
+            max-width: 90vw;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        body.theme-dark .edit-popup {
+            background: #1e1e1e;
+        }
+        .edit-popup h3 {
+            margin: 0 0 15px 0;
+            font-size: 1.2em;
+            color: var(--primary-text-color, #212121);
+        }
+        body.theme-dark .edit-popup h3 {
+            color: #e0e0e0;
+        }
+        .wheel-picker-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        .wheel-picker {
+            width: 100%;
+            height: 150px;
+            overflow-y: scroll;
+            scroll-snap-type: y mandatory;
+            -webkit-overflow-scrolling: touch;
+            border: 2px solid var(--divider-color, #e0e0e0);
+            border-radius: 8px;
+            background: var(--secondary-background-color, #f5f5f5);
+        }
+        body.theme-dark .wheel-picker {
+            background: #2a2a2a;
+            border-color: #444;
+        }
+        .wheel-picker-item {
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            font-weight: 500;
+            scroll-snap-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: var(--primary-text-color, #212121);
+        }
+        body.theme-dark .wheel-picker-item {
+            color: #e0e0e0;
+        }
+        .wheel-picker-item:hover {
+            background: var(--primary-color, #03a9f4);
+            color: white;
+        }
+        .wheel-picker-item.selected {
+            background: var(--primary-color, #03a9f4);
+            color: white;
+        }
+        .edit-popup-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: flex-end;
+        }
+        .edit-popup-buttons button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .popup-btn-confirm {
+            background: #4caf50;
+            color: white;
+        }
+        .popup-btn-confirm:hover {
+            background: #45a049;
+        }
+        .popup-btn-cancel {
+            background: #9e9e9e;
+            color: white;
+        }
+        .popup-btn-cancel:hover {
+            background: #757575;
+        }
+        /* Overlap popup for clock visualization */
+        .overlap-popup {
+            position: fixed;
+            z-index: 10001;
+            background: var(--card-background-color, #ffffff);
+            border-radius: 12px;
+            padding: 15px;
+            min-width: 220px;
+            max-width: 300px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            font-size: 0.9em;
+        }
+        body.theme-dark .overlap-popup {
+            background: #1e1e1e;
+        }
+        .overlap-popup-header {
+            font-weight: 600;
+            font-size: 1em;
+            margin-bottom: 12px;
+            color: var(--primary-text-color, #212121);
+            border-bottom: 1px solid var(--divider-color, #e0e0e0);
+            padding-bottom: 8px;
+        }
+        body.theme-dark .overlap-popup-header {
+            color: #e0e0e0;
+            border-bottom-color: #444;
+        }
+        .overlap-popup-content {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .overlap-popup-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 8px;
+            background: var(--secondary-background-color, #f5f5f5);
+            border-radius: 6px;
+            flex-wrap: wrap;
+        }
+        body.theme-dark .overlap-popup-item {
+            background: #2a2a2a;
+        }
+        .overlap-color-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .overlap-med-name {
+            font-weight: 500;
+            flex: 1;
+            color: var(--primary-text-color, #212121);
+        }
+        body.theme-dark .overlap-med-name {
+            color: #e0e0e0;
+        }
+        .overlap-action {
+            font-size: 0.85em;
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-transform: capitalize;
+        }
+        .overlap-action[data-action="taken"],
+        .overlap-popup-item .overlap-action {
+            background: rgba(76, 175, 80, 0.2);
+            color: #4caf50;
+        }
+        .overlap-time {
+            font-size: 0.85em;
+            color: var(--secondary-text-color, #757575);
+        }
+        body.theme-dark .overlap-time {
+            color: #b0b0b0;
+        }
+        .overlap-popup-close {
+            width: 100%;
+            margin-top: 12px;
+            padding: 8px 16px;
+            background: var(--primary-color, #03a9f4);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .overlap-popup-close:hover {
+            background: var(--dark-primary-color, #0288d1);
+        }
+        /* Overlap wedge styling */
+        .clock-wedge-overlap {
+            cursor: pointer;
+        }
+        .clock-wedge-overlap:hover {
+            opacity: 1;
+            stroke-width: 2;
+        }
         .settings-checkbox {
             display: flex;
             align-items: center;
@@ -1280,23 +1517,7 @@ body.theme-dark .clock-date-picker input[type="date"] {
     color: #e0e0e0;
     border-color: #444;
 }
-/* Breakpoint: stack legend under clocks (bottom-right aligned) */
-@media (max-width: 900px) {
-    .clock-layout {
-        grid-template-columns: 1fr;
-        grid-template-areas:
-            "clocks"
-            "legend";
-        column-gap: 0;
-    }
-    .clock-layout-spacer {
-        display: none;
-    }
-    /* Legend becomes a row aligned to the right under the clocks */
-    .clock-legend {
-        flex-direction: row;
-        flex-wrap: wrap;
-        justify-content: flex-end;
+
 /* Bottom banner legend for overall statistics view */
 .clock-legend.bottom-banner {
     grid-area: auto;
@@ -1314,18 +1535,97 @@ body.theme-dark .clock-date-picker input[type="date"] {
 body.theme-dark .clock-legend.bottom-banner {
     background: #1e1e1e;
 }
+
 /* Hide legend in per-medication view when using action colors */
 .clock-legend.hidden {
     display: none;
 }
+
+body.theme-dark .clock-view-checkbox {
+    color: #e0e0e0;
+}
+
+/* Breakpoint for tablets and small laptops */
+@media (max-width: 900px) {
+    .clock-layout {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+            "clocks"
+            "legend";
+        column-gap: 0;
+        justify-content: center;
+    }
+    .clock-layout-spacer {
+        display: none;
+    }
+    /* Legend becomes a row aligned center under the clocks */
+    .clock-legend {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
         align-items: center;
         width: 100%;
         margin-top: 8px;
     }
+    .clock-container {
+        justify-content: center;
+    }
 }
-        body.theme-dark .clock-view-checkbox {
-            color: #e0e0e0;
-        }
+
+/* Specific fixes for foldable phones like Galaxy Fold 7 */
+/* Front screen (narrow): width ~320-400px */
+@media (max-width: 420px) {
+    .clock-layout {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+            "clocks"
+            "legend";
+        justify-items: center;
+        justify-content: center;
+    }
+    .clock-container {
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+        width: 100%;
+    }
+    .clock-wrapper {
+        width: 100%;
+        max-width: 280px;
+    }
+    .clock-svg {
+        max-width: 240px;
+    }
+}
+
+/* Foldable expanded view (wide but short): width ~600-900px, height ~280-400px */
+@media (min-width: 600px) and (max-width: 900px) and (max-height: 450px) {
+    .clock-layout {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+            "clocks"
+            "legend";
+        justify-items: center;
+    }
+    .clock-container {
+        justify-content: center;
+        gap: 20px;
+    }
+}
+
+/* Landscape orientation for foldables - ensure center alignment */
+@media (orientation: landscape) and (max-height: 500px) {
+    .clock-layout {
+        justify-content: center;
+        justify-items: center;
+    }
+    .clock-container {
+        justify-content: center;
+    }
+    .clock-wrapper {
+        min-height: auto;
+    }
+}
         @media (max-width: 768px) {
             body {
                 padding: 10px;
@@ -2367,6 +2667,46 @@ body.theme-dark .clock-legend.bottom-banner {
             return `${numAmount} ${typeDisplay}`;
         }
         
+        // Format dose display - always shows medication type (e.g., "2 pills")
+        // This is separate from strength which uses dosageUnit (e.g., "150 mg")
+        function formatDoseDisplay(amount, medicationType) {
+            const numAmount = parseFloat(amount);
+            
+            // Handle medication type pluralization
+            let typeDisplay = medicationType;
+            if (numAmount !== 1) {
+                // Pluralize medication type
+                if (medicationType === 'gummy') {
+                    typeDisplay = 'gummies';
+                } else if (medicationType.endsWith('y')) {
+                    const beforeY = medicationType.charAt(medicationType.length - 2).toLowerCase();
+                    const isVowel = 'aeiou'.includes(beforeY);
+                    if (!isVowel) {
+                        typeDisplay = medicationType.slice(0, -1) + 'ies';
+                    } else {
+                        typeDisplay = medicationType + 's';
+                    }
+                } else if (!medicationType.endsWith('s')) {
+                    typeDisplay = medicationType + 's';
+                }
+            }
+            
+            return `${numAmount} ${typeDisplay}`;
+        }
+        
+        // Format strength display - shows strength value with unit (e.g., "150 mg")
+        function formatStrengthDisplay(strength, dosageUnit) {
+            if (!strength || strength === '') {
+                return 'N/A';
+            }
+            return `${strength} ${dosageUnit}`;
+        }
+        
+        // Format quantity display - just a number (inventory count)
+        function formatQuantityDisplay(quantity) {
+            return `${quantity}`;
+        }
+        
         // Render medications
         function renderMedications() {
             const content = document.getElementById('content');
@@ -2419,6 +2759,7 @@ body.theme-dark .clock-legend.bottom-banner {
             const medId = attrs['Medication ID'] || attrs['medication_id'] || '';
             const dosage = attrs['dosage'] || attrs['Dosage'] || '1';
             const dosageUnit = attrs['dosage_unit'] || attrs['Dosage unit'] || 'each';
+            const strength = attrs['strength'] || attrs['Strength'] || '';
             const medicationTypeRaw = attrs['medication_type'] || attrs['Medication Type'] || 'pill';
             const medicationType = formatMedicationType(medicationTypeRaw);
             const remaining = attrs['remaining_amount'] || attrs['Remaining amount'] || 0;
@@ -2436,11 +2777,20 @@ body.theme-dark .clock-legend.bottom-banner {
             const refillAmount = attrs['Refill amount'] || 0;
             const medName = formatMedicationName(med.entityId.replace('sensor.pa_', '').replace(/_/g, ' '));
             
+            // Format strength display - use proper formatting function
+            const strengthDisplay = formatStrengthDisplay(strength, dosageUnit);
+            
+            // Format dose display - shows medication type, not strength unit
+            const doseDisplay = formatDoseDisplay(dosage, medicationType);
+            
+            // Format quantity display - just a count, no unit
+            const quantityDisplay = formatQuantityDisplay(remaining);
+            
             // Helper to check if decrement button should be disabled
             const isDecrementDisabled = parseFloat(dosage) <= 0.5;
             const isRemainingDecrementDisabled = parseFloat(remaining) <= 0;
             return `
-                <div class="medication-card" data-entity-id="${med.entityId}">
+                <div class="medication-card" data-entity-id="${med.entityId}" data-med-id="${medId}">
                     <div class="medication-header">
                         <div class="medication-name">${medName}</div>
                         <div class="medication-status status-${med.state}">${med.state}</div>
@@ -2451,12 +2801,16 @@ body.theme-dark .clock-legend.bottom-banner {
                             <div class="detail-value">${medicationType}</div>
                         </div>
                         <div class="detail-item">
+                            <div class="detail-label">Strength</div>
+                            <div class="detail-value">${strengthDisplay}</div>
+                        </div>
+                        <div class="detail-item">
                             <div class="detail-label">Schedule</div>
                             <div class="detail-value">${schedule}</div>
                         </div>
                         <div class="detail-item">
-                            <div class="detail-label">Remaining Amount</div>
-                            <div class="detail-value">${remaining} ${dosageUnit}</div>
+                            <div class="detail-label">Quantity</div>
+                            <div class="detail-value" data-field="quantity">${quantityDisplay}</div>
                         </div>
                         <div class="detail-item">
                             <div class="detail-label">Last Taken</div>
@@ -2469,20 +2823,34 @@ body.theme-dark .clock-legend.bottom-banner {
                     </div>
                     <div class="adjusters-container">
                         <div class="dosage-adjuster">
-                            <div class="dosage-label">Dosage:</div>
+                            <div class="dosage-label">Dose per intake:</div>
                             <div class="dosage-controls">
                                 <button class="dosage-btn" onclick="adjustDosage('${medId}', -1)" ${isDecrementDisabled ? 'disabled' : ''}>−</button>
-                                <div class="dosage-value">${formatDosageDisplay(dosage, medicationType, dosageUnit)}</div>
+                                <div class="dosage-value">${doseDisplay}</div>
                                 <button class="dosage-btn" onclick="adjustDosage('${medId}', 1)">+</button>
                             </div>
                         </div>
                         <div class="dosage-adjuster">
-                            <div class="dosage-label">Remaining:</div>
+                            <div class="dosage-label">Quantity:</div>
                             <div class="dosage-controls">
                                 <button class="dosage-btn" onclick="adjustRemaining('${medId}', -1)" ${isRemainingDecrementDisabled ? 'disabled' : ''}>−</button>
-                                <div class="dosage-value">${formatDosageDisplay(remaining, medicationType, dosageUnit)}</div>
+                                <div class="dosage-value">${quantityDisplay}</div>
                                 <button class="dosage-btn" onclick="adjustRemaining('${medId}', 1)">+</button>
                             </div>
+                        </div>
+                    </div>
+                    <div class="edit-controls-container">
+                        <label class="settings-checkbox enable-edits-checkbox">
+                            <input type="checkbox" onchange="toggleMedicationEdits('${medId}', this.checked)">
+                            <span>✏️ Enable Edits</span>
+                        </label>
+                        <div class="inline-edit-controls" id="inline-edit-${medId}" style="display: none;">
+                            <button class="action-btn btn-edit-field" onclick="showEditDosePopup('${medId}', ${dosage})">
+                                Edit Dose
+                            </button>
+                            <button class="action-btn btn-edit-field" onclick="showEditQuantityPopup('${medId}', ${remaining})">
+                                Edit Quantity
+                            </button>
                         </div>
                     </div>
                     <div class="action-buttons">
@@ -2679,6 +3047,166 @@ body.theme-dark .clock-legend.bottom-banner {
         async function adjustRemaining(medId, change) {
             const service = change > 0 ? 'increment_remaining' : 'decrement_remaining';
             await callService('pill_assistant', service, { medication_id: medId });
+        }
+        // Toggle inline edit controls for a medication
+        function toggleMedicationEdits(medId, enabled) {
+            const editControls = document.getElementById(`inline-edit-${medId}`);
+            if (editControls) {
+                editControls.style.display = enabled ? 'flex' : 'none';
+            }
+        }
+        // Show edit dose popup with scrollable wheel picker
+        function showEditDosePopup(medId, currentValue) {
+            showEditPopup(medId, 'dose', currentValue, 0.5, 20, 0.5);
+        }
+        // Show edit quantity popup with scrollable wheel picker
+        function showEditQuantityPopup(medId, currentValue) {
+            showEditPopup(medId, 'quantity', currentValue, 0, 500, 1);
+        }
+        // Generic edit popup with wheel picker
+        function showEditPopup(medId, fieldType, currentValue, minValue, maxValue, step) {
+            // Create overlay
+            const overlay = document.createElement('div');
+            overlay.className = 'edit-popup-overlay';
+            overlay.id = 'edit-popup-overlay';
+            
+            // Generate values array
+            const values = [];
+            for (let v = minValue; v <= maxValue; v += step) {
+                values.push(step < 1 ? v.toFixed(1) : v);
+            }
+            
+            // Create wheel picker HTML
+            let wheelItemsHtml = '';
+            values.forEach(val => {
+                const isSelected = parseFloat(val) === parseFloat(currentValue) ? 'selected' : '';
+                wheelItemsHtml += `<div class="wheel-picker-item ${isSelected}" data-value="${val}">${val}</div>`;
+            });
+            
+            const title = fieldType === 'dose' ? 'Edit Dose per Intake' : 'Edit Quantity';
+            
+            overlay.innerHTML = `
+                <div class="edit-popup">
+                    <h3>${title}</h3>
+                    <div class="wheel-picker-container">
+                        <div class="wheel-picker" id="wheel-picker-${medId}">
+                            ${wheelItemsHtml}
+                        </div>
+                        <div style="font-size: 0.9em; color: var(--secondary-text-color, #757575);">
+                            Scroll or tap to select value
+                        </div>
+                    </div>
+                    <div class="edit-popup-buttons">
+                        <button class="popup-btn-cancel" onclick="closeEditPopup()">Cancel</button>
+                        <button class="popup-btn-confirm" onclick="confirmEditPopup('${medId}', '${fieldType}')">Confirm</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(overlay);
+            
+            // Add click handlers for wheel picker items
+            const wheelPicker = document.getElementById(`wheel-picker-${medId}`);
+            wheelPicker.querySelectorAll('.wheel-picker-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    wheelPicker.querySelectorAll('.wheel-picker-item').forEach(i => i.classList.remove('selected'));
+                    this.classList.add('selected');
+                });
+            });
+            
+            // Scroll to current value
+            const selectedItem = wheelPicker.querySelector('.wheel-picker-item.selected');
+            if (selectedItem) {
+                setTimeout(() => {
+                    selectedItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 100);
+            }
+            
+            // Close on overlay click
+            overlay.addEventListener('click', function(e) {
+                if (e.target === overlay) {
+                    closeEditPopup();
+                }
+            });
+        }
+        // Close edit popup
+        function closeEditPopup() {
+            const overlay = document.getElementById('edit-popup-overlay');
+            if (overlay) {
+                overlay.remove();
+            }
+        }
+        // Confirm edit popup and save value
+        async function confirmEditPopup(medId, fieldType) {
+            const wheelPicker = document.getElementById(`wheel-picker-${medId}`);
+            if (!wheelPicker) {
+                closeEditPopup();
+                return;
+            }
+            
+            const selectedItem = wheelPicker.querySelector('.wheel-picker-item.selected');
+            if (!selectedItem) {
+                showErrorMessage('Please select a value');
+                return;
+            }
+            
+            const newValue = parseFloat(selectedItem.dataset.value);
+            
+            closeEditPopup();
+            
+            try {
+                if (fieldType === 'dose') {
+                    // For dose, we need to update via increments/decrements
+                    // Find current dose and calculate difference
+                    const card = document.querySelector(`[data-med-id="${medId}"]`);
+                    if (card) {
+                        const currentDoseText = card.querySelector('.dosage-adjuster .dosage-value');
+                        if (currentDoseText) {
+                            const currentDose = parseFloat(currentDoseText.textContent) || 1;
+                            const diff = newValue - currentDose;
+                            const steps = Math.abs(diff / 0.5);
+                            
+                            // Apply increments/decrements
+                            for (let i = 0; i < steps; i++) {
+                                await adjustDosage(medId, diff > 0 ? 1 : -1);
+                                await new Promise(resolve => setTimeout(resolve, 100));
+                            }
+                        }
+                    }
+                } else if (fieldType === 'quantity') {
+                    // For quantity, we need to calculate difference and apply
+                    const card = document.querySelector(`[data-med-id="${medId}"]`);
+                    if (card) {
+                        const adjusters = card.querySelectorAll('.dosage-adjuster');
+                        let remainingAdjuster = null;
+                        adjusters.forEach(adj => {
+                            if (adj.querySelector('.dosage-label')?.textContent.includes('Quantity')) {
+                                remainingAdjuster = adj;
+                            }
+                        });
+                        
+                        if (remainingAdjuster) {
+                            const currentQuantityText = remainingAdjuster.querySelector('.dosage-value');
+                            if (currentQuantityText) {
+                                const currentQuantity = parseFloat(currentQuantityText.textContent) || 0;
+                                const diff = newValue - currentQuantity;
+                                const steps = Math.abs(diff);
+                                
+                                // Apply increments/decrements
+                                for (let i = 0; i < steps; i++) {
+                                    await adjustRemaining(medId, diff > 0 ? 1 : -1);
+                                    await new Promise(resolve => setTimeout(resolve, 50));
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                showSuccessMessage(`${fieldType === 'dose' ? 'Dose' : 'Quantity'} updated successfully!`);
+            } catch (error) {
+                console.error('Error updating value:', error);
+                showErrorMessage(`Failed to update ${fieldType}: ${error.message}`);
+            }
         }
         // Add medication - opens config flow
         async function addMedication() {
@@ -4100,14 +4628,8 @@ body.theme-dark .clock-legend.bottom-banner {
                 }
             });
             
-            // Draw wedges for each event
-            filteredEvents.forEach(event => {
-                const hours = event.time.getHours() % 12 || 12;
-                const minutes = event.time.getMinutes();
-                const angle = ((hours + minutes / 60) / 12) * 360;
-                
-                drawWedge(svg, angle, event.type, event.medication, event.time);
-            });
+            // Group overlapping events and draw them
+            drawGroupedWedges(svg, filteredEvents, 12);
         }
         // Render 24-hour clock with wedges
         function render24HourClock() {
@@ -4120,14 +4642,232 @@ body.theme-dark .clock-legend.bottom-banner {
             // Draw clock face
             drawClockFace(svg, 24);
             
-            // Draw wedges for all events
-            clockData.forEach(event => {
-                const hours = event.time.getHours();
-                const minutes = event.time.getMinutes();
-                const angle = ((hours + minutes / 60) / 24) * 360;
-                
-                drawWedge(svg, angle, event.type, event.medication, event.time);
+            // Group overlapping events and draw them
+            drawGroupedWedges(svg, clockData, 24);
+        }
+        
+        // Group overlapping events and draw wedges with stripe patterns for overlaps
+        function drawGroupedWedges(svg, events, maxHours) {
+            if (!events || events.length === 0) return;
+            
+            // Time threshold for overlap detection (in minutes)
+            const OVERLAP_THRESHOLD_MINUTES = 15;
+            
+            // Calculate angle for each event
+            const eventsWithAngles = events.map(event => {
+                let hours, minutes;
+                if (maxHours === 12) {
+                    hours = event.time.getHours() % 12 || 12;
+                    minutes = event.time.getMinutes();
+                } else {
+                    hours = event.time.getHours();
+                    minutes = event.time.getMinutes();
+                }
+                const angle = ((hours + minutes / 60) / maxHours) * 360;
+                return { ...event, angle, hours, minutes };
             });
+            
+            // Sort by angle
+            eventsWithAngles.sort((a, b) => a.angle - b.angle);
+            
+            // Group overlapping events
+            const groups = [];
+            let currentGroup = [];
+            
+            eventsWithAngles.forEach((event, index) => {
+                if (currentGroup.length === 0) {
+                    currentGroup.push(event);
+                } else {
+                    // Check if this event overlaps with any event in current group
+                    const overlaps = currentGroup.some(groupEvent => {
+                        const timeDiff = Math.abs(
+                            (event.time.getTime() - groupEvent.time.getTime()) / 60000
+                        );
+                        return timeDiff <= OVERLAP_THRESHOLD_MINUTES;
+                    });
+                    
+                    if (overlaps) {
+                        currentGroup.push(event);
+                    } else {
+                        groups.push([...currentGroup]);
+                        currentGroup = [event];
+                    }
+                }
+            });
+            
+            // Don't forget the last group
+            if (currentGroup.length > 0) {
+                groups.push(currentGroup);
+            }
+            
+            // Draw each group
+            groups.forEach(group => {
+                if (group.length === 1) {
+                    // Single event, draw normally
+                    const event = group[0];
+                    drawWedge(svg, event.angle, event.type, event.medication, event.time);
+                } else {
+                    // Multiple overlapping events, draw with stripe pattern
+                    drawOverlappingWedges(svg, group, maxHours);
+                }
+            });
+        }
+        
+        // Draw overlapping wedges with stripe pattern
+        function drawOverlappingWedges(svg, group, maxHours) {
+            // Calculate the combined wedge span
+            const minAngle = Math.min(...group.map(e => e.angle));
+            const maxAngle = Math.max(...group.map(e => e.angle));
+            
+            // Expand wedge width to accommodate all events plus margin
+            const baseWedgeWidth = 5;
+            const combinedWidth = Math.max(baseWedgeWidth * group.length, maxAngle - minAngle + baseWedgeWidth);
+            const centerAngle = (minAngle + maxAngle) / 2;
+            
+            // Get colors for all events in the group
+            const colors = group.map(event => getEventColor(event));
+            
+            // Create a unique pattern ID for this group
+            const patternId = `stripe-pattern-${centerAngle.toFixed(2).replace('.', '-')}`;
+            
+            // Create stripe pattern definition
+            const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+            const pattern = document.createElementNS('http://www.w3.org/2000/svg', 'pattern');
+            pattern.setAttribute('id', patternId);
+            pattern.setAttribute('patternUnits', 'userSpaceOnUse');
+            pattern.setAttribute('width', colors.length * 4);
+            pattern.setAttribute('height', colors.length * 4);
+            pattern.setAttribute('patternTransform', 'rotate(45)');
+            
+            // Create stripes for each color
+            colors.forEach((color, index) => {
+                const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                rect.setAttribute('x', index * 4);
+                rect.setAttribute('y', 0);
+                rect.setAttribute('width', 4);
+                rect.setAttribute('height', colors.length * 4);
+                rect.setAttribute('fill', color);
+                pattern.appendChild(rect);
+            });
+            
+            defs.appendChild(pattern);
+            svg.appendChild(defs);
+            
+            // Draw the combined wedge with stripe pattern
+            const outerRadius = 115;
+            const startAngle = (centerAngle - combinedWidth / 2 - 90) * Math.PI / 180;
+            const endAngle = (centerAngle + combinedWidth / 2 - 90) * Math.PI / 180;
+            
+            const x2 = Math.cos(startAngle) * outerRadius;
+            const y2 = Math.sin(startAngle) * outerRadius;
+            const x3 = Math.cos(endAngle) * outerRadius;
+            const y3 = Math.sin(endAngle) * outerRadius;
+            
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            const pathData = `M 0,0 L ${x2},${y2} A ${outerRadius},${outerRadius} 0 0,1 ${x3},${y3} Z`;
+            path.setAttribute('d', pathData);
+            path.setAttribute('fill', `url(#${patternId})`);
+            path.setAttribute('fill-opacity', '0.9');
+            path.setAttribute('stroke', colors[0]);
+            path.setAttribute('stroke-width', '1');
+            path.setAttribute('class', 'clock-wedge clock-wedge-overlap');
+            
+            // Build tooltip with all medications
+            const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+            const tooltipLines = group.map(event => {
+                const timeStr = event.time.toLocaleTimeString('en-US', { 
+                    hour: 'numeric', 
+                    minute: '2-digit',
+                    hour12: true 
+                });
+                return `${event.medication} - ${event.type} at ${timeStr}`;
+            });
+            title.textContent = tooltipLines.join('\n');
+            path.appendChild(title);
+            
+            // Add click handler for mobile devices
+            path.addEventListener('click', function(e) {
+                showOverlapPopup(group, e.clientX, e.clientY);
+            });
+            
+            svg.appendChild(path);
+        }
+        
+        // Get color for an event
+        function getEventColor(event) {
+            if (currentViewContext === 'per-medication') {
+                switch (event.type) {
+                    case 'taken': return '#4caf50';
+                    case 'delayed': return '#ffc107';
+                    case 'skipped': return '#f44336';
+                    default: return '#9e9e9e';
+                }
+            } else {
+                const medications = Array.from(new Set(clockData.map(e => e.medication)));
+                const medIndex = medications.indexOf(event.medication);
+                const hue = (medIndex * 137.5) % 360;
+                return `hsl(${hue}, 70%, 50%)`;
+            }
+        }
+        
+        // Show popup for overlapping medications on mobile
+        function showOverlapPopup(group, x, y) {
+            // Remove any existing popup
+            const existingPopup = document.getElementById('overlap-popup');
+            if (existingPopup) existingPopup.remove();
+            
+            // Create popup
+            const popup = document.createElement('div');
+            popup.id = 'overlap-popup';
+            popup.className = 'overlap-popup';
+            popup.style.left = `${Math.min(x, window.innerWidth - 250)}px`;
+            popup.style.top = `${Math.min(y, window.innerHeight - 200)}px`;
+            
+            let html = '<div class="overlap-popup-header">Medications at this time:</div>';
+            html += '<div class="overlap-popup-content">';
+            
+            group.forEach(event => {
+                const timeStr = event.time.toLocaleTimeString('en-US', { 
+                    hour: 'numeric', 
+                    minute: '2-digit',
+                    hour12: true 
+                });
+                const color = getEventColor(event);
+                html += `
+                    <div class="overlap-popup-item">
+                        <span class="overlap-color-dot" style="background: ${color};"></span>
+                        <span class="overlap-med-name">${event.medication}</span>
+                        <span class="overlap-action">${event.type}</span>
+                        <span class="overlap-time">${timeStr}</span>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            html += '<button class="overlap-popup-close" onclick="closeOverlapPopup()">Close</button>';
+            
+            popup.innerHTML = html;
+            document.body.appendChild(popup);
+            
+            // Close popup when clicking outside
+            setTimeout(() => {
+                document.addEventListener('click', closeOverlapPopupOnOutsideClick);
+            }, 100);
+        }
+        
+        // Close overlap popup
+        function closeOverlapPopup() {
+            const popup = document.getElementById('overlap-popup');
+            if (popup) popup.remove();
+            document.removeEventListener('click', closeOverlapPopupOnOutsideClick);
+        }
+        
+        // Close popup when clicking outside
+        function closeOverlapPopupOnOutsideClick(e) {
+            const popup = document.getElementById('overlap-popup');
+            if (popup && !popup.contains(e.target)) {
+                closeOverlapPopup();
+            }
         }
         // Draw clock face with hour markers
         function drawClockFace(svg, maxHours) {
