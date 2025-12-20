@@ -43,6 +43,8 @@ async def setup_multiple_medications(hass: HomeAssistant):
         },
     )
     entry1.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry1.entry_id)
+    await hass.async_block_till_done()
 
     # Medication 2: Next dose in 3 hours
     entry2 = MockConfigEntry(
@@ -60,6 +62,8 @@ async def setup_multiple_medications(hass: HomeAssistant):
         },
     )
     entry2.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry2.entry_id)
+    await hass.async_block_till_done()
 
     # Medication 3: Next dose in 30 minutes
     entry3 = MockConfigEntry(
@@ -77,9 +81,6 @@ async def setup_multiple_medications(hass: HomeAssistant):
         },
     )
     entry3.add_to_hass(hass)
-
-    await hass.config_entries.async_setup(entry1.entry_id)
-    await hass.config_entries.async_setup(entry2.entry_id)
     await hass.config_entries.async_setup(entry3.entry_id)
     await hass.async_block_till_done()
 
