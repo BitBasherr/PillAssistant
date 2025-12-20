@@ -438,6 +438,136 @@
         body.theme-dark .chart-type-toggle label {
             color: #b0b0b0;
         }
+        /* Statistics sub-tabs (Graphs|Table toggle) */
+        .stats-subtab-toggle {
+            display: flex;
+            gap: 0;
+            margin-bottom: 20px;
+            border-radius: 6px;
+            overflow: hidden;
+            width: fit-content;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .stats-subtab-btn {
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            background: var(--card-background-color, #ffffff);
+            color: var(--primary-text-color, #212121);
+            border-right: 1px solid var(--divider-color, #e0e0e0);
+        }
+        .stats-subtab-btn:last-child {
+            border-right: none;
+        }
+        .stats-subtab-btn.active {
+            background: #2196F3;
+            color: white;
+        }
+        .stats-subtab-btn:hover:not(.active) {
+            background: var(--secondary-background-color, #f5f5f5);
+        }
+        body.theme-dark .stats-subtab-btn {
+            background: #2a2a2a;
+            color: #e0e0e0;
+            border-right-color: #444;
+        }
+        body.theme-dark .stats-subtab-btn.active {
+            background: #2196F3;
+            color: white;
+        }
+        body.theme-dark .stats-subtab-btn:hover:not(.active) {
+            background: #3a3a3a;
+        }
+        /* Per-med/Overall toggle */
+        .view-context-toggle {
+            display: flex;
+            gap: 0;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            overflow: hidden;
+            width: fit-content;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .view-context-btn {
+            padding: 8px 16px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            background: var(--card-background-color, #ffffff);
+            color: var(--primary-text-color, #212121);
+            border-right: 1px solid var(--divider-color, #e0e0e0);
+            white-space: nowrap;
+        }
+        .view-context-btn:last-child {
+            border-right: none;
+        }
+        .view-context-btn.active {
+            background: #2196F3;
+            color: white;
+        }
+        .view-context-btn:hover:not(.active) {
+            background: var(--secondary-background-color, #f5f5f5);
+        }
+        body.theme-dark .view-context-btn {
+            background: #2a2a2a;
+            color: #e0e0e0;
+            border-right-color: #444;
+        }
+        body.theme-dark .view-context-btn.active {
+            background: #2196F3;
+            color: white;
+        }
+        body.theme-dark .view-context-btn:hover:not(.active) {
+            background: #3a3a3a;
+        }
+        /* Bar chart mode toggle (Time/Quantity) */
+        .bar-mode-toggle {
+            display: flex;
+            gap: 0;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            overflow: hidden;
+            width: fit-content;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .bar-mode-btn {
+            padding: 6px 14px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            background: var(--card-background-color, #ffffff);
+            color: var(--primary-text-color, #212121);
+            border-right: 1px solid var(--divider-color, #e0e0e0);
+        }
+        .bar-mode-btn:last-child {
+            border-right: none;
+        }
+        .bar-mode-btn.active {
+            background: #2196F3;
+            color: white;
+        }
+        .bar-mode-btn:hover:not(.active) {
+            background: var(--secondary-background-color, #f5f5f5);
+        }
+        body.theme-dark .bar-mode-btn {
+            background: #2a2a2a;
+            color: #e0e0e0;
+            border-right-color: #444;
+        }
+        body.theme-dark .bar-mode-btn.active {
+            background: #2196F3;
+            color: white;
+        }
+        body.theme-dark .bar-mode-btn:hover:not(.active) {
+            background: #3a3a3a;
+        }
         /* Per-medication statistics button */
         .btn-stats {
             background: #673ab7;
@@ -1351,6 +1481,10 @@ body.theme-dark .clock-legend.bottom-banner {
                             <input type="checkbox" id="stats-today-checkbox" onchange="setToday()" checked>
                             <span>Today</span>
                         </label>
+                        <label class="date-preset-checkbox">
+                            <input type="checkbox" id="stats-yesterday-checkbox" onchange="setYesterday()">
+                            <span>Yesterday</span>
+                        </label>
                         <button class="date-preset-btn" onclick="setLast7Days()">Last 7 Days</button>
                         <button class="date-preset-btn" onclick="setLast30Days()">Last 30 Days</button>
                     </div>
@@ -1372,8 +1506,22 @@ body.theme-dark .clock-legend.bottom-banner {
                 </div>
             </div>
             
-            <!-- Medication History Editing Section -->
-            <div class="history-editing-section" id="history-editing-section">
+            <!-- Per-Med/Overall Toggle -->
+            <div class="view-context-toggle" id="view-context-toggle">
+                <button class="view-context-btn" id="view-context-per-med" onclick="setViewContext('per-medication')">
+                    <span id="per-med-label">Per Med</span>
+                </button>
+                <button class="view-context-btn active" id="view-context-overall" onclick="setViewContext('overall')">Overall</button>
+            </div>
+            
+            <!-- Graphs/Table Sub-tabs -->
+            <div class="stats-subtab-toggle">
+                <button class="stats-subtab-btn active" id="stats-subtab-graphs" onclick="switchStatsSubtab('graphs')">📊 Graphs</button>
+                <button class="stats-subtab-btn" id="stats-subtab-table" onclick="switchStatsSubtab('table')">📝 Table</button>
+            </div>
+            
+            <!-- Medication History Editing Section (Table view) -->
+            <div class="history-editing-section" id="history-editing-section" style="display: none;">
                 <div class="history-header">
                     <h3>📝 Medication History Editor</h3>
                     <div class="history-controls">
@@ -1405,28 +1553,37 @@ body.theme-dark .clock-legend.bottom-banner {
                 </div>
             </div>
             
-            <!-- Chart Type Toggle -->
-            <div class="chart-type-toggle">
-                <label>Chart Type:</label>
-                <button class="chart-type-btn active" id="chart-type-clock" onclick="setChartType('clock')">🕐 Clock-Pie</button>
-                <button class="chart-type-btn" id="chart-type-bar" onclick="setChartType('bar')">📊 Bar</button>
-                <button class="chart-type-btn" id="chart-type-plot" onclick="setChartType('plot')">📈 Plot</button>
-            </div>
-            <div id="stats-summary" class="stats-grid">
-                <!-- Summary stats will be inserted here -->
-            </div>
-            <div class="chart-container">
-                <h2>Medications Taken Over Time</h2>
-                <div class="chart-wrapper">
-                    <canvas id="trendsChart"></canvas>
+            <!-- Graphs Content (shown by default) -->
+            <div id="graphs-content">
+                <!-- Chart Type Toggle -->
+                <div class="chart-type-toggle">
+                    <label>Chart Type:</label>
+                    <button class="chart-type-btn active" id="chart-type-clock" onclick="setChartType('clock')">🕐 Clock-Pie</button>
+                    <button class="chart-type-btn" id="chart-type-bar" onclick="setChartType('bar')">📊 Bar</button>
+                    <button class="chart-type-btn" id="chart-type-plot" onclick="setChartType('plot')">📈 Plot</button>
                 </div>
-            </div>
-            <div class="chart-container">
-                <h2>Adherence by Medication</h2>
-                <div class="chart-wrapper">
-                    <canvas id="adherenceChart"></canvas>
+                
+                <!-- Bar Chart Mode Toggle (only visible for bar chart) -->
+                <div class="bar-mode-toggle" id="bar-mode-toggle" style="display: none;">
+                    <button class="bar-mode-btn active" id="bar-mode-time" onclick="setBarMode('time')">⏰ Time</button>
+                    <button class="bar-mode-btn" id="bar-mode-quantity" onclick="setBarMode('quantity')">🔢 Quantity</button>
                 </div>
-            </div>
+                
+                <div id="stats-summary" class="stats-grid">
+                    <!-- Summary stats will be inserted here -->
+                </div>
+                <div class="chart-container">
+                    <h2>Medications Taken Over Time</h2>
+                    <div class="chart-wrapper">
+                        <canvas id="trendsChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <h2>Adherence by Medication</h2>
+                    <div class="chart-wrapper">
+                        <canvas id="adherenceChart"></canvas>
+                    </div>
+                </div>
             <div class="chart-container">
                 <h2>Daily Medication Timeline</h2>
                 
@@ -1471,6 +1628,8 @@ body.theme-dark .clock-legend.bottom-banner {
     </div>
 </div>
             </div>
+            </div>
+            <!-- End of graphs-content -->
         </div>
     </div>
     <script>
@@ -1489,6 +1648,10 @@ body.theme-dark .clock-legend.bottom-banner {
         let nextScheduleCache = {}; // Cache for next scheduled times
         let darkModeMediaQuery = null; // Media query for system dark mode
         let dateChangeDebounceTimer = null; // Timer for debouncing date/time changes
+        let currentStatsSubtab = 'graphs'; // Current statistics sub-tab: 'graphs' or 'table'
+        let currentBarMode = 'time'; // Current bar chart mode: 'time' or 'quantity'
+        let currentViewContext = 'overall'; // Current view context: 'overall' or 'per-medication'
+        let currentMedicationId = null; // Track current medication ID when in per-medication view
         // Helper function to unwrap service response from various formats
         function unwrapServiceResponse(response) {
             if (!response || typeof response !== 'object') {
@@ -1728,6 +1891,12 @@ body.theme-dark .clock-legend.bottom-banner {
                 activeBtn.classList.add('active');
             }
             
+            // Show/hide bar mode toggle (only for bar chart)
+            const barModeToggle = document.getElementById('bar-mode-toggle');
+            if (barModeToggle) {
+                barModeToggle.style.display = (type === 'bar') ? 'flex' : 'none';
+            }
+            
             // Show/hide appropriate chart containers
             // Note: Each chart is inside a .chart-container parent
             const trendsContainer = document.querySelector('#trendsChart')?.closest('.chart-container');
@@ -1772,11 +1941,18 @@ body.theme-dark .clock-legend.bottom-banner {
             document.getElementById('stats-start-date').valueAsDate = today;
             document.getElementById('stats-end-date').valueAsDate = today;
             
-            // Check the today checkbox
-            const checkbox = document.getElementById('stats-today-checkbox');
-            if (checkbox) {
-                checkbox.checked = true;
+            // Check the today checkbox and uncheck yesterday
+            const todayCheckbox = document.getElementById('stats-today-checkbox');
+            const yesterdayCheckbox = document.getElementById('stats-yesterday-checkbox');
+            if (todayCheckbox) {
+                todayCheckbox.checked = true;
             }
+            if (yesterdayCheckbox) {
+                yesterdayCheckbox.checked = false;
+            }
+            
+            // Update view context toggle
+            updateViewContextToggle();
             
             // Load statistics with medication filter
             loadStatisticsForMedication(medId, medName);
@@ -2066,6 +2242,45 @@ body.theme-dark .clock-legend.bottom-banner {
                 `;
             }
         }
+        
+        // Helper function to format dosage display with proper pluralization
+        function formatDosageDisplay(amount, medicationType, dosageUnit) {
+            // Parse amount to float
+            const numAmount = parseFloat(amount);
+            
+            // Handle medication type pluralization
+            let typeDisplay = medicationType;
+            if (numAmount !== 1) {
+                // Pluralize medication type
+                if (medicationType === 'gummy') {
+                    typeDisplay = 'gummies';
+                } else if (medicationType.endsWith('y')) {
+                    // Check if 'y' is preceded by a consonant
+                    const beforeY = medicationType.charAt(medicationType.length - 2).toLowerCase();
+                    const isVowel = 'aeiou'.includes(beforeY);
+                    if (!isVowel) {
+                        // Consonant + 'y' becomes 'ies'
+                        typeDisplay = medicationType.slice(0, -1) + 'ies';
+                    } else {
+                        // Vowel + 'y' just adds 's'
+                        typeDisplay = medicationType + 's';
+                    }
+                } else if (!medicationType.endsWith('s')) {
+                    // Add 's' if not already plural
+                    typeDisplay = medicationType + 's';
+                }
+            }
+            
+            // If dosage unit is specific (not "each"), show unit instead of type
+            const specificUnits = ["mL", "mg", "g", "mcg", "tsp", "TBSP", "units", "IU"];
+            if (specificUnits.includes(dosageUnit)) {
+                return `${numAmount} ${dosageUnit}`;
+            }
+            
+            // Otherwise show type
+            return `${numAmount} ${typeDisplay}`;
+        }
+        
         // Render medications
         function renderMedications() {
             const content = document.getElementById('content');
@@ -2165,7 +2380,7 @@ body.theme-dark .clock-legend.bottom-banner {
                             <div class="dosage-label">Dosage:</div>
                             <div class="dosage-controls">
                                 <button class="dosage-btn" onclick="adjustDosage('${medId}', -1)" ${isDecrementDisabled ? 'disabled' : ''}>−</button>
-                                <div class="dosage-value">${dosage} ${medicationType}(s) (${dosageUnit})</div>
+                                <div class="dosage-value">${formatDosageDisplay(dosage, medicationType, dosageUnit)}</div>
                                 <button class="dosage-btn" onclick="adjustDosage('${medId}', 1)">+</button>
                             </div>
                         </div>
@@ -2173,7 +2388,7 @@ body.theme-dark .clock-legend.bottom-banner {
                             <div class="dosage-label">Remaining:</div>
                             <div class="dosage-controls">
                                 <button class="dosage-btn" onclick="adjustRemaining('${medId}', -1)" ${isRemainingDecrementDisabled ? 'disabled' : ''}>−</button>
-                                <div class="dosage-value">${remaining} ${medicationType}(s) (${dosageUnit})</div>
+                                <div class="dosage-value">${formatDosageDisplay(remaining, medicationType, dosageUnit)}</div>
                                 <button class="dosage-btn" onclick="adjustRemaining('${medId}', 1)">+</button>
                             </div>
                         </div>
@@ -2586,17 +2801,141 @@ body.theme-dark .clock-legend.bottom-banner {
         function initStatistics() {
             // Set default to today (with checkbox checked)
             setToday();
+            // Ensure graphs are shown by default
+            switchStatsSubtab('graphs');
+            // Update view context toggle visibility
+            updateViewContextToggle();
         }
+        
+        // Switch between Graphs and Table sub-tabs
+        function switchStatsSubtab(subtab) {
+            currentStatsSubtab = subtab;
+            
+            // Update button states
+            document.querySelectorAll('.stats-subtab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById(`stats-subtab-${subtab}`).classList.add('active');
+            
+            // Show/hide content
+            const graphsContent = document.getElementById('graphs-content');
+            const tableContent = document.getElementById('history-editing-section');
+            
+            if (subtab === 'graphs') {
+                if (graphsContent) graphsContent.style.display = 'block';
+                if (tableContent) tableContent.style.display = 'none';
+            } else {
+                if (graphsContent) graphsContent.style.display = 'none';
+                if (tableContent) tableContent.style.display = 'block';
+                // Load medication history when switching to table view
+                loadMedicationHistory();
+            }
+            
+            // Save preference
+            localStorage.setItem('pillAssistantStatsSubtab', subtab);
+        }
+        
+        // Set view context (per-medication or overall)
+        function setViewContext(context) {
+            if (context === 'per-medication' && !currentMedicationId) {
+                // Can't switch to per-medication view without a medication selected
+                return;
+            }
+            
+            currentViewContext = context;
+            
+            // Update button states
+            document.querySelectorAll('.view-context-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            if (context === 'per-medication') {
+                document.getElementById('view-context-per-med').classList.add('active');
+            } else {
+                document.getElementById('view-context-overall').classList.add('active');
+                currentMedicationId = null; // Clear medication filter
+            }
+            
+            // Update header
+            const header = document.querySelector('.statistics-header h2');
+            if (header) {
+                if (context === 'per-medication' && currentMedicationId) {
+                    const medName = getMedicationNameById(currentMedicationId);
+                    header.textContent = `Statistics for ${medName}`;
+                } else {
+                    header.textContent = 'Medication Statistics';
+                }
+            }
+            
+            // Reload statistics with new context
+            loadStatistics();
+        }
+        
+        // Update view context toggle visibility and label
+        function updateViewContextToggle() {
+            const toggle = document.getElementById('view-context-toggle');
+            const perMedBtn = document.getElementById('view-context-per-med');
+            const perMedLabel = document.getElementById('per-med-label');
+            
+            if (currentMedicationId && currentViewContext === 'per-medication') {
+                // Show toggle with medication name
+                if (toggle) toggle.style.display = 'flex';
+                if (perMedLabel) {
+                    const medName = getMedicationNameById(currentMedicationId);
+                    perMedLabel.textContent = medName;
+                }
+            } else if (currentMedicationId) {
+                // Show toggle but highlight overall
+                if (toggle) toggle.style.display = 'flex';
+                if (perMedLabel) {
+                    const medName = getMedicationNameById(currentMedicationId);
+                    perMedLabel.textContent = medName;
+                }
+            } else {
+                // Hide toggle when no medication context
+                if (toggle) toggle.style.display = 'none';
+            }
+        }
+        
+        // Helper to get medication name by ID
+        function getMedicationNameById(medId) {
+            const med = medications.find(m => m.id === medId);
+            return med ? med.medication_name : 'Medication';
+        }
+        
+        // Set bar chart mode (time or quantity)
+        function setBarMode(mode) {
+            currentBarMode = mode;
+            
+            // Update button states
+            document.querySelectorAll('.bar-mode-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById(`bar-mode-${mode}`).classList.add('active');
+            
+            // Re-render trends chart with new mode
+            if (currentStats) {
+                renderTrendsChart(currentStats);
+            }
+            
+            // Save preference
+            localStorage.setItem('pillAssistantBarMode', mode);
+        }
+        
         // Set date range to today only
         function setToday() {
             const today = new Date();
             document.getElementById('stats-start-date').valueAsDate = today;
             document.getElementById('stats-end-date').valueAsDate = today;
             
-            // Check the today checkbox
-            const checkbox = document.getElementById('stats-today-checkbox');
-            if (checkbox) {
-                checkbox.checked = true;
+            // Check the today checkbox and uncheck yesterday
+            const todayCheckbox = document.getElementById('stats-today-checkbox');
+            const yesterdayCheckbox = document.getElementById('stats-yesterday-checkbox');
+            if (todayCheckbox) {
+                todayCheckbox.checked = true;
+            }
+            if (yesterdayCheckbox) {
+                yesterdayCheckbox.checked = false;
             }
             
             // Reset time inputs to full day
@@ -2606,6 +2945,32 @@ body.theme-dark .clock-legend.bottom-banner {
             // Auto-load statistics
             loadStatistics();
         }
+        
+        // Set date range to yesterday only
+        function setYesterday() {
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            document.getElementById('stats-start-date').valueAsDate = yesterday;
+            document.getElementById('stats-end-date').valueAsDate = yesterday;
+            
+            // Check the yesterday checkbox and uncheck today
+            const yesterdayCheckbox = document.getElementById('stats-yesterday-checkbox');
+            const todayCheckbox = document.getElementById('stats-today-checkbox');
+            if (yesterdayCheckbox) {
+                yesterdayCheckbox.checked = true;
+            }
+            if (todayCheckbox) {
+                todayCheckbox.checked = false;
+            }
+            
+            // Reset time inputs to full day
+            document.getElementById('stats-start-time').value = '00:00';
+            document.getElementById('stats-end-time').value = '23:59';
+            
+            // Auto-load statistics
+            loadStatistics();
+        }
+        
         // Set date range to last 7 days
         function setLast7Days() {
             const endDate = new Date();
@@ -2618,10 +2983,14 @@ body.theme-dark .clock-legend.bottom-banner {
             document.getElementById('stats-start-time').value = '00:00';
             document.getElementById('stats-end-time').value = '23:59';
             
-            // Uncheck the today checkbox since we're using a different range
-            const checkbox = document.getElementById('stats-today-checkbox');
-            if (checkbox) {
-                checkbox.checked = false;
+            // Uncheck both today and yesterday checkboxes since we're using a different range
+            const todayCheckbox = document.getElementById('stats-today-checkbox');
+            const yesterdayCheckbox = document.getElementById('stats-yesterday-checkbox');
+            if (todayCheckbox) {
+                todayCheckbox.checked = false;
+            }
+            if (yesterdayCheckbox) {
+                yesterdayCheckbox.checked = false;
             }
             
             // Auto-load statistics
@@ -2639,10 +3008,14 @@ body.theme-dark .clock-legend.bottom-banner {
             document.getElementById('stats-start-time').value = '00:00';
             document.getElementById('stats-end-time').value = '23:59';
             
-            // Uncheck the today checkbox since we're using a different range
-            const checkbox = document.getElementById('stats-today-checkbox');
-            if (checkbox) {
-                checkbox.checked = false;
+            // Uncheck both today and yesterday checkboxes since we're using a different range
+            const todayCheckbox = document.getElementById('stats-today-checkbox');
+            const yesterdayCheckbox = document.getElementById('stats-yesterday-checkbox');
+            if (todayCheckbox) {
+                todayCheckbox.checked = false;
+            }
+            if (yesterdayCheckbox) {
+                yesterdayCheckbox.checked = false;
             }
             
             // Auto-load statistics
@@ -2826,9 +3199,71 @@ body.theme-dark .clock-legend.bottom-banner {
             }
             // Determine chart type based on current selection
             const isScatterPlot = currentChartType === 'plot';
+            const isBarChart = currentChartType === 'bar';
+            const isTimeMode = isBarChart && currentBarMode === 'time';
             
-            // Prepare datasets for each medication
-            const datasets = Array.from(medIds).map((medId, index) => {
+            // For time mode, we need to restructure data by time chunks
+            let labels, datasets;
+            
+            if (isTimeMode) {
+                // Time-based bar chart: group by 4-hour chunks
+                const timeChunks = [
+                    '0:00-4:00',
+                    '4:00-8:00',
+                    '8:00-12:00',
+                    '12:00-16:00',
+                    '16:00-20:00',
+                    '20:00-24:00'
+                ];
+                labels = timeChunks;
+                
+                // Aggregate data by time chunks across all dates
+                const timeChunkCounts = {};
+                medIds.forEach(medId => {
+                    timeChunkCounts[medId] = new Array(6).fill(0);
+                });
+                
+                // Parse dose events from statistics to get time information
+                if (stats.dose_events) {
+                    stats.dose_events.forEach(event => {
+                        if (event.action === 'taken') {
+                            // Parse timestamp and convert to local time
+                            const timestamp = new Date(event.timestamp);
+                            // getHours() returns local time, not UTC
+                            const hour = timestamp.getHours();
+                            const chunkIndex = Math.floor(hour / 4);
+                            const medId = event.medication_id;
+                            if (timeChunkCounts[medId]) {
+                                timeChunkCounts[medId][chunkIndex]++;
+                            }
+                        }
+                    });
+                }
+                
+                // Create datasets for each medication
+                datasets = Array.from(medIds).map((medId, index) => {
+                    const medData = stats.medications[medId] || {};
+                    const medName = medData.name || medId;
+                    
+                    const hue = (index * 137.5) % 360;
+                    const color = `hsl(${hue}, 70%, 50%)`;
+                    const borderColor = `hsl(${hue}, 70%, 40%)`;
+                    const ALPHA_50_PERCENT = '80';
+                    
+                    return {
+                        label: medName,
+                        data: timeChunkCounts[medId] || new Array(6).fill(0),
+                        borderColor: borderColor,
+                        backgroundColor: color + ALPHA_50_PERCENT,
+                        borderWidth: 2
+                    };
+                });
+            } else {
+                // Original code for quantity mode and other chart types
+                labels = dates;
+                
+                // Prepare datasets for each medication
+                datasets = Array.from(medIds).map((medId, index) => {
                 const medData = stats.medications[medId] || {};
                 const medName = medData.name || medId;
                 
@@ -2875,17 +3310,19 @@ body.theme-dark .clock-legend.bottom-banner {
                     };
                 }
             });
+            }
+            
             // Determine if we're in dark mode
             const isDarkMode = document.body.classList.contains('theme-dark');
             const textColor = isDarkMode ? '#e0e0e0' : '#212121';
             const gridColor = isDarkMode ? '#444' : '#e0e0e0';
-            // Use scatter type for scatter plot, line for default
-            const chartType = isScatterPlot ? 'scatter' : 'line';
+            // Use scatter type for scatter plot, bar for bar chart, line for default
+            const chartType = isScatterPlot ? 'scatter' : (isBarChart ? 'bar' : 'line');
             
             trendsChart = new Chart(ctx, {
                 type: chartType,
                 data: {
-                    labels: dates,
+                    labels: labels,
                     datasets: datasets
                 },
                 options: {
@@ -3099,8 +3536,6 @@ body.theme-dark .clock-legend.bottom-banner {
         let clockPeriod = 'AM'; // Current selected period for 12hr clock
         let clockData = []; // Store dose events by date
         let show24HourClock = false; // Whether to show 24-hour clock
-        let currentViewContext = 'overall'; // 'overall' or 'per-medication'
-        let currentMedicationId = null; // Track current medication ID when in per-medication view
         // Get local date string in YYYY-MM-DD format
         function getLocalDateString(date) {
             const year = date.getFullYear();
@@ -3186,7 +3621,10 @@ body.theme-dark .clock-legend.bottom-banner {
             renderClocks();
         }
         // Load medication dose data for a specific date
-        async function loadClockData(dateStr) {
+        async function loadClockData(dateStr, fallbackDepth = 0) {
+            // Limit fallback recursion depth to prevent infinite loops
+            const MAX_FALLBACK_DEPTH = 5;
+            
             try {
                 // Uncheck "View Yesterday" when manually selecting a date
                 const yesterdayCheckbox = document.getElementById('view-yesterday-clock');
@@ -3255,6 +3693,25 @@ body.theme-dark .clock-legend.bottom-banner {
                 
                 // Parse the dose events from the response
                 clockData = parseDoseEvents(stats, dateStr);
+                
+                // Auto-fallback: If no data for selected date, try to find last date with data
+                if (clockData.length === 0 && fallbackDepth < MAX_FALLBACK_DEPTH && currentStats && currentStats.daily_counts) {
+                    const availableDates = Object.keys(currentStats.daily_counts).sort().reverse();
+                    // Find the most recent date with data that's before or equal to selected date
+                    for (const availDate of availableDates) {
+                        if (availDate <= dateStr) {
+                            console.debug(`No data for ${dateStr}, falling back to ${availDate} (depth: ${fallbackDepth + 1})`);
+                            // Update date picker to show the fallback date
+                            if (datePicker) {
+                                datePicker.value = availDate;
+                            }
+                            // Recursively load data for that date with incremented depth
+                            await loadClockData(availDate, fallbackDepth + 1);
+                            return;
+                        }
+                    }
+                }
+                
                 renderClocks();
                 
             } catch (error) {
