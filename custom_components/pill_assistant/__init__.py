@@ -283,6 +283,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     if "history" not in storage_data:
         storage_data["history"] = []
+    
+    if "last_sensor_trigger" not in storage_data:
+        storage_data["last_sensor_trigger"] = {}
 
     # Store the entry data in storage if not already there
     med_id = entry.entry_id
@@ -374,6 +377,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         entry_data = hass.data[DOMAIN][_med_id]
         _store = entry_data["store"]
         _storage_data = entry_data["storage_data"]
+        _entry = entry_data["entry"]
 
         med_data = _storage_data["medications"].get(_med_id)
         if not med_data:
@@ -387,6 +391,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         # Decrease remaining amount by 1 dose (not by dosage amount)
         remaining = float(med_data.get("remaining_amount", 0))
         med_data["remaining_amount"] = max(0, remaining - 1)
+        
+        # If this is a sensor-based schedule with duplicate avoidance, track the trigger
+        schedule_type = _entry.data.get(CONF_SCHEDULE_TYPE)
+        if schedule_type == "relative_sensor":
+            avoid_duplicates = _entry.data.get(CONF_AVOID_DUPLICATE_TRIGGERS, DEFAULT_AVOID_DUPLICATE_TRIGGERS)
+            if avoid_duplicates:
+                sensor_entity_id = _entry.data.get(CONF_RELATIVE_TO_SENSOR)
+                if sensor_entity_id:
+                    sensor_state = hass.states.get(sensor_entity_id)
+                    if sensor_state and sensor_state.last_changed:
+                        # Track this sensor event as triggered
+                        if "last_sensor_trigger" not in _storage_data:
+                            _storage_data["last_sensor_trigger"] = {}
+                        _storage_data["last_sensor_trigger"][_med_id] = sensor_state.last_changed.isoformat()
 
         # Add to history
         history_entry = {
