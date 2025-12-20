@@ -15,6 +15,9 @@
 
         html {
             height: 100%;
+            /* Allow touch scrolling on the document */
+            touch-action: pan-y pan-x;
+            -webkit-overflow-scrolling: touch;
         }
 
         body {
@@ -25,6 +28,8 @@
             -webkit-overflow-scrolling: touch;
             min-height: 100vh;
             position: relative;
+            /* Ensure touch scrolling works without needing an initial click */
+            touch-action: pan-y pan-x;
         }
 
         /* Light theme (default) */
@@ -48,7 +53,9 @@
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            touch-action: pan-y;
+            /* Allow full touch scrolling */
+            touch-action: auto;
+            overflow: visible;
         }
 
         h1 {
@@ -390,6 +397,129 @@
 
         .theme-option input[type="radio"]:checked + label:hover {
             background: var(--dark-primary-color, #0288d1);
+        }
+
+        /* Sizing controls */
+        .sizing-controls {
+            display: none;
+            flex-wrap: wrap;
+            gap: 15px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background: var(--card-background-color, #ffffff);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .sizing-controls.visible {
+            display: flex;
+        }
+
+        .sizing-slider-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .sizing-slider-group label {
+            font-size: 0.85em;
+            font-weight: 500;
+            color: var(--secondary-text-color, #757575);
+        }
+
+        .sizing-slider-group input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+        }
+
+        .sizing-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85em;
+            cursor: pointer;
+            user-select: none;
+            color: var(--secondary-text-color, #757575);
+        }
+
+        .sizing-toggle input[type="checkbox"] {
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+        }
+
+        body.theme-dark .sizing-controls {
+            background: #1e1e1e;
+        }
+
+        body.theme-dark .sizing-slider-group label {
+            color: #b0b0b0;
+        }
+
+        /* Chart type toggle */
+        .chart-type-toggle {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .chart-type-toggle label {
+            font-size: 0.85em;
+            font-weight: 500;
+            color: var(--secondary-text-color, #757575);
+            margin-right: 8px;
+        }
+
+        .chart-type-btn {
+            padding: 6px 14px;
+            border: 2px solid var(--divider-color, #e0e0e0);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            background: var(--card-background-color, #ffffff);
+            color: var(--primary-text-color, #212121);
+        }
+
+        .chart-type-btn.active {
+            background: var(--primary-color, #03a9f4);
+            color: white;
+            border-color: var(--primary-color, #03a9f4);
+        }
+
+        .chart-type-btn:hover:not(.active) {
+            border-color: var(--primary-color, #03a9f4);
+        }
+
+        body.theme-dark .chart-type-btn {
+            background: #2a2a2a;
+            color: #e0e0e0;
+            border-color: #444;
+        }
+
+        body.theme-dark .chart-type-btn.active {
+            background: var(--primary-color, #03a9f4);
+            color: white;
+            border-color: var(--primary-color, #03a9f4);
+        }
+
+        body.theme-dark .chart-type-toggle label {
+            color: #b0b0b0;
+        }
+
+        /* Per-medication statistics button */
+        .btn-stats {
+            background: #673ab7;
+            color: white;
+        }
+
+        .btn-stats:hover {
+            background: #512da8;
         }
 
         /* Theme-specific card backgrounds */
@@ -874,6 +1004,32 @@
                 flex-direction: column;
                 gap: 30px;
             }
+
+            /* Ensure management buttons (Edit/Delete) are visible on mobile */
+            .card-management-actions {
+                flex-direction: column;
+                gap: 8px;
+                width: 100%;
+            }
+
+            .card-management-actions .action-btn {
+                min-width: 100%;
+                width: 100%;
+            }
+
+            /* Sizing controls for mobile */
+            .sizing-controls {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .sizing-slider-group {
+                width: 100%;
+            }
+
+            .sizing-slider-group input[type="range"] {
+                width: 100%;
+            }
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -918,6 +1074,24 @@
             </button>
         </div>
 
+        <!-- Sizing Controls Toggle -->
+        <label class="sizing-toggle">
+            <input type="checkbox" id="editSizingSliders" onchange="toggleSizingControls()">
+            <span>Edit Sizing Sliders</span>
+        </label>
+
+        <!-- Sizing Controls (hidden by default) -->
+        <div id="sizingControls" class="sizing-controls">
+            <div class="sizing-slider-group">
+                <label for="buttonSizeSlider">Button Size: <span id="buttonSizeValue">100</span>%</label>
+                <input type="range" id="buttonSizeSlider" min="50" max="150" value="100" onchange="updateButtonSize(this.value)">
+            </div>
+            <div class="sizing-slider-group">
+                <label for="textSizeSlider">Text Size: <span id="textSizeValue">100</span>%</label>
+                <input type="range" id="textSizeSlider" min="50" max="150" value="100" onchange="updateTextSize(this.value)">
+            </div>
+        </div>
+
         <!-- Medications Tab -->
         <div id="medications-tab" class="tab-content active">
             <div id="content">
@@ -937,6 +1111,14 @@
                     <button onclick="loadStatistics()">Update</button>
                     <button onclick="setLast30Days()">Last 30 Days</button>
                 </div>
+            </div>
+
+            <!-- Chart Type Toggle -->
+            <div class="chart-type-toggle">
+                <label>Chart Type:</label>
+                <button class="chart-type-btn active" id="chart-type-clock" onclick="setChartType('clock')">🕐 Clock-Pie</button>
+                <button class="chart-type-btn" id="chart-type-bar" onclick="setChartType('bar')">📊 Bar</button>
+                <button class="chart-type-btn" id="chart-type-plot" onclick="setChartType('plot')">📈 Plot</button>
             </div>
 
             <div id="stats-summary" class="stats-grid">
@@ -1057,7 +1239,8 @@
             document.body.classList.remove('theme-light', 'theme-dark', 'theme-auto');
             
             if (theme === 'auto') {
-                document.body.classList.add('theme-auto');
+                // Apply theme based on system preference - don't add theme-auto class
+                // since it uses incorrect fallback values
                 applyAutoTheme();
             } else if (theme === 'light') {
                 document.body.classList.add('theme-light');
@@ -1067,9 +1250,44 @@
         }
 
         function applyAutoTheme() {
-            // Check system preference and apply appropriate theme class
-            // Note: theme-auto class is already set in applyTheme()
-            if (darkModeMediaQuery && darkModeMediaQuery.matches) {
+            // Check multiple methods for system dark mode preference
+            // 1. CSS media query (most reliable for browsers)
+            // 2. Home Assistant theme detection
+            let prefersDark = false;
+            
+            // Check CSS media query
+            if (darkModeMediaQuery) {
+                prefersDark = darkModeMediaQuery.matches;
+            }
+            
+            // Also check for Home Assistant dark theme (via CSS variables if set)
+            // This helps when embedded in Home Assistant app which may not report
+            // prefers-color-scheme correctly
+            if (!prefersDark && hass) {
+                // Check if Home Assistant has a dark theme active
+                try {
+                    const computedStyle = getComputedStyle(document.documentElement);
+                    const primaryBg = computedStyle.getPropertyValue('--primary-background-color');
+                    // If the primary background is very dark, assume dark mode
+                    if (primaryBg && primaryBg.trim()) {
+                        const rgb = primaryBg.match(/\d+/g);
+                        if (rgb && rgb.length >= 3) {
+                            // Calculate luminance - if below 50, it's dark
+                            const luminance = (0.299 * parseInt(rgb[0]) + 0.587 * parseInt(rgb[1]) + 0.114 * parseInt(rgb[2]));
+                            if (luminance < 50) {
+                                prefersDark = true;
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.debug('Pill Assistant: Could not detect HA theme', e);
+                }
+            }
+            
+            // Remove both theme classes first to avoid conflicts
+            document.body.classList.remove('theme-light', 'theme-dark');
+            
+            if (prefersDark) {
                 document.body.classList.add('theme-dark');
             } else {
                 document.body.classList.add('theme-light');
@@ -1106,6 +1324,187 @@
         function toggleConfirmationBanner() {
             showConfirmationBanner = document.getElementById('showConfirmationBanner').checked;
             saveSettings();
+        }
+
+        // ============== Sizing Controls ==============
+        let buttonSizeScale = 100;
+        let textSizeScale = 100;
+        let currentChartType = 'clock';
+
+        function toggleSizingControls() {
+            const checkbox = document.getElementById('editSizingSliders');
+            const controls = document.getElementById('sizingControls');
+            if (checkbox && controls) {
+                controls.classList.toggle('visible', checkbox.checked);
+            }
+        }
+
+        function updateButtonSize(value) {
+            buttonSizeScale = parseInt(value);
+            document.getElementById('buttonSizeValue').textContent = value;
+            const scale = buttonSizeScale / 100;
+            
+            // Apply size to action buttons
+            document.querySelectorAll('.action-btn').forEach(btn => {
+                btn.style.transform = `scale(${scale})`;
+                btn.style.transformOrigin = 'center';
+            });
+            
+            // Save preference
+            saveSizingSettings();
+        }
+
+        function updateTextSize(value) {
+            textSizeScale = parseInt(value);
+            document.getElementById('textSizeValue').textContent = value;
+            const scale = textSizeScale / 100;
+            
+            // Apply size to text elements while maintaining relative proportions
+            document.querySelectorAll('.medication-name').forEach(el => {
+                el.style.fontSize = `${1.5 * scale}em`;
+            });
+            document.querySelectorAll('.detail-label, .detail-value').forEach(el => {
+                el.style.fontSize = `${0.9 * scale}em`;
+            });
+            document.querySelectorAll('.dosage-label').forEach(el => {
+                el.style.fontSize = `${0.9 * scale}em`;
+            });
+            document.querySelectorAll('.dosage-value').forEach(el => {
+                el.style.fontSize = `${1.1 * scale}em`;
+            });
+            
+            // Save preference
+            saveSizingSettings();
+        }
+
+        function saveSizingSettings() {
+            localStorage.setItem('pillAssistantSizing', JSON.stringify({
+                buttonSize: buttonSizeScale,
+                textSize: textSizeScale
+            }));
+        }
+
+        function loadSizingSettings() {
+            const saved = localStorage.getItem('pillAssistantSizing');
+            if (saved) {
+                try {
+                    const settings = JSON.parse(saved);
+                    if (settings.buttonSize) {
+                        buttonSizeScale = settings.buttonSize;
+                        const slider = document.getElementById('buttonSizeSlider');
+                        if (slider) {
+                            slider.value = buttonSizeScale;
+                            updateButtonSize(buttonSizeScale);
+                        }
+                    }
+                    if (settings.textSize) {
+                        textSizeScale = settings.textSize;
+                        const slider = document.getElementById('textSizeSlider');
+                        if (slider) {
+                            slider.value = textSizeScale;
+                            updateTextSize(textSizeScale);
+                        }
+                    }
+                } catch (e) {
+                    console.error('Error loading sizing settings:', e);
+                }
+            }
+        }
+
+        // ============== Chart Type Toggle ==============
+        function setChartType(type) {
+            currentChartType = type;
+            
+            // Update button active states
+            document.querySelectorAll('.chart-type-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            const activeBtn = document.getElementById(`chart-type-${type}`);
+            if (activeBtn) {
+                activeBtn.classList.add('active');
+            }
+            
+            // Show/hide appropriate chart containers
+            const trendsContainer = document.querySelector('#trendsChart')?.closest('.chart-container');
+            const adherenceContainer = document.querySelector('#adherenceChart')?.closest('.chart-container');
+            const clockContainer = document.querySelector('.clock-container')?.closest('.chart-container');
+            
+            if (trendsContainer) trendsContainer.style.display = (type === 'plot' || type === 'bar') ? 'block' : 'none';
+            if (adherenceContainer) adherenceContainer.style.display = (type === 'bar') ? 'block' : 'none';
+            if (clockContainer) clockContainer.style.display = (type === 'clock') ? 'block' : 'none';
+            
+            // Save preference
+            localStorage.setItem('pillAssistantChartType', type);
+        }
+
+        function loadChartTypePreference() {
+            const saved = localStorage.getItem('pillAssistantChartType');
+            if (saved && ['clock', 'bar', 'plot'].includes(saved)) {
+                setChartType(saved);
+            } else {
+                setChartType('clock');
+            }
+        }
+
+        // ============== Per-Medication Statistics ==============
+        function showMedicationStats(medId, medName) {
+            // Switch to statistics tab
+            switchTab('statistics');
+            
+            // Set the date range for last 30 days
+            setLast30Days();
+            
+            // Load statistics with medication filter
+            loadStatisticsForMedication(medId, medName);
+        }
+
+        async function loadStatisticsForMedication(medId, medName) {
+            try {
+                if (!hass) {
+                    hass = getHassConnection();
+                    if (!hass) {
+                        console.error('Home Assistant connection not available');
+                        return;
+                    }
+                }
+
+                const startDate = document.getElementById('stats-start-date').value;
+                const endDate = document.getElementById('stats-end-date').value;
+
+                const response = await hass.callWS({
+                    type: 'call_service',
+                    domain: 'pill_assistant',
+                    service: 'get_statistics',
+                    service_data: {
+                        start_date: startDate,
+                        end_date: endDate,
+                        medication_id: medId
+                    },
+                    return_response: true
+                });
+
+                // Update the header to show it's filtered
+                const header = document.querySelector('.statistics-header h2');
+                if (header) {
+                    header.textContent = `Statistics for ${medName}`;
+                }
+
+                // Process the response
+                let stats = null;
+                if (response && typeof response === 'object') {
+                    if ('response' in response && response.response) {
+                        stats = response.response;
+                    } else if ('medications' in response || 'daily_counts' in response) {
+                        stats = response;
+                    }
+                }
+                currentStats = stats || { total_entries: 0, medications: {}, daily_counts: {} };
+                
+                renderStatistics(currentStats);
+                
+            } catch (error) {
+                console.error('Error loading medication statistics:', error);
+            }
         }
 
         // Load next schedule cache from localStorage
@@ -1455,6 +1854,9 @@
                     </div>
 
                     <div class="card-management-actions">
+                        <button class="action-btn btn-stats" onclick="showMedicationStats('${medId}', '${medName}')">
+                            📊 Statistics
+                        </button>
                         <button class="action-btn btn-edit" onclick="editMedication('${medId}')">
                             ✏️ Edit
                         </button>
@@ -1839,6 +2241,13 @@
             tabs.forEach(tab => tab.classList.remove('active'));
             if (event && event.target) {
                 event.target.classList.add('active');
+            } else {
+                // If no event, find and activate the correct tab button
+                tabs.forEach(tab => {
+                    if (tab.textContent.toLowerCase().includes(tabName.toLowerCase())) {
+                        tab.classList.add('active');
+                    }
+                });
             }
 
             // Update tab content
@@ -2445,7 +2854,7 @@
                 const minutes = event.time.getMinutes();
                 const angle = ((hours + minutes / 60) / 12) * 360;
                 
-                drawWedge(svg, angle, event.type, event.medication);
+                drawWedge(svg, angle, event.type, event.medication, event.time);
             });
         }
 
@@ -2466,7 +2875,7 @@
                 const minutes = event.time.getMinutes();
                 const angle = ((hours + minutes / 60) / 24) * 360;
                 
-                drawWedge(svg, angle, event.type, event.medication);
+                drawWedge(svg, angle, event.type, event.medication, event.time);
             });
         }
 
@@ -2527,8 +2936,8 @@
             }
         }
 
-        // Draw a wedge for a dose event
-        function drawWedge(svg, angle, type, medication) {
+        // Draw a wedge for a dose event extending from center outward
+        function drawWedge(svg, angle, type, medication, eventTime) {
             // Determine color based on type
             let color;
             switch (type) {
@@ -2545,40 +2954,42 @@
                     color = '#9e9e9e'; // Gray for unknown
             }
             
-            // Wedge parameters
-            const innerRadius = 100; // Start from edge of clock face
-            const outerRadius = 120; // Extend beyond clock face
-            const wedgeWidth = 3; // Degrees of arc for each wedge
+            // Wedge parameters - wedge extends FROM CENTER outward past clock face
+            const innerRadius = 0; // Start from center of clock
+            const outerRadius = 115; // Extend slightly beyond clock face (100)
+            const wedgeWidth = 5; // Degrees of arc for each wedge
             
             // Convert angle to radians (adjust so 0° is at top)
             const startAngle = (angle - wedgeWidth / 2 - 90) * Math.PI / 180;
             const endAngle = (angle + wedgeWidth / 2 - 90) * Math.PI / 180;
             
-            // Calculate path points
-            const x1 = Math.cos(startAngle) * innerRadius;
-            const y1 = Math.sin(startAngle) * innerRadius;
+            // Calculate path points for outer arc
             const x2 = Math.cos(startAngle) * outerRadius;
             const y2 = Math.sin(startAngle) * outerRadius;
             const x3 = Math.cos(endAngle) * outerRadius;
             const y3 = Math.sin(endAngle) * outerRadius;
-            const x4 = Math.cos(endAngle) * innerRadius;
-            const y4 = Math.sin(endAngle) * innerRadius;
             
-            // Create path for wedge
+            // Create path for wedge from center (0,0) to outer arc
             const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            const pathData = `M ${x1},${y1} L ${x2},${y2} A ${outerRadius},${outerRadius} 0 0,1 ${x3},${y3} L ${x4},${y4} A ${innerRadius},${innerRadius} 0 0,0 ${x1},${y1} Z`;
+            const pathData = `M 0,0 L ${x2},${y2} A ${outerRadius},${outerRadius} 0 0,1 ${x3},${y3} Z`;
             path.setAttribute('d', pathData);
             path.setAttribute('fill', color);
+            path.setAttribute('fill-opacity', '0.8');
+            path.setAttribute('stroke', color);
+            path.setAttribute('stroke-width', '1');
             path.setAttribute('class', 'clock-wedge');
             
-            # Add title for tooltip
+            // Add title for tooltip
             const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
-            const timeStr = event.time.toLocaleTimeString('en-US', { 
-                hour: 'numeric', 
-                minute: '2-digit',
-                hour12: true 
-            });
-            title.textContent = `${medication} - ${type} at ${timeStr}`;
+            let timeStr = '';
+            if (eventTime) {
+                timeStr = eventTime.toLocaleTimeString('en-US', { 
+                    hour: 'numeric', 
+                    minute: '2-digit',
+                    hour12: true 
+                });
+            }
+            title.textContent = `${medication} - ${type}${timeStr ? ' at ' + timeStr : ''}`;
             path.appendChild(title);
             
             svg.appendChild(path);
@@ -2587,6 +2998,8 @@
         // Event handler for date picker change
         document.addEventListener('DOMContentLoaded', function() {
             initClockDatePicker();
+            loadSizingSettings();
+            loadChartTypePreference();
             
             // Re-render clocks when switching tabs
             const statsTab = document.querySelector('[data-tab="statistics-tab"]');

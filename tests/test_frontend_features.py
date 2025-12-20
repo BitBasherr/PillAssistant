@@ -357,3 +357,152 @@ async def test_display_attributes_include_type_and_unit(hass: HomeAssistant):
         assert dosage_unit_attr is not None, f"Dosage unit missing for {med_type}"
         assert med_type_attr == med_type
         assert dosage_unit_attr == unit
+
+
+async def test_statistics_service_accepts_medication_id_filter(hass: HomeAssistant):
+    """Test that statistics service can filter by medication_id for per-med stats."""
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={
+            CONF_MEDICATION_NAME: "Filter_Test",
+            CONF_DOSAGE: "1",
+            CONF_DOSAGE_UNIT: "each",
+            CONF_MEDICATION_TYPE: "pill",
+            CONF_SCHEDULE_TYPE: "fixed_time",
+            CONF_SCHEDULE_TIMES: ["09:00"],
+            CONF_SCHEDULE_DAYS: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
+            CONF_REFILL_AMOUNT: 30,
+            CONF_REFILL_REMINDER_DAYS: 7,
+        },
+    )
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    state = hass.states.get("sensor.pa_filter_test")
+    assert state is not None
+    med_id = state.attributes.get("Medication ID") or state.attributes.get(
+        "medication_id"
+    )
+
+    today = dt_util.now().date().isoformat()
+
+    # Query with medication_id filter
+    response = await hass.services.async_call(
+        DOMAIN,
+        SERVICE_GET_STATISTICS,
+        {
+            ATTR_START_DATE: today,
+            ATTR_END_DATE: today,
+            "medication_id": med_id,
+        },
+        blocking=True,
+        return_response=True,
+    )
+
+    # Service should handle the medication_id parameter
+    assert response is not None
+    assert isinstance(response, dict)
+
+
+async def test_html_panel_contains_sizing_controls_css(hass: HomeAssistant):
+    """Test that the HTML panel contains sizing control CSS classes."""
+    import os
+
+    html_path = os.path.join(
+        os.path.dirname(__file__),
+        "..",
+        "custom_components",
+        "pill_assistant",
+        "www",
+        "pill-assistant-panel.html",
+    )
+
+    with open(html_path, "r") as f:
+        content = f.read()
+
+    # Check for sizing controls CSS
+    assert ".sizing-controls" in content, "Sizing controls CSS missing"
+    assert ".sizing-slider-group" in content, "Sizing slider group CSS missing"
+    assert ".sizing-toggle" in content, "Sizing toggle CSS missing"
+
+    # Check for chart type toggle CSS
+    assert ".chart-type-toggle" in content, "Chart type toggle CSS missing"
+    assert ".chart-type-btn" in content, "Chart type button CSS missing"
+
+    # Check for per-medication statistics button
+    assert ".btn-stats" in content, "Statistics button CSS missing"
+
+
+async def test_html_panel_contains_clock_wedge_fixes(hass: HomeAssistant):
+    """Test that the HTML panel contains fixed clock wedge code."""
+    import os
+
+    html_path = os.path.join(
+        os.path.dirname(__file__),
+        "..",
+        "custom_components",
+        "pill_assistant",
+        "www",
+        "pill-assistant-panel.html",
+    )
+
+    with open(html_path, "r") as f:
+        content = f.read()
+
+    # Check that wedges extend from center (innerRadius = 0)
+    assert "const innerRadius = 0" in content, "Wedges should start from center"
+
+    # Check that Python-style comment is fixed
+    assert "# Add title" not in content, "Python-style comment should be fixed"
+    assert "// Add title" in content, "JavaScript comment should be present"
+
+
+async def test_html_panel_contains_auto_theme_fixes(hass: HomeAssistant):
+    """Test that the HTML panel contains improved auto theme detection."""
+    import os
+
+    html_path = os.path.join(
+        os.path.dirname(__file__),
+        "..",
+        "custom_components",
+        "pill_assistant",
+        "www",
+        "pill-assistant-panel.html",
+    )
+
+    with open(html_path, "r") as f:
+        content = f.read()
+
+    # Check for improved auto theme detection
+    assert "prefers-color-scheme: dark" in content, "Should check prefers-color-scheme"
+    assert (
+        "primary-background-color" in content
+    ), "Should check HA primary background color"
+
+    # Check for touch scrolling fixes
+    assert "touch-action: auto" in content or "touch-action: pan" in content
+
+
+async def test_html_panel_contains_mobile_button_fixes(hass: HomeAssistant):
+    """Test that the HTML panel contains mobile button visibility fixes."""
+    import os
+
+    html_path = os.path.join(
+        os.path.dirname(__file__),
+        "..",
+        "custom_components",
+        "pill_assistant",
+        "www",
+        "pill-assistant-panel.html",
+    )
+
+    with open(html_path, "r") as f:
+        content = f.read()
+
+    # Check for mobile responsive card-management-actions
+    assert ".card-management-actions" in content
+    # Should have mobile-specific width styling
+    assert "width: 100%" in content
