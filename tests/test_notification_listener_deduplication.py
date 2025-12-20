@@ -64,16 +64,20 @@ async def test_notification_listeners_registered_once(hass: HomeAssistant):
 
     # Verify listeners are still marked as registered (not re-registered)
     assert hass.data[DOMAIN].get("notification_listeners_registered") is True
-    
+
     # Count the number of listeners for mobile_app_notification_action
-    mobile_app_listeners = hass.bus.async_listeners().get("mobile_app_notification_action", 0)
-    
+    mobile_app_listeners = hass.bus.async_listeners().get(
+        "mobile_app_notification_action", 0
+    )
+
     # Should have exactly 1 listener, not 2 (one for each entry)
     assert mobile_app_listeners == 1, f"Expected 1 listener, got {mobile_app_listeners}"
 
 
 @pytest.mark.asyncio
-async def test_notification_action_handler_responds_to_all_medications(hass: HomeAssistant):
+async def test_notification_action_handler_responds_to_all_medications(
+    hass: HomeAssistant,
+):
     """Test that notification action handler can handle actions for all medications."""
     # Create two medication entries
     entry1 = MockConfigEntry(

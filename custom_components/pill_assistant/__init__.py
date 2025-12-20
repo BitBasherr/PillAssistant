@@ -346,6 +346,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Register notification action listener ONCE globally (not per entry)
     if not hass.data[DOMAIN].get("notification_listeners_registered"):
+
         async def handle_notification_action(event) -> None:
             """Handle notification action events from mobile_app."""
             action = event.data.get("action")
@@ -1066,7 +1067,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         # Get storage data from any medication entry (they all share the same storage)
         _store = None
         for entry_id in hass.data.get(DOMAIN, {}):
-            if entry_id not in ["panel_registered", "sidebar_registered", "store", "notification_listeners_registered"]:
+            if entry_id not in [
+                "panel_registered",
+                "sidebar_registered",
+                "store",
+                "notification_listeners_registered",
+            ]:
                 entry_data = hass.data[DOMAIN].get(entry_id)
                 if entry_data and isinstance(entry_data, dict):
                     _store = entry_data.get("store")
@@ -1135,7 +1141,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         # Get storage from any medication entry
         _store = None
         for entry_id in hass.data.get(DOMAIN, {}):
-            if entry_id not in ["panel_registered", "sidebar_registered", "store", "notification_listeners_registered"]:
+            if entry_id not in [
+                "panel_registered",
+                "sidebar_registered",
+                "store",
+                "notification_listeners_registered",
+            ]:
                 entry_data = hass.data[DOMAIN].get(entry_id)
                 if entry_data and isinstance(entry_data, dict):
                     _store = entry_data.get("store")
@@ -1178,7 +1189,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await _store.async_update(update_history)
 
         if updated_entry:
-            _LOGGER.info("Medication history entry %s edited successfully", history_index)
+            _LOGGER.info(
+                "Medication history entry %s edited successfully", history_index
+            )
             return {"success": True, "updated_entry": updated_entry}
         else:
             return {"success": False, "error": "Invalid history index"}
@@ -1190,7 +1203,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         # Get storage from any medication entry
         _store = None
         for entry_id in hass.data.get(DOMAIN, {}):
-            if entry_id not in ["panel_registered", "sidebar_registered", "store", "notification_listeners_registered"]:
+            if entry_id not in [
+                "panel_registered",
+                "sidebar_registered",
+                "store",
+                "notification_listeners_registered",
+            ]:
                 entry_data = hass.data[DOMAIN].get(entry_id)
                 if entry_data and isinstance(entry_data, dict):
                     _store = entry_data.get("store")
@@ -1221,7 +1239,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await _store.async_update(delete_history)
 
         if deleted_entry:
-            _LOGGER.info("Medication history entry %s deleted successfully", history_index)
+            _LOGGER.info(
+                "Medication history entry %s deleted successfully", history_index
+            )
             return {"success": True, "deleted_entry": deleted_entry}
         else:
             return {"success": False, "error": "Invalid history index"}

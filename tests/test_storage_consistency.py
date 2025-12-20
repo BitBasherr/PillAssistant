@@ -58,7 +58,7 @@ async def test_storage_singleton_shared_across_entries(hass: HomeAssistant):
         },
     )
     entry2.add_to_hass(hass)
-    
+
     # Set up second entry
     assert await hass.config_entries.async_setup(entry2.entry_id)
     await hass.async_block_till_done()
@@ -66,7 +66,7 @@ async def test_storage_singleton_shared_across_entries(hass: HomeAssistant):
     # Verify both entries use the same store instance
     store1 = hass.data[DOMAIN][entry1.entry_id]["store"]
     store2 = hass.data[DOMAIN][entry2.entry_id]["store"]
-    
+
     assert store1 is store2, "Both entries should share the same storage singleton"
 
 
@@ -136,11 +136,11 @@ async def test_concurrent_medication_updates_no_data_loss(hass: HomeAssistant):
 
     assert entry1.entry_id in storage_data["medications"]
     assert entry2.entry_id in storage_data["medications"]
-    
+
     # Verify both medications have been taken
     med1_data = storage_data["medications"][entry1.entry_id]
     med2_data = storage_data["medications"][entry2.entry_id]
-    
+
     assert med1_data["last_taken"] is not None
     assert med2_data["last_taken"] is not None
     assert med1_data["remaining_amount"] == 29  # Started with 30, took 1
@@ -212,14 +212,14 @@ async def test_sequential_updates_maintain_consistency(hass: HomeAssistant):
 
     assert entry1.entry_id in storage_data["medications"]
     assert entry2.entry_id in storage_data["medications"]
-    
+
     med1_data = storage_data["medications"][entry1.entry_id]
     med2_data = storage_data["medications"][entry2.entry_id]
-    
+
     # Med A was added first and taken once
     assert med1_data["last_taken"] is not None
     assert med1_data["remaining_amount"] == 29
-    
+
     # Med B was added second and taken once
     assert med2_data["last_taken"] is not None
     assert med2_data["remaining_amount"] == 59
@@ -230,7 +230,7 @@ async def test_storage_reset_between_tests(hass: HomeAssistant):
     """Test that storage singleton is properly reset between tests."""
     # Reset the singleton to ensure clean state
     PillAssistantStore.reset_instance()
-    
+
     entry = MockConfigEntry(
         domain=DOMAIN,
         data={
@@ -318,7 +318,7 @@ async def test_multiple_medications_share_history(hass: HomeAssistant):
     storage_data = await store.async_load()
 
     assert len(storage_data["history"]) == 2
-    
+
     # Check that both medications are in history
     med_ids_in_history = {entry["medication_id"] for entry in storage_data["history"]}
     assert entry1.entry_id in med_ids_in_history
