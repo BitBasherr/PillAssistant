@@ -666,6 +666,124 @@
             color: #ffffff;
         }
 
+        /* Clock visualization styles */
+        .clock-container {
+            display: flex;
+            gap: 40px;
+            justify-content: center;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .clock-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .clock-toggle {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .clock-toggle button {
+            padding: 8px 16px;
+            border: 1px solid var(--divider-color, #e0e0e0);
+            background: var(--card-background-color, #ffffff);
+            color: var(--primary-text-color, #212121);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .clock-toggle button.active {
+            background: var(--primary-color, #03a9f4);
+            color: white;
+            border-color: var(--primary-color, #03a9f4);
+        }
+
+        .clock-svg {
+            position: relative;
+        }
+
+        .clock-wedge {
+            cursor: pointer;
+            transition: opacity 0.2s ease;
+        }
+
+        .clock-wedge:hover {
+            opacity: 0.8;
+        }
+
+        .clock-label {
+            font-size: 0.9em;
+            font-weight: 500;
+            color: var(--primary-text-color, #212121);
+        }
+
+        .clock-date-picker {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .clock-date-picker label {
+            font-weight: 500;
+            color: var(--primary-text-color, #212121);
+        }
+
+        .clock-date-picker input[type="date"] {
+            padding: 8px 12px;
+            border: 1px solid var(--divider-color, #e0e0e0);
+            background: var(--card-background-color, #ffffff);
+            color: var(--primary-text-color, #212121);
+            border-radius: 4px;
+            font-size: 1em;
+        }
+
+        .clock-legend {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+
+        .legend-text {
+            font-size: 0.9em;
+            color: var(--primary-text-color, #212121);
+        }
+
+        body.theme-dark .clock-toggle button {
+            background: #2a2a2a;
+            color: #e0e0e0;
+            border-color: #444;
+        }
+
+        body.theme-dark .clock-date-picker input[type="date"] {
+            background: #2a2a2a;
+            color: #e0e0e0;
+            border-color: #444;
+        }
+
         @media (max-width: 768px) {
             body {
                 padding: 10px;
@@ -751,6 +869,11 @@
             .chart-wrapper {
                 height: 300px;
             }
+
+            .clock-container {
+                flex-direction: column;
+                gap: 30px;
+            }
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -831,6 +954,50 @@
                 <h2>Adherence by Medication</h2>
                 <div class="chart-wrapper">
                     <canvas id="adherenceChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <h2>Daily Medication Timeline</h2>
+                
+                <div class="clock-date-picker">
+                    <label for="clock-date-picker">Select Date:</label>
+                    <input type="date" id="clock-date-picker" onchange="renderClocks()">
+                </div>
+
+                <div class="clock-container">
+                    <div class="clock-wrapper">
+                        <div class="clock-label">12-Hour Clock</div>
+                        <div class="clock-toggle">
+                            <button id="am-btn" class="active" onclick="toggleClockPeriod('AM')">AM</button>
+                            <button id="pm-btn" onclick="toggleClockPeriod('PM')">PM</button>
+                        </div>
+                        <svg id="clock-12hr" class="clock-svg" width="300" height="300" viewBox="-150 -150 300 300">
+                            <!-- Clock face will be drawn here -->
+                        </svg>
+                    </div>
+                    
+                    <div class="clock-wrapper">
+                        <div class="clock-label">24-Hour Clock</div>
+                        <svg id="clock-24hr" class="clock-svg" width="300" height="300" viewBox="-150 -150 300 300">
+                            <!-- Clock face will be drawn here -->
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="clock-legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #4caf50;"></div>
+                        <div class="legend-text">Taken</div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #ffc107;"></div>
+                        <div class="legend-text">Delayed/Snoozed</div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #f44336;"></div>
+                        <div class="legend-text">Skipped</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1168,8 +1335,28 @@
                 return;
             }
 
+            // Sort medications by next_dose_time (next scheduled first)
+            const sortedMedications = [...medications].sort((a, b) => {
+                const aNextDose = a.attributes['Next dose time'] || a.attributes['next_dose_time'];
+                const bNextDose = b.attributes['Next dose time'] || b.attributes['next_dose_time'];
+                
+                // Handle medications with no next dose (put them at the end)
+                if (!aNextDose || aNextDose === 'Unknown' || aNextDose === 'Never') return 1;
+                if (!bNextDose || bNextDose === 'Unknown' || bNextDose === 'Never') return -1;
+                
+                // Parse dates and compare
+                const aDate = new Date(aNextDose);
+                const bDate = new Date(bNextDose);
+                
+                // Invalid dates go to the end
+                if (isNaN(aDate.getTime())) return 1;
+                if (isNaN(bDate.getTime())) return -1;
+                
+                return aDate - bDate;
+            });
+
             let html = '';
-            medications.forEach(med => {
+            sortedMedications.forEach(med => {
                 html += renderMedicationCard(med);
             });
 
@@ -1181,7 +1368,8 @@
             const attrs = med.attributes;
             const medId = attrs['Medication ID'] || attrs['medication_id'] || '';
             const dosage = attrs['dosage'] || attrs['Dosage'] || '1';
-            const dosageUnit = attrs['dosage_unit'] || attrs['Dosage unit'] || 'pill(s)';
+            const dosageUnit = attrs['dosage_unit'] || attrs['Dosage unit'] || 'each';
+            const medicationType = attrs['medication_type'] || attrs['Medication Type'] || 'pill';
             const remaining = attrs['remaining_amount'] || attrs['Remaining amount'] || 0;
             const lastTaken = formatTimeToLocal(attrs['Last taken at'] || attrs['last_taken'] || 'Never');
             const schedule = formatSchedule(attrs['Schedule'] || 'Not scheduled');
@@ -1210,6 +1398,10 @@
 
                     <div class="medication-details">
                         <div class="detail-item">
+                            <div class="detail-label">Type</div>
+                            <div class="detail-value">${medicationType}</div>
+                        </div>
+                        <div class="detail-item">
                             <div class="detail-label">Schedule</div>
                             <div class="detail-value">${schedule}</div>
                         </div>
@@ -1232,7 +1424,7 @@
                             <div class="dosage-label">Dosage:</div>
                             <div class="dosage-controls">
                                 <button class="dosage-btn" onclick="adjustDosage('${medId}', -1)" ${isDecrementDisabled ? 'disabled' : ''}>−</button>
-                                <div class="dosage-value">${dosage} ${dosageUnit}</div>
+                                <div class="dosage-value">${dosage} ${medicationType}(s) (${dosageUnit})</div>
                                 <button class="dosage-btn" onclick="adjustDosage('${medId}', 1)">+</button>
                             </div>
                         </div>
@@ -1241,7 +1433,7 @@
                             <div class="dosage-label">Remaining:</div>
                             <div class="dosage-controls">
                                 <button class="dosage-btn" onclick="adjustRemaining('${medId}', -1)" ${isRemainingDecrementDisabled ? 'disabled' : ''}>−</button>
-                                <div class="dosage-value">${remaining} ${dosageUnit}</div>
+                                <div class="dosage-value">${remaining} ${medicationType}(s) (${dosageUnit})</div>
                                 <button class="dosage-btn" onclick="adjustRemaining('${medId}', 1)">+</button>
                             </div>
                         </div>
@@ -1773,6 +1965,12 @@
             // Render charts
             renderTrendsChart(stats);
             renderAdherenceChart(stats);
+            
+            // Load clock data for the selected date if picker exists
+            const datePicker = document.getElementById('clock-date-picker');
+            if (datePicker && datePicker.value) {
+                loadClockData(datePicker.value);
+            }
         }
 
         // Render summary statistics cards
@@ -2085,6 +2283,328 @@
                 }
             });
         }
+
+        // ============== Clock Visualization Functions ==============
+        
+        let clockPeriod = 'AM'; // Current selected period for 12hr clock
+        let clockData = []; // Store dose events by date
+
+        // Initialize clock date picker to today
+        function initClockDatePicker() {
+            const datePicker = document.getElementById('clock-date-picker');
+            if (datePicker) {
+                const today = new Date();
+                const dateStr = today.toISOString().split('T')[0];
+                datePicker.value = dateStr;
+                
+                // Set max date to today
+                datePicker.max = dateStr;
+                
+                // Load data for today
+                loadClockData(dateStr);
+            }
+        }
+
+        // Toggle between AM/PM for 12hr clock
+        function toggleClockPeriod(period) {
+            clockPeriod = period;
+            document.getElementById('am-btn').classList.toggle('active', period === 'AM');
+            document.getElementById('pm-btn').classList.toggle('active', period === 'PM');
+            renderClocks();
+        }
+
+        // Load medication dose data for a specific date
+        async function loadClockData(dateStr) {
+            try {
+                if (!hass) {
+                    hass = getHassConnection();
+                    if (!hass) {
+                        console.error('Home Assistant connection not available');
+                        return;
+                    }
+                }
+
+                // Call the statistics service for the selected date
+                const startDate = dateStr;
+                const endDate = dateStr;
+                
+                const response = await hass.callService('pill_assistant', 'get_statistics', {
+                    start_date: startDate,
+                    end_date: endDate
+                });
+
+                console.debug('Clock data loaded for', dateStr, response);
+                
+                // Parse the dose events from the response
+                clockData = parseDoseEvents(response, dateStr);
+                renderClocks();
+                
+            } catch (error) {
+                console.error('Error loading clock data:', error);
+                clockData = [];
+                renderClocks();
+            }
+        }
+
+        // Parse dose events from statistics response
+        function parseDoseEvents(stats, dateStr) {
+            const events = [];
+            
+            if (!stats || !stats.medications) {
+                return events;
+            }
+
+            // Iterate through each medication's events
+            Object.entries(stats.medications).forEach(([medId, medData]) => {
+                const medName = medData.name || medId;
+                
+                // Check for taken events
+                if (medData.taken_times) {
+                    medData.taken_times.forEach(timeStr => {
+                        const eventDate = new Date(timeStr);
+                        const dateOnly = eventDate.toISOString().split('T')[0];
+                        if (dateOnly === dateStr) {
+                            events.push({
+                                time: eventDate,
+                                type: 'taken',
+                                medication: medName
+                            });
+                        }
+                    });
+                }
+                
+                // Check for skipped events
+                if (medData.skipped_times) {
+                    medData.skipped_times.forEach(timeStr => {
+                        const eventDate = new Date(timeStr);
+                        const dateOnly = eventDate.toISOString().split('T')[0];
+                        if (dateOnly === dateStr) {
+                            events.push({
+                                time: eventDate,
+                                type: 'skipped',
+                                medication: medName
+                            });
+                        }
+                    });
+                }
+                
+                // Check for snoozed events (treat as delayed)
+                if (medData.snoozed_times) {
+                    medData.snoozed_times.forEach(timeStr => {
+                        const eventDate = new Date(timeStr);
+                        const dateOnly = eventDate.toISOString().split('T')[0];
+                        if (dateOnly === dateStr) {
+                            events.push({
+                                time: eventDate,
+                                type: 'delayed',
+                                medication: medName
+                            });
+                        }
+                    });
+                }
+            });
+            
+            return events;
+        }
+
+        // Render both clock visualizations
+        function renderClocks() {
+            const datePicker = document.getElementById('clock-date-picker');
+            if (!datePicker || !datePicker.value) {
+                return;
+            }
+            
+            render12HourClock();
+            render24HourClock();
+        }
+
+        // Render 12-hour clock with wedges
+        function render12HourClock() {
+            const svg = document.getElementById('clock-12hr');
+            if (!svg) return;
+            
+            // Clear existing content
+            svg.innerHTML = '';
+            
+            // Draw clock face
+            drawClockFace(svg, 12);
+            
+            // Filter events for the selected period (AM/PM)
+            const filteredEvents = clockData.filter(event => {
+                const hours = event.time.getHours();
+                if (clockPeriod === 'AM') {
+                    return hours < 12;
+                } else {
+                    return hours >= 12;
+                }
+            });
+            
+            // Draw wedges for each event
+            filteredEvents.forEach(event => {
+                const hours = event.time.getHours() % 12 || 12;
+                const minutes = event.time.getMinutes();
+                const angle = ((hours + minutes / 60) / 12) * 360;
+                
+                drawWedge(svg, angle, event.type, event.medication);
+            });
+        }
+
+        // Render 24-hour clock with wedges
+        function render24HourClock() {
+            const svg = document.getElementById('clock-24hr');
+            if (!svg) return;
+            
+            // Clear existing content
+            svg.innerHTML = '';
+            
+            // Draw clock face
+            drawClockFace(svg, 24);
+            
+            // Draw wedges for all events
+            clockData.forEach(event => {
+                const hours = event.time.getHours();
+                const minutes = event.time.getMinutes();
+                const angle = ((hours + minutes / 60) / 24) * 360;
+                
+                drawWedge(svg, angle, event.type, event.medication);
+            });
+        }
+
+        // Draw clock face with hour markers
+        function drawClockFace(svg, maxHours) {
+            const isDarkMode = document.body.classList.contains('theme-dark');
+            const faceColor = isDarkMode ? '#2a2a2a' : '#ffffff';
+            const lineColor = isDarkMode ? '#444' : '#e0e0e0';
+            const textColor = isDarkMode ? '#e0e0e0' : '#212121';
+            
+            // Draw outer circle
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', '0');
+            circle.setAttribute('cy', '0');
+            circle.setAttribute('r', '100');
+            circle.setAttribute('fill', faceColor);
+            circle.setAttribute('stroke', lineColor);
+            circle.setAttribute('stroke-width', '2');
+            svg.appendChild(circle);
+            
+            // Draw hour markers and labels
+            for (let i = 0; i < maxHours; i++) {
+                const angle = (i / maxHours) * 360 - 90; // Start from top (12 o'clock position)
+                const radians = angle * Math.PI / 180;
+                
+                // Draw hour line
+                const x1 = Math.cos(radians) * 90;
+                const y1 = Math.sin(radians) * 90;
+                const x2 = Math.cos(radians) * 100;
+                const y2 = Math.sin(radians) * 100;
+                
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', x1);
+                line.setAttribute('y1', y1);
+                line.setAttribute('x2', x2);
+                line.setAttribute('y2', y2);
+                line.setAttribute('stroke', lineColor);
+                line.setAttribute('stroke-width', '1');
+                svg.appendChild(line);
+                
+                // Draw hour label (only every N hours for readability)
+                const labelInterval = maxHours === 24 ? 6 : 3;
+                if (i % labelInterval === 0) {
+                    const labelX = Math.cos(radians) * 75;
+                    const labelY = Math.sin(radians) * 75;
+                    
+                    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    text.setAttribute('x', labelX);
+                    text.setAttribute('y', labelY);
+                    text.setAttribute('text-anchor', 'middle');
+                    text.setAttribute('dominant-baseline', 'middle');
+                    text.setAttribute('fill', textColor);
+                    text.setAttribute('font-size', '12');
+                    text.setAttribute('font-weight', '500');
+                    text.textContent = maxHours === 24 ? i : (i === 0 ? 12 : i);
+                    svg.appendChild(text);
+                }
+            }
+        }
+
+        // Draw a wedge for a dose event
+        function drawWedge(svg, angle, type, medication) {
+            // Determine color based on type
+            let color;
+            switch (type) {
+                case 'taken':
+                    color = '#4caf50'; // Green
+                    break;
+                case 'delayed':
+                    color = '#ffc107'; // Yellow
+                    break;
+                case 'skipped':
+                    color = '#f44336'; // Red
+                    break;
+                default:
+                    color = '#9e9e9e'; // Gray for unknown
+            }
+            
+            // Wedge parameters
+            const innerRadius = 100; // Start from edge of clock face
+            const outerRadius = 120; // Extend beyond clock face
+            const wedgeWidth = 3; // Degrees of arc for each wedge
+            
+            // Convert angle to radians (adjust so 0° is at top)
+            const startAngle = (angle - wedgeWidth / 2 - 90) * Math.PI / 180;
+            const endAngle = (angle + wedgeWidth / 2 - 90) * Math.PI / 180;
+            
+            // Calculate path points
+            const x1 = Math.cos(startAngle) * innerRadius;
+            const y1 = Math.sin(startAngle) * innerRadius;
+            const x2 = Math.cos(startAngle) * outerRadius;
+            const y2 = Math.sin(startAngle) * outerRadius;
+            const x3 = Math.cos(endAngle) * outerRadius;
+            const y3 = Math.sin(endAngle) * outerRadius;
+            const x4 = Math.cos(endAngle) * innerRadius;
+            const y4 = Math.sin(endAngle) * innerRadius;
+            
+            // Create path for wedge
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            const pathData = `M ${x1},${y1} L ${x2},${y2} A ${outerRadius},${outerRadius} 0 0,1 ${x3},${y3} L ${x4},${y4} A ${innerRadius},${innerRadius} 0 0,0 ${x1},${y1} Z`;
+            path.setAttribute('d', pathData);
+            path.setAttribute('fill', color);
+            path.setAttribute('class', 'clock-wedge');
+            
+            # Add title for tooltip
+            const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+            const timeStr = event.time.toLocaleTimeString('en-US', { 
+                hour: 'numeric', 
+                minute: '2-digit',
+                hour12: true 
+            });
+            title.textContent = `${medication} - ${type} at ${timeStr}`;
+            path.appendChild(title);
+            
+            svg.appendChild(path);
+        }
+
+        // Event handler for date picker change
+        document.addEventListener('DOMContentLoaded', function() {
+            initClockDatePicker();
+            
+            // Re-render clocks when switching tabs
+            const statsTab = document.querySelector('[data-tab="statistics-tab"]');
+            if (statsTab) {
+                statsTab.addEventListener('click', function() {
+                    setTimeout(() => {
+                        if (!clockData || clockData.length === 0) {
+                            const datePicker = document.getElementById('clock-date-picker');
+                            if (datePicker && datePicker.value) {
+                                loadClockData(datePicker.value);
+                            }
+                        } else {
+                            renderClocks();
+                        }
+                    }, 100);
+                });
+            }
+        });
     </script>
 </body>
 </html>
