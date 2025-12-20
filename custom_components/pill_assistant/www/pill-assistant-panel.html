@@ -3054,6 +3054,14 @@ body.theme-dark .clock-legend.bottom-banner {
                 // Combine date and time for full datetime
                 const startDateTime = new Date(`${startDate}T${startTime}:00`);
                 const endDateTime = new Date(`${endDate}T${endTime}:59`);
+                // Build service data, including medication_id if in per-medication context
+                const serviceData = {
+                    start_date: startDateTime.toISOString(),
+                    end_date: endDateTime.toISOString()
+                };
+                if (currentViewContext === 'per-medication' && currentMedicationId) {
+                    serviceData.medication_id = currentMedicationId;
+                }
                 // Use callWS with return_response: true to properly receive service responses
                 // This is the correct method for services that support response data
                 let response = null;
@@ -3062,10 +3070,7 @@ body.theme-dark .clock-legend.bottom-banner {
                         type: 'call_service',
                         domain: 'pill_assistant',
                         service: 'get_statistics',
-                        service_data: {
-                            start_date: startDateTime.toISOString(),
-                            end_date: endDateTime.toISOString()
-                        },
+                        service_data: serviceData,
                         return_response: true
                     });
                 } catch (wsError) {
@@ -3074,10 +3079,7 @@ body.theme-dark .clock-legend.bottom-banner {
                     response = await hass.callService(
                         'pill_assistant',
                         'get_statistics',
-                        {
-                            start_date: startDateTime.toISOString(),
-                            end_date: endDateTime.toISOString()
-                        }
+                        serviceData
                     );
                 }
                 // Use centralized helper to unwrap response
@@ -3089,16 +3091,68 @@ body.theme-dark .clock-legend.bottom-banner {
                 
                 const stats = unwrapServiceResponse(response);
                 
-                if (!stats) {
-                    console.warn('No statistics data received from service');
-                    showErrorMessage('No statistics data available. Please ensure medications have been logged.');
-                    // Set empty stats to clear any previous data
-                    currentStats = {
-                        total_entries: 0,
-                        medications: {},
-                        daily_counts: {},
-                        action_counts: {}
-                    };
+                if (!stats || stats.total_entries === 0) {
+                    // Try to find the most recent date with data
+                    console.warn('No statistics data for selected date range');
+                    
+                    // Try expanding the date range backwards to find data
+                    const searchEndDate = new Date(endDateTime);
+                    let foundData = false;
+                    
+                    // Search back up to 90 days for data
+                    for (let daysBack = 1; daysBack <= 90 && !foundData; daysBack++) {
+                        const searchStartDate = new Date(searchEndDate);
+                        searchStartDate.setDate(searchStartDate.getDate() - daysBack);
+                        
+                        try {
+                            const searchServiceData = {
+                                start_date: searchStartDate.toISOString(),
+                                end_date: searchEndDate.toISOString()
+                            };
+                            if (currentViewContext === 'per-medication' && currentMedicationId) {
+                                searchServiceData.medication_id = currentMedicationId;
+                            }
+                            
+                            const searchResponse = await hass.callWS({
+                                type: 'call_service',
+                                domain: 'pill_assistant',
+                                service: 'get_statistics',
+                                service_data: searchServiceData,
+                                return_response: true
+                            });
+                            
+                            const searchStats = unwrapServiceResponse(searchResponse);
+                            if (searchStats && searchStats.total_entries > 0) {
+                                // Found data! Update the date range
+                                currentStats = searchStats;
+                                foundData = true;
+                                
+                                // Update the date pickers to show the range where data was found
+                                const startDateStr = getLocalDateString(searchStartDate);
+                                const endDateStr = getLocalDateString(searchEndDate);
+                                document.getElementById('stats-start-date').value = startDateStr;
+                                document.getElementById('stats-end-date').value = endDateStr;
+                                
+                                console.log(`Found data in date range ${startDateStr} to ${endDateStr}`);
+                                break;
+                            }
+                        } catch (searchError) {
+                            console.warn('Error searching for historical data:', searchError);
+                            break;
+                        }
+                    }
+                    
+                    if (!foundData) {
+                        console.warn('No statistics data found in last 90 days');
+                        showErrorMessage('No statistics data available. Please ensure medications have been logged.');
+                        // Set empty stats to clear any previous data
+                        currentStats = {
+                            total_entries: 0,
+                            medications: {},
+                            daily_counts: {},
+                            action_counts: {}
+                        };
+                    }
                 } else {
                     currentStats = stats;
                 }
@@ -3658,16 +3712,22 @@ body.theme-dark .clock-legend.bottom-banner {
                 const startDateISO = new Date(dateStr).toISOString();
                 const endDateISO = new Date(dateStr + 'T23:59:59').toISOString();
                 
+                // Build service data, including medication_id if in per-medication context
+                const serviceData = {
+                    start_date: startDateISO,
+                    end_date: endDateISO
+                };
+                if (currentViewContext === 'per-medication' && currentMedicationId) {
+                    serviceData.medication_id = currentMedicationId;
+                }
+                
                 let response = null;
                 try {
                     response = await hass.callWS({
                         type: 'call_service',
                         domain: 'pill_assistant',
                         service: 'get_statistics',
-                        service_data: {
-                            start_date: startDateISO,
-                            end_date: endDateISO
-                        },
+                        service_data: serviceData,
                         return_response: true
                     });
                 } catch (wsError) {
@@ -3677,10 +3737,7 @@ body.theme-dark .clock-legend.bottom-banner {
                         response = await hass.callService(
                             'pill_assistant',
                             'get_statistics',
-                            {
-                                start_date: startDateISO,
-                                end_date: endDateISO
-                            }
+                            serviceData
                         );
                     } catch (serviceError) {
                         console.warn('callService also failed for clock data:', serviceError);
@@ -3695,19 +3752,72 @@ body.theme-dark .clock-legend.bottom-banner {
                 clockData = parseDoseEvents(stats, dateStr);
                 
                 // Auto-fallback: If no data for selected date, try to find last date with data
-                if (clockData.length === 0 && fallbackDepth < MAX_FALLBACK_DEPTH && currentStats && currentStats.daily_counts) {
-                    const availableDates = Object.keys(currentStats.daily_counts).sort().reverse();
-                    // Find the most recent date with data that's before or equal to selected date
-                    for (const availDate of availableDates) {
-                        if (availDate <= dateStr) {
-                            console.debug(`No data for ${dateStr}, falling back to ${availDate} (depth: ${fallbackDepth + 1})`);
-                            // Update date picker to show the fallback date
-                            if (datePicker) {
-                                datePicker.value = availDate;
+                if (clockData.length === 0 && fallbackDepth < MAX_FALLBACK_DEPTH) {
+                    // First try to use currentStats if available
+                    if (currentStats && currentStats.daily_counts) {
+                        const availableDates = Object.keys(currentStats.daily_counts).sort().reverse();
+                        // When in per-medication mode, filter dates that have data for this medication
+                        const relevantDates = availableDates.filter(date => {
+                            if (currentViewContext === 'per-medication' && currentMedicationId) {
+                                return currentStats.daily_counts[date] && 
+                                       currentStats.daily_counts[date][currentMedicationId];
                             }
-                            // Recursively load data for that date with incremented depth
-                            await loadClockData(availDate, fallbackDepth + 1);
-                            return;
+                            return true;
+                        });
+                        
+                        // Find the most recent date with data that's before or equal to selected date
+                        for (const availDate of relevantDates) {
+                            if (availDate <= dateStr) {
+                                console.debug(`No data for ${dateStr}, falling back to ${availDate} (depth: ${fallbackDepth + 1})`);
+                                // Update date picker to show the fallback date
+                                if (datePicker) {
+                                    datePicker.value = availDate;
+                                }
+                                // Recursively load data for that date with incremented depth
+                                await loadClockData(availDate, fallbackDepth + 1);
+                                return;
+                            }
+                        }
+                    }
+                    
+                    // If currentStats doesn't help, search backwards day by day
+                    console.debug('Searching backwards for date with data...');
+                    for (let daysBack = 1; daysBack <= 30 && fallbackDepth + daysBack <= MAX_FALLBACK_DEPTH; daysBack++) {
+                        const searchDate = new Date(dateStr);
+                        searchDate.setDate(searchDate.getDate() - daysBack);
+                        const searchDateStr = getLocalDateString(searchDate);
+                        
+                        try {
+                            const searchServiceData = {
+                                start_date: new Date(searchDateStr).toISOString(),
+                                end_date: new Date(searchDateStr + 'T23:59:59').toISOString()
+                            };
+                            if (currentViewContext === 'per-medication' && currentMedicationId) {
+                                searchServiceData.medication_id = currentMedicationId;
+                            }
+                            
+                            const searchResponse = await hass.callWS({
+                                type: 'call_service',
+                                domain: 'pill_assistant',
+                                service: 'get_statistics',
+                                service_data: searchServiceData,
+                                return_response: true
+                            });
+                            
+                            const searchStats = unwrapServiceResponse(searchResponse);
+                            const searchClockData = parseDoseEvents(searchStats, searchDateStr);
+                            
+                            if (searchClockData.length > 0) {
+                                console.debug(`Found data on ${searchDateStr}, falling back to that date`);
+                                if (datePicker) {
+                                    datePicker.value = searchDateStr;
+                                }
+                                await loadClockData(searchDateStr, fallbackDepth + 1);
+                                return;
+                            }
+                        } catch (searchError) {
+                            console.warn('Error searching for historical clock data:', searchError);
+                            break;
                         }
                     }
                 }
