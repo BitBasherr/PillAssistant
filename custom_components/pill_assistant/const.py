@@ -18,7 +18,9 @@ CONF_SCHEDULE_DAYS = "schedule_days"  # List of days (mon, tue, wed, thu, fri, s
 CONF_REFILL_AMOUNT = "refill_amount"
 CONF_REFILL_REMINDER_DAYS = "refill_reminder_days"
 CONF_CURRENT_QUANTITY = "current_quantity"  # Current/starting quantity
-CONF_USE_CUSTOM_QUANTITY = "use_custom_quantity"  # Use custom starting quantity instead of refill amount
+CONF_USE_CUSTOM_QUANTITY = (
+    "use_custom_quantity"  # Use custom starting quantity instead of refill amount
+)
 CONF_NOTES = "notes"
 CONF_NOTIFY_SERVICES = "notify_services"  # List of notification services to use
 
@@ -45,9 +47,7 @@ CONF_SENSOR_TRIGGER_ATTRIBUTE = (
 CONF_AVOID_DUPLICATE_TRIGGERS = (
     "avoid_duplicate_triggers"  # Avoid triggering multiple times for same sensor event
 )
-CONF_IGNORE_UNAVAILABLE = (
-    "ignore_unavailable"  # Ignore 'unknown' and 'unavailable' states when monitoring for changes
-)
+CONF_IGNORE_UNAVAILABLE = "ignore_unavailable"  # Ignore 'unknown' and 'unavailable' states when monitoring for changes
 CONF_ENABLE_AUTOMATIC_NOTIFICATIONS = "enable_automatic_notifications"  # Enable automatic notifications at scheduled times
 CONF_ON_TIME_WINDOW_MINUTES = (
     "on_time_window_minutes"  # Time window (±minutes) for "on time" statistics

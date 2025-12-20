@@ -30,7 +30,7 @@ async def test_sensor_event_with_trigger_value(hass: HomeAssistant):
     """Test sensor event scheduling with specific trigger value."""
     # Create a mock binary sensor
     hass.states.async_set("binary_sensor.test_wake", "on")
-    
+
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
     )
@@ -100,9 +100,9 @@ async def test_sensor_event_with_attribute(hass: HomeAssistant):
     hass.states.async_set(
         "sensor.test_sensor",
         "active",
-        attributes={"battery": 90, "signal_strength": "high"}
+        attributes={"battery": 90, "signal_strength": "high"},
     )
-    
+
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
     )
@@ -182,10 +182,10 @@ async def test_ignore_unavailable_states(hass: HomeAssistant):
             CONF_REFILL_REMINDER_DAYS: 7,
         },
     )
-    
+
     # Set sensor to unavailable
     hass.states.async_set("sensor.test_unavailable", "unavailable")
-    
+
     entry.add_to_hass(hass)
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
@@ -210,10 +210,10 @@ async def test_all_entity_types_supported(hass: HomeAssistant):
         "switch.test",
         "light.test",
     ]
-    
+
     for entity_id in entity_types:
         hass.states.async_set(entity_id, "on")
-        
+
         result = await hass.config_entries.flow.async_init(
             DOMAIN, context={"source": config_entries.SOURCE_USER}
         )
@@ -257,7 +257,15 @@ async def test_all_entity_types_supported(hass: HomeAssistant):
                     CONF_RELATIVE_OFFSET_MINUTES: 30,
                     CONF_AVOID_DUPLICATE_TRIGGERS: True,
                     CONF_IGNORE_UNAVAILABLE: True,
-                    CONF_SCHEDULE_DAYS: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
+                    CONF_SCHEDULE_DAYS: [
+                        "mon",
+                        "tue",
+                        "wed",
+                        "thu",
+                        "fri",
+                        "sat",
+                        "sun",
+                    ],
                 },
             )
 

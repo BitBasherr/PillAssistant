@@ -284,7 +284,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     if "history" not in storage_data:
         storage_data["history"] = []
-    
+
     if "last_sensor_trigger" not in storage_data:
         storage_data["last_sensor_trigger"] = {}
 
@@ -292,7 +292,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     med_id = entry.entry_id
     if med_id not in storage_data["medications"]:
         # Use current_quantity if provided (from custom starting amount), otherwise use refill_amount
-        starting_amount = entry.data.get(CONF_CURRENT_QUANTITY, entry.data.get(CONF_REFILL_AMOUNT, 0))
+        starting_amount = entry.data.get(
+            CONF_CURRENT_QUANTITY, entry.data.get(CONF_REFILL_AMOUNT, 0)
+        )
         storage_data["medications"][med_id] = {
             **entry.data,
             "remaining_amount": starting_amount,
@@ -394,11 +396,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         # Decrease remaining amount by 1 dose (not by dosage amount)
         remaining = float(med_data.get("remaining_amount", 0))
         med_data["remaining_amount"] = max(0, remaining - 1)
-        
+
         # If this is a sensor-based schedule with duplicate avoidance, track the trigger
         schedule_type = _entry.data.get(CONF_SCHEDULE_TYPE)
         if schedule_type == "relative_sensor":
-            avoid_duplicates = _entry.data.get(CONF_AVOID_DUPLICATE_TRIGGERS, DEFAULT_AVOID_DUPLICATE_TRIGGERS)
+            avoid_duplicates = _entry.data.get(
+                CONF_AVOID_DUPLICATE_TRIGGERS, DEFAULT_AVOID_DUPLICATE_TRIGGERS
+            )
             if avoid_duplicates:
                 sensor_entity_id = _entry.data.get(CONF_RELATIVE_TO_SENSOR)
                 if sensor_entity_id:
@@ -407,7 +411,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                         # Track this sensor event as triggered
                         if "last_sensor_trigger" not in _storage_data:
                             _storage_data["last_sensor_trigger"] = {}
-                        _storage_data["last_sensor_trigger"][_med_id] = sensor_state.last_changed.isoformat()
+                        _storage_data["last_sensor_trigger"][
+                            _med_id
+                        ] = sensor_state.last_changed.isoformat()
 
         # Add to history
         history_entry = {

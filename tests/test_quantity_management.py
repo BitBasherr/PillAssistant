@@ -148,7 +148,7 @@ async def test_options_flow_current_quantity_editable(hass: HomeAssistant):
 
     assert result["type"] == data_entry_flow.FlowResultType.FORM
     # The form should include CONF_CURRENT_QUANTITY field
-    
+
     # Update the current quantity
     result = await hass.config_entries.options.async_configure(
         result["flow_id"],
@@ -166,7 +166,7 @@ async def test_options_flow_current_quantity_editable(hass: HomeAssistant):
     )
 
     assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
-    
+
     # Verify the remaining amount was updated in storage
     entry_data = hass.data[DOMAIN][entry.entry_id]
     storage_data = entry_data.get("storage_data", {})
@@ -198,7 +198,7 @@ async def test_options_flow_dosage_editable(hass: HomeAssistant):
     result = await hass.config_entries.options.async_init(entry.entry_id)
 
     assert result["type"] == data_entry_flow.FlowResultType.FORM
-    
+
     # Update the dosage
     result = await hass.config_entries.options.async_configure(
         result["flow_id"],
@@ -216,7 +216,7 @@ async def test_options_flow_dosage_editable(hass: HomeAssistant):
     )
 
     assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
-    
+
     # Verify the dosage was updated
     assert entry.data[CONF_DOSAGE] == "2"
 
@@ -246,6 +246,6 @@ async def test_remaining_amount_initialized_from_custom_quantity(hass: HomeAssis
     entry_data = hass.data[DOMAIN][entry.entry_id]
     storage_data = entry_data.get("storage_data", {})
     medications = storage_data.get("medications", {})
-    
+
     assert medications[entry.entry_id]["remaining_amount"] == 20
     assert entry.data[CONF_REFILL_AMOUNT] == 60

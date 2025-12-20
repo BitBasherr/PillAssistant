@@ -444,11 +444,12 @@ class PillAssistantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             # Check if sensor is being selected for the first time
             sensor_just_selected = (
                 CONF_RELATIVE_TO_SENSOR in user_input
-                and self._data.get(CONF_RELATIVE_TO_SENSOR) != user_input.get(CONF_RELATIVE_TO_SENSOR)
+                and self._data.get(CONF_RELATIVE_TO_SENSOR)
+                != user_input.get(CONF_RELATIVE_TO_SENSOR)
             )
-            
+
             self._data.update(user_input)
-            
+
             # If sensor was just selected, re-show form with additional options
             if sensor_just_selected:
                 pass  # Fall through to show form again with full options
@@ -459,60 +460,68 @@ class PillAssistantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         # Build sensor information display if a sensor has been selected
         sensor_info = ""
         sensor_entity_id = self._data.get(CONF_RELATIVE_TO_SENSOR)
-        
+
         if sensor_entity_id:
             sensor_state = self.hass.states.get(sensor_entity_id)
             if sensor_state:
                 # Get current state and last changed
                 current_value = sensor_state.state
                 last_changed = sensor_state.last_changed
-                
+
                 # Convert to local time
                 local_time = dt_util.as_local(last_changed)
                 last_changed_str = local_time.strftime("%Y-%m-%d %H:%M:%S")
-                
+
                 # Build sensor info display
                 sensor_info = f"**Current Entity Information:**\n\n"
                 sensor_info += f"**Entity ID:** `{sensor_entity_id}`\n"
                 sensor_info += f"**Current State:** `{current_value}`\n"
                 sensor_info += f"**Last Changed:** {last_changed_str}\n"
-                
+
                 # Show available attributes
                 if sensor_state.attributes:
                     sensor_info += f"**Available Attributes:**\n"
-                    for attr_name, attr_value in list(sensor_state.attributes.items())[:10]:  # Limit to first 10
-                        if attr_name not in ['friendly_name', 'icon', 'device_class']:
+                    for attr_name, attr_value in list(sensor_state.attributes.items())[
+                        :10
+                    ]:  # Limit to first 10
+                        if attr_name not in ["friendly_name", "icon", "device_class"]:
                             sensor_info += f"  • `{attr_name}`: {attr_value}\n"
                     sensor_info += "\n"
-                
+
                 # Get state history for last 24 hours
                 now = dt_util.now()
                 start_time = now - timedelta(hours=24)
-                
+
                 # Get history using recorder component with error handling
                 try:
                     from homeassistant.components import history
-                    
+
                     history_states = await self.hass.async_add_executor_job(
                         history.state_changes_during_period,
                         self.hass,
                         start_time,
                         now,
-                        sensor_entity_id
+                        sensor_entity_id,
                     )
-                    
+
                     if history_states and sensor_entity_id in history_states:
                         state_changes = history_states[sensor_entity_id]
-                        
+
                         if len(state_changes) > 1:
-                            sensor_info += f"**State Changes (Last 24 Hours):**\n\n```\n"
-                            
+                            sensor_info += (
+                                f"**State Changes (Last 24 Hours):**\n\n```\n"
+                            )
+
                             # Show state changes in reverse chronological order (newest first)
-                            for state in reversed(state_changes[-MAX_SENSOR_HISTORY_CHANGES:]):
+                            for state in reversed(
+                                state_changes[-MAX_SENSOR_HISTORY_CHANGES:]
+                            ):
                                 change_time = dt_util.as_local(state.last_changed)
-                                change_time_str = change_time.strftime("%Y-%m-%d %H:%M:%S")
+                                change_time_str = change_time.strftime(
+                                    "%Y-%m-%d %H:%M:%S"
+                                )
                                 sensor_info += f"• {change_time_str} → {state.state}\n"
-                            
+
                             sensor_info += "```\n"
                         else:
                             sensor_info += "*No state changes in the last 24 hours.*\n"
@@ -520,42 +529,52 @@ class PillAssistantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         sensor_info += "*No state history available.*\n"
                 except (ImportError, Exception) as ex:
                     # History/recorder component not available or error fetching history
-                    sensor_info += f"*State history unavailable (recorder may be disabled).*\n"
-                    
+                    sensor_info += (
+                        f"*State history unavailable (recorder may be disabled).*\n"
+                    )
+
                 # Detect sensor type and offer trigger value options
                 sensor_type = self._detect_sensor_type(sensor_state)
-                trigger_value_options = self._get_trigger_value_options(sensor_state, sensor_type)
-                
+                trigger_value_options = self._get_trigger_value_options(
+                    sensor_state, sensor_type
+                )
+
         # Build schema - allow ALL entity types
         schema_dict = {
             vol.Required(CONF_RELATIVE_TO_SENSOR): selector(
-                {
-                    "entity": {}  # No domain restriction - all entities allowed
-                }
+                {"entity": {}}  # No domain restriction - all entities allowed
             ),
         }
-        
+
         # Add trigger value selector if sensor is selected
         if sensor_entity_id and sensor_state:
-            trigger_value_options = self._get_trigger_value_options(sensor_state, self._detect_sensor_type(sensor_state))
+            trigger_value_options = self._get_trigger_value_options(
+                sensor_state, self._detect_sensor_type(sensor_state)
+            )
             if trigger_value_options:
-                schema_dict[vol.Optional(
-                    CONF_SENSOR_TRIGGER_VALUE,
-                    default=DEFAULT_SENSOR_TRIGGER_VALUE,
-                )] = selector({
-                    "select": {
-                        "options": trigger_value_options,
-                        "mode": "dropdown",
-                        "custom_value": True,
+                schema_dict[
+                    vol.Optional(
+                        CONF_SENSOR_TRIGGER_VALUE,
+                        default=DEFAULT_SENSOR_TRIGGER_VALUE,
+                    )
+                ] = selector(
+                    {
+                        "select": {
+                            "options": trigger_value_options,
+                            "mode": "dropdown",
+                            "custom_value": True,
+                        }
                     }
-                })
+                )
             else:
                 # Allow free text input for custom trigger values
-                schema_dict[vol.Optional(
-                    CONF_SENSOR_TRIGGER_VALUE,
-                    default=DEFAULT_SENSOR_TRIGGER_VALUE,
-                )] = selector({"text": {}})
-            
+                schema_dict[
+                    vol.Optional(
+                        CONF_SENSOR_TRIGGER_VALUE,
+                        default=DEFAULT_SENSOR_TRIGGER_VALUE,
+                    )
+                ] = selector({"text": {}})
+
             # Add attribute selector if entity has attributes
             if sensor_state.attributes:
                 # Get list of non-standard attributes
@@ -563,41 +582,52 @@ class PillAssistantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     {"label": "State (default)", "value": ""},
                 ]
                 for attr_name in sensor_state.attributes.keys():
-                    if attr_name not in ['friendly_name', 'icon', 'device_class', 'unit_of_measurement']:
+                    if attr_name not in [
+                        "friendly_name",
+                        "icon",
+                        "device_class",
+                        "unit_of_measurement",
+                    ]:
                         available_attrs.append({"label": attr_name, "value": attr_name})
-                
+
                 if len(available_attrs) > 1:  # More than just "State"
-                    schema_dict[vol.Optional(
-                        CONF_SENSOR_TRIGGER_ATTRIBUTE,
-                        default=DEFAULT_SENSOR_TRIGGER_ATTRIBUTE,
-                    )] = selector({
-                        "select": {
-                            "options": available_attrs,
-                            "mode": "dropdown",
+                    schema_dict[
+                        vol.Optional(
+                            CONF_SENSOR_TRIGGER_ATTRIBUTE,
+                            default=DEFAULT_SENSOR_TRIGGER_ATTRIBUTE,
+                        )
+                    ] = selector(
+                        {
+                            "select": {
+                                "options": available_attrs,
+                                "mode": "dropdown",
+                            }
                         }
-                    })
-        
-        schema_dict.update({
-            vol.Required(
-                CONF_RELATIVE_OFFSET_HOURS,
-                default=DEFAULT_RELATIVE_OFFSET_HOURS,
-            ): vol.Coerce(int),
-            vol.Required(
-                CONF_RELATIVE_OFFSET_MINUTES,
-                default=DEFAULT_RELATIVE_OFFSET_MINUTES,
-            ): vol.Coerce(int),
-            vol.Optional(
-                CONF_AVOID_DUPLICATE_TRIGGERS,
-                default=DEFAULT_AVOID_DUPLICATE_TRIGGERS,
-            ): selector({"boolean": {}}),
-            vol.Optional(
-                CONF_IGNORE_UNAVAILABLE,
-                default=DEFAULT_IGNORE_UNAVAILABLE,
-            ): selector({"boolean": {}}),
-            vol.Required(
-                CONF_SCHEDULE_DAYS, default=DEFAULT_SCHEDULE_DAYS
-            ): SELECT_DAYS,
-        })
+                    )
+
+        schema_dict.update(
+            {
+                vol.Required(
+                    CONF_RELATIVE_OFFSET_HOURS,
+                    default=DEFAULT_RELATIVE_OFFSET_HOURS,
+                ): vol.Coerce(int),
+                vol.Required(
+                    CONF_RELATIVE_OFFSET_MINUTES,
+                    default=DEFAULT_RELATIVE_OFFSET_MINUTES,
+                ): vol.Coerce(int),
+                vol.Optional(
+                    CONF_AVOID_DUPLICATE_TRIGGERS,
+                    default=DEFAULT_AVOID_DUPLICATE_TRIGGERS,
+                ): selector({"boolean": {}}),
+                vol.Optional(
+                    CONF_IGNORE_UNAVAILABLE,
+                    default=DEFAULT_IGNORE_UNAVAILABLE,
+                ): selector({"boolean": {}}),
+                vol.Required(
+                    CONF_SCHEDULE_DAYS, default=DEFAULT_SCHEDULE_DAYS
+                ): SELECT_DAYS,
+            }
+        )
 
         return self.async_show_form(
             step_id="schedule_relative_sensor",
@@ -607,49 +637,49 @@ class PillAssistantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 "help": f"{sensor_info}\n**Configure Entity-Based Scheduling:**\n\nTake this medication X hours/minutes after an entity changes state.\n\n**Trigger Value:** Specify which value should trigger the schedule (leave empty to trigger on any change).\n\n**Trigger Attribute:** Monitor a specific attribute instead of the entity state (optional).\n\n**Avoid Duplicate Triggers:** Prevents multiple schedules for the same event.\n\n**Ignore Unavailable:** When enabled, ignores 'unknown' and 'unavailable' states when monitoring for changes."
             },
         )
-    
+
     def _detect_sensor_type(self, sensor_state):
         """Detect the type of sensor based on its attributes and state."""
         if not sensor_state:
             return "unknown"
-        
+
         domain = sensor_state.entity_id.split(".")[0]
-        
+
         # Binary sensors have on/off states
         if domain == "binary_sensor":
             return "binary"
-        
+
         # Check attributes for sensor class
         attributes = sensor_state.attributes
         device_class = attributes.get("device_class")
         unit = attributes.get("unit_of_measurement")
-        
+
         if device_class:
             return device_class
-        
+
         # Try to detect from state value
         state_value = sensor_state.state
-        
+
         # Check if numeric
         try:
             float(state_value)
             return "numeric"
         except (ValueError, TypeError):
             pass
-        
+
         # Check common state patterns
         if state_value in ["on", "off", "true", "false", "open", "closed"]:
             return "binary_like"
-        
+
         return "text"
-    
+
     def _get_trigger_value_options(self, sensor_state, sensor_type):
         """Get appropriate trigger value options based on sensor type."""
         if not sensor_state:
             return []
-        
+
         options = []
-        
+
         if sensor_type == "binary" or sensor_type == "binary_like":
             # Binary sensors or sensors with binary-like values
             current_state = sensor_state.state.lower() if sensor_state.state else ""
@@ -681,10 +711,10 @@ class PillAssistantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         else:
             # For other sensors, get unique values from history or use text input
             return []
-        
+
         # Add "Any change" option at the beginning
         options.insert(0, {"label": "Any change (empty)", "value": ""})
-        
+
         return options
 
     async def async_step_refill(self, user_input=None):
@@ -695,17 +725,19 @@ class PillAssistantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             # Check if user wants custom quantity and hasn't provided it yet
             use_custom = user_input.get(CONF_USE_CUSTOM_QUANTITY, False)
             has_custom_quantity = CONF_CURRENT_QUANTITY in user_input
-            
+
             if use_custom and not has_custom_quantity:
                 # Re-show form with current quantity field
                 self._data.update(user_input)
                 pass  # Fall through to show form again
             else:
                 self._data.update(user_input)
-                
+
                 # If not using custom quantity, set current quantity to refill amount
                 if not use_custom:
-                    self._data[CONF_CURRENT_QUANTITY] = self._data.get(CONF_REFILL_AMOUNT, 30)
+                    self._data[CONF_CURRENT_QUANTITY] = self._data.get(
+                        CONF_REFILL_AMOUNT, 30
+                    )
 
                 # Create unique ID based on medication name
                 await self.async_set_unique_id(
@@ -722,47 +754,69 @@ class PillAssistantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         # Get available notification services
         notify_services = self._get_notify_services()
         notify_options = [{"label": svc, "value": svc} for svc in notify_services]
-        
+
         # Check if we should show the custom quantity field
         use_custom = self._data.get(CONF_USE_CUSTOM_QUANTITY, False)
 
         schema_dict = {
-            vol.Required(CONF_REFILL_AMOUNT, default=self._data.get(CONF_REFILL_AMOUNT, 30)): vol.Coerce(int),
             vol.Required(
-                CONF_REFILL_REMINDER_DAYS, 
-                default=self._data.get(CONF_REFILL_REMINDER_DAYS, DEFAULT_REFILL_REMINDER_DAYS)
+                CONF_REFILL_AMOUNT, default=self._data.get(CONF_REFILL_AMOUNT, 30)
+            ): vol.Coerce(int),
+            vol.Required(
+                CONF_REFILL_REMINDER_DAYS,
+                default=self._data.get(
+                    CONF_REFILL_REMINDER_DAYS, DEFAULT_REFILL_REMINDER_DAYS
+                ),
             ): vol.Coerce(int),
             vol.Optional(
                 CONF_USE_CUSTOM_QUANTITY,
                 default=self._data.get(CONF_USE_CUSTOM_QUANTITY, False),
             ): selector({"boolean": {}}),
         }
-        
+
         # Add current quantity field if checkbox is checked
         if use_custom:
-            schema_dict[vol.Required(
-                CONF_CURRENT_QUANTITY,
-                default=self._data.get(CONF_CURRENT_QUANTITY, self._data.get(CONF_REFILL_AMOUNT, 30)),
-            )] = vol.Coerce(int)
-        
-        schema_dict.update({
-            vol.Optional(
-                CONF_SNOOZE_DURATION_MINUTES, 
-                default=self._data.get(CONF_SNOOZE_DURATION_MINUTES, DEFAULT_SNOOZE_DURATION_MINUTES)
-            ): vol.Coerce(int),
-            vol.Optional(
-                CONF_ENABLE_AUTOMATIC_NOTIFICATIONS,
-                default=self._data.get(CONF_ENABLE_AUTOMATIC_NOTIFICATIONS, DEFAULT_ENABLE_AUTOMATIC_NOTIFICATIONS),
-            ): selector({"boolean": {}}),
-            vol.Optional(
-                CONF_ON_TIME_WINDOW_MINUTES, 
-                default=self._data.get(CONF_ON_TIME_WINDOW_MINUTES, DEFAULT_ON_TIME_WINDOW_MINUTES)
-            ): vol.Coerce(int),
-        })
+            schema_dict[
+                vol.Required(
+                    CONF_CURRENT_QUANTITY,
+                    default=self._data.get(
+                        CONF_CURRENT_QUANTITY, self._data.get(CONF_REFILL_AMOUNT, 30)
+                    ),
+                )
+            ] = vol.Coerce(int)
+
+        schema_dict.update(
+            {
+                vol.Optional(
+                    CONF_SNOOZE_DURATION_MINUTES,
+                    default=self._data.get(
+                        CONF_SNOOZE_DURATION_MINUTES, DEFAULT_SNOOZE_DURATION_MINUTES
+                    ),
+                ): vol.Coerce(int),
+                vol.Optional(
+                    CONF_ENABLE_AUTOMATIC_NOTIFICATIONS,
+                    default=self._data.get(
+                        CONF_ENABLE_AUTOMATIC_NOTIFICATIONS,
+                        DEFAULT_ENABLE_AUTOMATIC_NOTIFICATIONS,
+                    ),
+                ): selector({"boolean": {}}),
+                vol.Optional(
+                    CONF_ON_TIME_WINDOW_MINUTES,
+                    default=self._data.get(
+                        CONF_ON_TIME_WINDOW_MINUTES, DEFAULT_ON_TIME_WINDOW_MINUTES
+                    ),
+                ): vol.Coerce(int),
+            }
+        )
 
         # Add notification service selector if services are available
         if notify_options:
-            schema_dict[vol.Optional(CONF_NOTIFY_SERVICES, default=self._data.get(CONF_NOTIFY_SERVICES, []))] = selector(
+            schema_dict[
+                vol.Optional(
+                    CONF_NOTIFY_SERVICES,
+                    default=self._data.get(CONF_NOTIFY_SERVICES, []),
+                )
+            ] = selector(
                 {
                     "select": {
                         "options": notify_options,
@@ -891,7 +945,7 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
             if not errors:
                 # Get medication ID
                 med_id = self._config_entry.entry_id
-                
+
                 # Update the config entry with new data
                 # Clear temp schedule type since we're saving now
                 self._temp_schedule_type = None
@@ -899,17 +953,23 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
                     self._config_entry,
                     data={**self._config_entry.data, **user_input},
                 )
-                
+
                 # If remaining_amount was changed, update it in storage
                 if CONF_CURRENT_QUANTITY in user_input:
                     from .const import DOMAIN as PILL_DOMAIN
-                    if PILL_DOMAIN in self.hass.data and med_id in self.hass.data[PILL_DOMAIN]:
+
+                    if (
+                        PILL_DOMAIN in self.hass.data
+                        and med_id in self.hass.data[PILL_DOMAIN]
+                    ):
                         entry_data = self.hass.data[PILL_DOMAIN][med_id]
                         storage_data = entry_data.get("storage_data", {})
                         medications = storage_data.get("medications", {})
-                        
+
                         if med_id in medications:
-                            medications[med_id]["remaining_amount"] = user_input[CONF_CURRENT_QUANTITY]
+                            medications[med_id]["remaining_amount"] = user_input[
+                                CONF_CURRENT_QUANTITY
+                            ]
                             # Save to storage
                             store = entry_data.get("store")
                             if store:
@@ -920,11 +980,12 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
         # Get available notification services
         notify_services = self._get_notify_services()
         notify_options = [{"label": svc, "value": svc} for svc in notify_services]
-        
+
         # Get current remaining amount from storage
         remaining_amount = 0
         med_id = self._config_entry.entry_id
         from .const import DOMAIN as PILL_DOMAIN
+
         if PILL_DOMAIN in self.hass.data and med_id in self.hass.data[PILL_DOMAIN]:
             entry_data = self.hass.data[PILL_DOMAIN][med_id]
             storage_data = entry_data.get("storage_data", {})
@@ -1030,56 +1091,82 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
                     default=current_data.get(CONF_RELATIVE_TO_SENSOR, ""),
                 )
             ] = selector(
-                {
-                    "entity": {}  # Allow all entity types
-                }
+                {"entity": {}}  # Allow all entity types
             )
-            
+
             # Add trigger value and duplicate avoidance options
             sensor_entity_id = current_data.get(CONF_RELATIVE_TO_SENSOR)
             if sensor_entity_id:
                 sensor_state = self.hass.states.get(sensor_entity_id)
                 if sensor_state:
                     sensor_type = self._detect_sensor_type(sensor_state)
-                    trigger_value_options = self._get_trigger_value_options(sensor_state, sensor_type)
-                    
+                    trigger_value_options = self._get_trigger_value_options(
+                        sensor_state, sensor_type
+                    )
+
                     if trigger_value_options:
-                        schema_dict[vol.Optional(
-                            CONF_SENSOR_TRIGGER_VALUE,
-                            default=current_data.get(CONF_SENSOR_TRIGGER_VALUE, DEFAULT_SENSOR_TRIGGER_VALUE),
-                        )] = selector({
-                            "select": {
-                                "options": trigger_value_options,
-                                "mode": "dropdown",
-                                "custom_value": True,
+                        schema_dict[
+                            vol.Optional(
+                                CONF_SENSOR_TRIGGER_VALUE,
+                                default=current_data.get(
+                                    CONF_SENSOR_TRIGGER_VALUE,
+                                    DEFAULT_SENSOR_TRIGGER_VALUE,
+                                ),
+                            )
+                        ] = selector(
+                            {
+                                "select": {
+                                    "options": trigger_value_options,
+                                    "mode": "dropdown",
+                                    "custom_value": True,
+                                }
                             }
-                        })
+                        )
                     else:
-                        schema_dict[vol.Optional(
-                            CONF_SENSOR_TRIGGER_VALUE,
-                            default=current_data.get(CONF_SENSOR_TRIGGER_VALUE, DEFAULT_SENSOR_TRIGGER_VALUE),
-                        )] = selector({"text": {}})
-                    
+                        schema_dict[
+                            vol.Optional(
+                                CONF_SENSOR_TRIGGER_VALUE,
+                                default=current_data.get(
+                                    CONF_SENSOR_TRIGGER_VALUE,
+                                    DEFAULT_SENSOR_TRIGGER_VALUE,
+                                ),
+                            )
+                        ] = selector({"text": {}})
+
                     # Add attribute selector if entity has attributes
                     if sensor_state.attributes:
                         available_attrs = [
                             {"label": "State (default)", "value": ""},
                         ]
                         for attr_name in sensor_state.attributes.keys():
-                            if attr_name not in ['friendly_name', 'icon', 'device_class', 'unit_of_measurement']:
-                                available_attrs.append({"label": attr_name, "value": attr_name})
-                        
+                            if attr_name not in [
+                                "friendly_name",
+                                "icon",
+                                "device_class",
+                                "unit_of_measurement",
+                            ]:
+                                available_attrs.append(
+                                    {"label": attr_name, "value": attr_name}
+                                )
+
                         if len(available_attrs) > 1:
-                            schema_dict[vol.Optional(
-                                CONF_SENSOR_TRIGGER_ATTRIBUTE,
-                                default=current_data.get(CONF_SENSOR_TRIGGER_ATTRIBUTE, DEFAULT_SENSOR_TRIGGER_ATTRIBUTE),
-                            )] = selector({
-                                "select": {
-                                    "options": available_attrs,
-                                    "mode": "dropdown",
+                            schema_dict[
+                                vol.Optional(
+                                    CONF_SENSOR_TRIGGER_ATTRIBUTE,
+                                    default=current_data.get(
+                                        CONF_SENSOR_TRIGGER_ATTRIBUTE,
+                                        DEFAULT_SENSOR_TRIGGER_ATTRIBUTE,
+                                    ),
+                                )
+                            ] = selector(
+                                {
+                                    "select": {
+                                        "options": available_attrs,
+                                        "mode": "dropdown",
+                                    }
                                 }
-                            })
-            
+                            )
+
             schema_dict[
                 vol.Required(
                     CONF_RELATIVE_OFFSET_HOURS,
@@ -1247,49 +1334,49 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
                 "clarification_help": "\n".join(description_lines)
             },
         )
-    
+
     def _detect_sensor_type(self, sensor_state):
         """Detect the type of sensor based on its attributes and state."""
         if not sensor_state:
             return "unknown"
-        
+
         domain = sensor_state.entity_id.split(".")[0]
-        
+
         # Binary sensors have on/off states
         if domain == "binary_sensor":
             return "binary"
-        
+
         # Check attributes for sensor class
         attributes = sensor_state.attributes
         device_class = attributes.get("device_class")
         unit = attributes.get("unit_of_measurement")
-        
+
         if device_class:
             return device_class
-        
+
         # Try to detect from state value
         state_value = sensor_state.state
-        
+
         # Check if numeric
         try:
             float(state_value)
             return "numeric"
         except (ValueError, TypeError):
             pass
-        
+
         # Check common state patterns
         if state_value in ["on", "off", "true", "false", "open", "closed"]:
             return "binary_like"
-        
+
         return "text"
-    
+
     def _get_trigger_value_options(self, sensor_state, sensor_type):
         """Get appropriate trigger value options based on sensor type."""
         if not sensor_state:
             return []
-        
+
         options = []
-        
+
         if sensor_type == "binary" or sensor_type == "binary_like":
             # Binary sensors or sensors with binary-like values
             current_state = sensor_state.state.lower() if sensor_state.state else ""
@@ -1321,8 +1408,8 @@ class PillAssistantOptionsFlow(config_entries.OptionsFlow):
         else:
             # For other sensors, get unique values from history or use text input
             return []
-        
+
         # Add "Any change" option at the beginning
         options.insert(0, {"label": "Any change (empty)", "value": ""})
-        
+
         return options
