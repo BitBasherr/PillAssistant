@@ -513,3 +513,25 @@ async def test_html_panel_clock_alignment(hass: HomeAssistant):
 
     # Check that clock container aligns items at flex-start for proper column alignment
     assert "align-items: flex-start" in content, "Clock alignment CSS rule missing"
+
+
+async def test_html_panel_time_pickers(hass: HomeAssistant):
+    """Test that the HTML panel has time picker inputs alongside date pickers."""
+    html_path = os.path.join(
+        os.path.dirname(__file__),
+        "..",
+        "custom_components",
+        "pill_assistant",
+        "www",
+        "pill-assistant-panel.html",
+    )
+
+    with open(html_path, "r") as f:
+        content = f.read()
+
+    # Check for time input elements
+    assert "stats-start-time" in content, "Start time input ID missing"
+    assert "stats-end-time" in content, "End time input ID missing"
+    assert 'type="time"' in content, "Time input type missing"
+    # Check that time inputs are styled
+    assert 'input[type="time"]' in content, "Time input CSS styling missing"

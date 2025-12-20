@@ -770,6 +770,22 @@
             min-width: 40px;
         }
 
+        .date-range-picker input[type="time"] {
+            padding: 8px 8px;
+            border: 2px solid var(--divider-color, #e0e0e0);
+            border-radius: 6px;
+            background: var(--card-background-color, #ffffff);
+            color: var(--primary-text-color, #212121);
+            font-size: 0.85em;
+            width: 90px;
+        }
+
+        body.theme-dark .date-range-picker input[type="time"] {
+            background: #2a2a2a;
+            color: #e0e0e0;
+            border-color: #444;
+        }
+
         .update-btn {
             align-self: flex-end;
         }
@@ -1228,10 +1244,12 @@
                         <div class="date-time-group">
                             <div class="date-input-group">
                                 <label>Start:</label>
+                                <input type="time" id="stats-start-time" onchange="onDateRangeChange()" value="00:00">
                                 <input type="date" id="stats-start-date" onchange="onDateRangeChange()">
                             </div>
                             <div class="date-input-group">
                                 <label>End:</label>
+                                <input type="time" id="stats-end-time" onchange="onDateRangeChange()" value="23:59">
                                 <input type="date" id="stats-end-date" onchange="onDateRangeChange()">
                             </div>
                         </div>
@@ -2491,6 +2509,10 @@
                 checkbox.checked = true;
             }
             
+            // Reset time inputs to full day
+            document.getElementById('stats-start-time').value = '00:00';
+            document.getElementById('stats-end-time').value = '23:59';
+            
             // Auto-load statistics
             loadStatistics();
         }
@@ -2503,6 +2525,10 @@
 
             document.getElementById('stats-start-date').valueAsDate = startDate;
             document.getElementById('stats-end-date').valueAsDate = endDate;
+            
+            // Reset time inputs to full day range
+            document.getElementById('stats-start-time').value = '00:00';
+            document.getElementById('stats-end-time').value = '23:59';
             
             // Uncheck the today checkbox since we're using a different range
             const checkbox = document.getElementById('stats-today-checkbox');
@@ -2522,6 +2548,10 @@
 
             document.getElementById('stats-start-date').valueAsDate = startDate;
             document.getElementById('stats-end-date').valueAsDate = endDate;
+            
+            // Reset time inputs to full day range
+            document.getElementById('stats-start-time').value = '00:00';
+            document.getElementById('stats-end-time').value = '23:59';
             
             // Uncheck the today checkbox since we're using a different range
             const checkbox = document.getElementById('stats-today-checkbox');
@@ -2554,11 +2584,17 @@
 
                 const startDate = document.getElementById('stats-start-date').value;
                 const endDate = document.getElementById('stats-end-date').value;
+                const startTime = document.getElementById('stats-start-time').value || '00:00';
+                const endTime = document.getElementById('stats-end-time').value || '23:59';
 
                 if (!startDate || !endDate) {
                     showErrorMessage('Please select both start and end dates');
                     return;
                 }
+
+                // Combine date and time for full datetime
+                const startDateTime = new Date(`${startDate}T${startTime}:00`);
+                const endDateTime = new Date(`${endDate}T${endTime}:59`);
 
                 // Use callWS with return_response: true to properly receive service responses
                 // This is the correct method for services that support response data
@@ -2569,8 +2605,8 @@
                         domain: 'pill_assistant',
                         service: 'get_statistics',
                         service_data: {
-                            start_date: new Date(startDate).toISOString(),
-                            end_date: new Date(endDate + 'T23:59:59').toISOString()
+                            start_date: startDateTime.toISOString(),
+                            end_date: endDateTime.toISOString()
                         },
                         return_response: true
                     });
@@ -2581,8 +2617,8 @@
                         'pill_assistant',
                         'get_statistics',
                         {
-                            start_date: new Date(startDate).toISOString(),
-                            end_date: new Date(endDate + 'T23:59:59').toISOString()
+                            start_date: startDateTime.toISOString(),
+                            end_date: endDateTime.toISOString()
                         }
                     );
                 }
