@@ -17,6 +17,10 @@ CONF_SCHEDULE_TIMES = "schedule_times"  # List of times in HH:MM format
 CONF_SCHEDULE_DAYS = "schedule_days"  # List of days (mon, tue, wed, thu, fri, sat, sun)
 CONF_REFILL_AMOUNT = "refill_amount"
 CONF_REFILL_REMINDER_DAYS = "refill_reminder_days"
+CONF_CURRENT_QUANTITY = "current_quantity"  # Current/starting quantity
+CONF_USE_CUSTOM_QUANTITY = (
+    "use_custom_quantity"  # Use custom starting quantity instead of refill amount
+)
 CONF_NOTES = "notes"
 CONF_NOTIFY_SERVICES = "notify_services"  # List of notification services to use
 
@@ -34,6 +38,16 @@ CONF_RELATIVE_OFFSET_HOURS = "relative_offset_hours"  # Hours offset from refere
 CONF_RELATIVE_OFFSET_MINUTES = (
     "relative_offset_minutes"  # Minutes offset from reference
 )
+CONF_SENSOR_TRIGGER_VALUE = (
+    "sensor_trigger_value"  # Specific sensor value to trigger on
+)
+CONF_SENSOR_TRIGGER_ATTRIBUTE = (
+    "sensor_trigger_attribute"  # Specific sensor attribute to monitor (optional)
+)
+CONF_AVOID_DUPLICATE_TRIGGERS = (
+    "avoid_duplicate_triggers"  # Avoid triggering multiple times for same sensor event
+)
+CONF_IGNORE_UNAVAILABLE = "ignore_unavailable"  # Ignore 'unknown' and 'unavailable' states when monitoring for changes
 CONF_ENABLE_AUTOMATIC_NOTIFICATIONS = "enable_automatic_notifications"  # Enable automatic notifications at scheduled times
 CONF_ON_TIME_WINDOW_MINUTES = (
     "on_time_window_minutes"  # Time window (±minutes) for "on time" statistics
@@ -47,6 +61,10 @@ DEFAULT_SCHEDULE_DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
 DEFAULT_SCHEDULE_TYPE = "fixed_time"
 DEFAULT_RELATIVE_OFFSET_HOURS = 0
 DEFAULT_RELATIVE_OFFSET_MINUTES = 0
+DEFAULT_SENSOR_TRIGGER_VALUE = ""
+DEFAULT_SENSOR_TRIGGER_ATTRIBUTE = ""
+DEFAULT_AVOID_DUPLICATE_TRIGGERS = True
+DEFAULT_IGNORE_UNAVAILABLE = True
 DEFAULT_ENABLE_AUTOMATIC_NOTIFICATIONS = True
 DEFAULT_ON_TIME_WINDOW_MINUTES = 30
 
@@ -181,3 +199,6 @@ ATTR_LOG_FILE_LOCATION = "Log file location"
 # Snooze configuration
 CONF_SNOOZE_DURATION_MINUTES = "snooze_duration_minutes"
 DEFAULT_SNOOZE_DURATION_MINUTES = 15
+
+# Sensor event history configuration
+MAX_SENSOR_HISTORY_CHANGES = 20  # Maximum number of state changes to display

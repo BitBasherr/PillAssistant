@@ -29,6 +29,10 @@ from .const import (
     CONF_RELATIVE_TO_SENSOR,
     CONF_RELATIVE_OFFSET_HOURS,
     CONF_RELATIVE_OFFSET_MINUTES,
+    CONF_SENSOR_TRIGGER_VALUE,
+    CONF_SENSOR_TRIGGER_ATTRIBUTE,
+    CONF_AVOID_DUPLICATE_TRIGGERS,
+    CONF_IGNORE_UNAVAILABLE,
     CONF_REFILL_AMOUNT,
     CONF_REFILL_REMINDER_DAYS,
     CONF_NOTES,
@@ -38,6 +42,10 @@ from .const import (
     DEFAULT_SCHEDULE_TYPE,
     DEFAULT_DOSAGE_UNIT,
     DEFAULT_MEDICATION_TYPE,
+    DEFAULT_SENSOR_TRIGGER_VALUE,
+    DEFAULT_SENSOR_TRIGGER_ATTRIBUTE,
+    DEFAULT_AVOID_DUPLICATE_TRIGGERS,
+    DEFAULT_IGNORE_UNAVAILABLE,
     DEFAULT_ENABLE_AUTOMATIC_NOTIFICATIONS,
     DEFAULT_ON_TIME_WINDOW_MINUTES,
     SPECIFIC_DOSAGE_UNITS,
@@ -127,7 +135,7 @@ class PillAssistantSensor(SensorEntity):
         self._medication_name = entry.data.get(
             CONF_MEDICATION_NAME, "Unknown Medication"
         )
-        self._attr_name = f"PA_{self._medication_name}"
+        self._attr_name = f"PA_{self._medication_name.title()}"
         self._attr_unique_id = f"{DOMAIN}_{entry.entry_id}"
         self._attr_native_value = "scheduled"
         self._medication_id = entry.entry_id
@@ -217,7 +225,27 @@ class PillAssistantSensor(SensorEntity):
         )
 
         # Format dosage display with type and unit
-        dosage_display = f"{dosage} {medication_type}(s) ({dosage_unit})"
+        # Make pluralization dynamic based on dosage amount
+        try:
+            dosage_num = float(dosage)
+            # Pluralize medication type if dosage > 1
+            if dosage_num == 1:
+                type_display = medication_type
+            else:
+                # Handle special plurals
+                if medication_type.endswith("y"):
+                    type_display = (
+                        medication_type[:-1] + "ies"
+                    )  # e.g., gummy -> gummies
+                elif medication_type in ["patch", "each"]:
+                    type_display = medication_type + "es"
+                else:
+                    type_display = medication_type + "s"
+        except (ValueError, TypeError):
+            # If dosage is not a number, keep medication type as-is
+            type_display = medication_type
+
+        dosage_display = f"{dosage} {type_display} ({dosage_unit})"
 
         # Use human-friendly keys as per requirements but keep backward compatibility
         attributes = {
@@ -491,6 +519,18 @@ class PillAssistantSensor(SensorEntity):
         sensor_entity_id = self._entry.data.get(CONF_RELATIVE_TO_SENSOR)
         offset_hours = self._entry.data.get(CONF_RELATIVE_OFFSET_HOURS, 0)
         offset_minutes = self._entry.data.get(CONF_RELATIVE_OFFSET_MINUTES, 0)
+        trigger_value = self._entry.data.get(
+            CONF_SENSOR_TRIGGER_VALUE, DEFAULT_SENSOR_TRIGGER_VALUE
+        )
+        trigger_attribute = self._entry.data.get(
+            CONF_SENSOR_TRIGGER_ATTRIBUTE, DEFAULT_SENSOR_TRIGGER_ATTRIBUTE
+        )
+        avoid_duplicates = self._entry.data.get(
+            CONF_AVOID_DUPLICATE_TRIGGERS, DEFAULT_AVOID_DUPLICATE_TRIGGERS
+        )
+        ignore_unavailable = self._entry.data.get(
+            CONF_IGNORE_UNAVAILABLE, DEFAULT_IGNORE_UNAVAILABLE
+        )
 
         if not sensor_entity_id:
             return None
@@ -503,6 +543,59 @@ class PillAssistantSensor(SensorEntity):
         sensor_last_changed = sensor_state.last_changed
         if not sensor_last_changed:
             return None
+
+        # Get the value to check (either state or attribute)
+        if trigger_attribute:
+            # Check attribute value
+            current_value = sensor_state.attributes.get(trigger_attribute)
+            if current_value is None:
+                return None
+            # Safely convert to string, handling complex objects
+            try:
+                current_value = str(current_value).lower()
+            except (TypeError, AttributeError):
+                # If conversion fails, skip this trigger
+                return None
+        else:
+            # Check state value
+            try:
+                current_value = (
+                    str(sensor_state.state).lower() if sensor_state.state else ""
+                )
+            except (TypeError, AttributeError):
+                # If conversion fails, skip this trigger
+                return None
+
+        # Ignore unavailable/unknown states if configured
+        if ignore_unavailable and current_value in [
+            "unknown",
+            "unavailable",
+            "none",
+            "",
+        ]:
+            return None
+
+        # Check if trigger value matches (if specified)
+        if trigger_value:
+            trigger_value_lower = trigger_value.lower()
+
+            # Only trigger if the current value matches the trigger value
+            if current_value != trigger_value_lower:
+                return None
+
+        # If avoiding duplicates, check if we've already triggered for this sensor event
+        if avoid_duplicates:
+            storage_data = self._store_data["storage_data"]
+            last_sensor_trigger = storage_data.get("last_sensor_trigger", {}).get(
+                self._entry.entry_id
+            )
+
+            # If we've already triggered for this exact sensor change time, skip
+            if (
+                last_sensor_trigger
+                and last_sensor_trigger == sensor_last_changed.isoformat()
+            ):
+                return None
 
         # Calculate next dose time as offset from sensor event
         next_dose = sensor_last_changed + timedelta(
