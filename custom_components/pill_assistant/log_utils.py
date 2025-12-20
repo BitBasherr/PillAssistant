@@ -237,12 +237,17 @@ async def async_get_statistics(
                 "refilled_count": 0,
                 "total_count": 0,
                 "on_time_percentage": 0.0,
+                "taken_times": [],
+                "skipped_times": [],
+                "snoozed_times": [],
             }
 
         stats["medications"][med_id]["total_count"] += 1
 
         if action == "taken":
             stats["medications"][med_id]["taken_count"] += 1
+            if timestamp_str:
+                stats["medications"][med_id]["taken_times"].append(timestamp_str)
 
             # Calculate if taken on time
             if med_id in med_configs and timestamp_str:
@@ -285,6 +290,11 @@ async def async_get_statistics(
 
         elif action == "skipped":
             stats["medications"][med_id]["skipped_count"] += 1
+            if timestamp_str:
+                stats["medications"][med_id]["skipped_times"].append(timestamp_str)
+        elif action == "snoozed":
+            if timestamp_str:
+                stats["medications"][med_id]["snoozed_times"].append(timestamp_str)
         elif action == "refilled":
             stats["medications"][med_id]["refilled_count"] += 1
 

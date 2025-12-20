@@ -294,13 +294,30 @@ class PillAssistantSensor(SensorEntity):
                 ref_entry = ref_entry_data.get("entry")
                 if ref_entry:
                     rel_med_name = ref_entry.data.get(CONF_MEDICATION_NAME, "unknown")
-            return f"{offset_hours}h {offset_minutes}m after {rel_med_name}"
+            offset_str = self._format_time_offset(offset_hours, offset_minutes)
+            return f"{offset_str} after {rel_med_name}"
         elif schedule_type == "relative_sensor":
             sensor_id = self._entry.data.get(CONF_RELATIVE_TO_SENSOR, "unknown sensor")
             offset_hours = self._entry.data.get(CONF_RELATIVE_OFFSET_HOURS, 0)
             offset_minutes = self._entry.data.get(CONF_RELATIVE_OFFSET_MINUTES, 0)
-            return f"{offset_hours}h {offset_minutes}m after {sensor_id}"
+            offset_str = self._format_time_offset(offset_hours, offset_minutes)
+            return f"{offset_str} after {sensor_id}"
         return "Unknown schedule type"
+
+    def _format_time_offset(self, hours: int, minutes: int) -> str:
+        """Format a time offset as a human-readable string."""
+        # Ensure non-negative values
+        hours = abs(hours) if hours else 0
+        minutes = abs(minutes) if minutes else 0
+
+        parts = []
+        if hours > 0:
+            parts.append(f"{hours} hr" if hours == 1 else f"{hours} hrs")
+        if minutes > 0:
+            parts.append(f"{minutes} min")
+        if not parts:
+            return "0 min"
+        return " ".join(parts)
 
     def _get_doses_taken_today(self) -> list:
         """Get list of dose timestamps taken today."""
