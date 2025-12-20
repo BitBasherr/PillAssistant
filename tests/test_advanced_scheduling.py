@@ -133,7 +133,19 @@ async def test_relative_sensor_schedule_config(hass: HomeAssistant):
         },
     )
 
-    # Configure sensor-based scheduling
+    # Configure sensor-based scheduling - first select the sensor
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={
+            CONF_RELATIVE_TO_SENSOR: "binary_sensor.wake_up",
+        },
+    )
+
+    # The form is re-shown with additional options after sensor selection
+    assert result["type"] == data_entry_flow.FlowResultType.FORM
+    assert result["step_id"] == "schedule_relative_sensor"
+
+    # Now submit with all fields including offsets and schedule days
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={
@@ -143,6 +155,10 @@ async def test_relative_sensor_schedule_config(hass: HomeAssistant):
             CONF_SCHEDULE_DAYS: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
         },
     )
+
+    # Now we should be on the refill step
+    assert result["type"] == data_entry_flow.FlowResultType.FORM
+    assert result["step_id"] == "refill"
 
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
