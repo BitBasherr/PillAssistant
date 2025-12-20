@@ -224,7 +224,9 @@ async def test_html_panel_contains_clock_toggle(hass: HomeAssistant):
 
     # Check that 24-hour clock wrapper is hidden by default
     assert 'id="clock-24hr-wrapper"' in content, "24-hour clock wrapper missing"
-    assert 'style="display: none;"' in content, "24-hour clock should be hidden by default"
+    assert (
+        'style="display: none;"' in content
+    ), "24-hour clock should be hidden by default"
 
 
 async def test_html_panel_local_date_function(hass: HomeAssistant):
@@ -263,7 +265,9 @@ async def test_html_panel_scatter_plot_support(hass: HomeAssistant):
         content = f.read()
 
     # Check for scatter plot support
-    assert "type: 'scatter'" in content or "type: chartType" in content, "Scatter chart type missing"
+    assert (
+        "type: 'scatter'" in content or "type: chartType" in content
+    ), "Scatter chart type missing"
     assert "isScatterPlot" in content, "Scatter plot detection variable missing"
     assert "pointRadius" in content, "Point radius for scatter missing"
 
@@ -328,7 +332,7 @@ async def test_time_offset_format_readable(hass: HomeAssistant):
 async def test_time_offset_format_hours_only(hass: HomeAssistant):
     """Test that time offset with only hours is formatted correctly."""
     hass.states.async_set("sensor.test_sensor2", "on")
-    
+
     config_entry = MockConfigEntry(
         domain=DOMAIN,
         data={
@@ -361,7 +365,7 @@ async def test_time_offset_format_hours_only(hass: HomeAssistant):
 async def test_time_offset_format_mixed(hass: HomeAssistant):
     """Test that time offset with both hours and minutes is formatted correctly."""
     hass.states.async_set("sensor.test_sensor3", "on")
-    
+
     config_entry = MockConfigEntry(
         domain=DOMAIN,
         data={

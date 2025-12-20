@@ -309,7 +309,7 @@ class PillAssistantSensor(SensorEntity):
         # Ensure non-negative values
         hours = abs(hours) if hours else 0
         minutes = abs(minutes) if minutes else 0
-        
+
         parts = []
         if hours > 0:
             parts.append(f"{hours} hr" if hours == 1 else f"{hours} hrs")
