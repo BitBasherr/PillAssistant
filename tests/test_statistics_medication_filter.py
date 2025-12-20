@@ -44,7 +44,7 @@ async def test_statistics_per_medication_filter(hass: HomeAssistant):
     )
     entry1.add_to_hass(hass)
     await hass.config_entries.async_setup(entry1.entry_id)
-    
+
     entry2 = MockConfigEntry(
         domain=DOMAIN,
         data={
@@ -62,7 +62,7 @@ async def test_statistics_per_medication_filter(hass: HomeAssistant):
     entry2.add_to_hass(hass)
     await hass.config_entries.async_setup(entry2.entry_id)
     await hass.async_block_till_done()
-    
+
     # Take Med1 twice and Med2 once
     await hass.services.async_call(
         DOMAIN,
@@ -83,11 +83,11 @@ async def test_statistics_per_medication_filter(hass: HomeAssistant):
         blocking=True,
     )
     await hass.async_block_till_done()
-    
+
     now = dt_util.now()
     start_date = (now - timedelta(days=7)).isoformat()
     end_date = now.isoformat()
-    
+
     # Get statistics for all medications
     all_stats = await hass.services.async_call(
         DOMAIN,
@@ -99,7 +99,7 @@ async def test_statistics_per_medication_filter(hass: HomeAssistant):
         blocking=True,
         return_response=True,
     )
-    
+
     # Verify both medications are in the response
     assert all_stats is not None
     assert "medications" in all_stats
@@ -108,7 +108,7 @@ async def test_statistics_per_medication_filter(hass: HomeAssistant):
     assert all_stats["medications"][entry1.entry_id]["taken_count"] == 2
     assert all_stats["medications"][entry2.entry_id]["taken_count"] == 1
     assert all_stats["total_entries"] == 3
-    
+
     # Get statistics for Med1 only
     med1_stats = await hass.services.async_call(
         DOMAIN,
@@ -121,7 +121,7 @@ async def test_statistics_per_medication_filter(hass: HomeAssistant):
         blocking=True,
         return_response=True,
     )
-    
+
     # Verify only Med1 is in the response
     assert med1_stats is not None
     assert "medications" in med1_stats
@@ -129,7 +129,7 @@ async def test_statistics_per_medication_filter(hass: HomeAssistant):
     assert entry2.entry_id not in med1_stats["medications"]
     assert med1_stats["medications"][entry1.entry_id]["taken_count"] == 2
     assert med1_stats["total_entries"] == 2
-    
+
     # Get statistics for Med2 only
     med2_stats = await hass.services.async_call(
         DOMAIN,
@@ -142,7 +142,7 @@ async def test_statistics_per_medication_filter(hass: HomeAssistant):
         blocking=True,
         return_response=True,
     )
-    
+
     # Verify only Med2 is in the response
     assert med2_stats is not None
     assert "medications" in med2_stats
