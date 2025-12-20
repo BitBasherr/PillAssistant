@@ -94,9 +94,7 @@ async def test_html_panel_legend_hidden_class(hass: HomeAssistant):
 
     # Check for hidden CSS class
     assert ".clock-legend.hidden" in content, "Legend hidden CSS class missing"
-    assert (
-        "display: none" in content
-    ), "Hidden class should have display: none"
+    assert "display: none" in content, "Hidden class should have display: none"
 
 
 async def test_html_panel_clock_layout_legend_bottom(hass: HomeAssistant):
@@ -114,7 +112,9 @@ async def test_html_panel_clock_layout_legend_bottom(hass: HomeAssistant):
         content = f.read()
 
     # Check for legend-bottom class
-    assert ".clock-layout.legend-bottom" in content, "Legend-bottom layout class missing"
+    assert (
+        ".clock-layout.legend-bottom" in content
+    ), "Legend-bottom layout class missing"
     # Check that it changes grid template
     assert (
         "grid-template-areas" in content
@@ -357,9 +357,7 @@ async def test_html_panel_clock_wrapper_alignment(hass: HomeAssistant):
         "grid-template-rows" in content
     ), "Grid template rows should be defined for consistent layout"
     # Check for spacer toggle row to align SVGs
-    assert (
-        "clock-toggle--spacer" in content
-    ), "Spacer toggle should exist for alignment"
+    assert "clock-toggle--spacer" in content, "Spacer toggle should exist for alignment"
 
 
 async def test_html_panel_legend_no_data_handling(hass: HomeAssistant):
@@ -378,9 +376,5 @@ async def test_html_panel_legend_no_data_handling(hass: HomeAssistant):
 
     # Check that renderClockLegend checks for empty medications
     # Should add 'hidden' class when medications.size === 0
-    assert (
-        "medications.size === 0" in content
-    ), "Should check for empty medication list"
-    assert (
-        "classList.add('hidden')" in content
-    ), "Should hide legend when no data"
+    assert "medications.size === 0" in content, "Should check for empty medication list"
+    assert "classList.add('hidden')" in content, "Should hide legend when no data"
