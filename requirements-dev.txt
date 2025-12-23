@@ -1,0 +1,7 @@
+# Development and test dependencies for Pill Assistant
+pytest
+pytest-asyncio
+pytest-homeassistant-custom-component
+homeassistant
+# Optional tools
+coverage

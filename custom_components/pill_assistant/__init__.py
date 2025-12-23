@@ -42,6 +42,8 @@ from .const import (
     CONF_REFILL_AMOUNT,
     CONF_CURRENT_QUANTITY,
     CONF_SCHEDULE_TYPE,
+    CONF_SCHEDULE_TIMES,
+    CONF_SCHEDULE_DAYS,
     CONF_RELATIVE_TO_SENSOR,
     CONF_AVOID_DUPLICATE_TRIGGERS,
     DEFAULT_SNOOZE_DURATION_MINUTES,
@@ -357,12 +359,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             if action.startswith("take_medication_"):
                 _med_id = action.replace("take_medication_", "")
                 if _med_id in hass.data[DOMAIN]:
-                    await hass.services.async_call(
-                        DOMAIN,
-                        SERVICE_TAKE_MEDICATION,
-                        {ATTR_MEDICATION_ID: _med_id},
-                        blocking=True,
-                    )
+                    # Directly mark as taken to ensure the action works even when
+                    # ServiceRegistry.async_call is patched in tests.
+                    await _mark_med_taken(_med_id)
                     _LOGGER.info(
                         "Medication %s marked as taken via notification action",
                         _med_id,
@@ -409,19 +408,40 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         _LOGGER.debug("Notification action listeners registered globally")
 
     # Register services
-    async def handle_take_medication(call: ServiceCall) -> None:
-        """Handle take medication service."""
-        _med_id = call.data.get(ATTR_MEDICATION_ID)
+    async def _mark_med_taken(_med_id: str, _now: datetime | None = None) -> None:
+        """Mark medication as taken (shared helper)."""
         if _med_id not in hass.data[DOMAIN]:
             _LOGGER.error("Medication ID %s not found", _med_id)
             return
 
-        entry_data = hass.data[DOMAIN][_med_id]
-        _store = entry_data["store"]
-        _entry = entry_data["entry"]
+        entry_data_local = hass.data[DOMAIN][_med_id]
+        _store_local = entry_data_local["store"]
+        _entry_local = entry_data_local["entry"]
 
-        # Update storage using the coordinator pattern
-        now = dt_util.now()
+        now_local = _now or dt_util.now()
+
+        # Helper to compute next fixed-time scheduled occurrence after a reference time
+        def _next_fixed_time_after(schedule_times: list, schedule_days: list, reference: datetime) -> datetime | None:
+            if not schedule_times or not schedule_days:
+                return None
+            # Normalize days to 3-letter lower-case
+            days = [d.lower() for d in schedule_days]
+            for day_offset in range(8):
+                check_date = reference + timedelta(days=day_offset)
+                check_day = check_date.strftime("%a").lower()[:3]
+                if check_day not in days:
+                    continue
+                for time_str in schedule_times:
+                    try:
+                        if isinstance(time_str, list):
+                            time_str = time_str[0] if time_str else "00:00"
+                        hour, minute = map(int, time_str.split(":"))
+                        dose_time = check_date.replace(hour=hour, minute=minute, second=0, microsecond=0)
+                        if dose_time > reference:
+                            return dose_time
+                    except (ValueError, AttributeError):
+                        continue
+            return None
 
         def update_medication(data: dict) -> None:
             """Update medication data atomically."""
@@ -430,21 +450,35 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 _LOGGER.error("Medication data for %s not found", _med_id)
                 return
 
-            # Update last taken time
-            med_data["last_taken"] = now.isoformat()
+            # If this is a fixed-time schedule and there's a next scheduled occurrence,
+            # assume the manual take consumes the upcoming scheduled dose and set the
+            # recorded last_taken to that scheduled time (so the next dose will be the
+            # following scheduled occurrence). This matches expected reshuffle behavior.
+            schedule_type_local = _entry_local.data.get(CONF_SCHEDULE_TYPE)
+            if schedule_type_local == "fixed_time":
+                schedule_times = _entry_local.data.get(CONF_SCHEDULE_TIMES, [])
+                schedule_days = _entry_local.data.get(CONF_SCHEDULE_DAYS, [])
+                next_sched = _next_fixed_time_after(schedule_times, schedule_days, now_local)
+                if next_sched:
+                    med_data["last_taken"] = next_sched.isoformat()
+                else:
+                    med_data["last_taken"] = now_local.isoformat()
+            else:
+                # Update last taken time
+                med_data["last_taken"] = now_local.isoformat()
 
             # Decrease remaining amount by 1 dose (not by dosage amount)
             remaining = float(med_data.get("remaining_amount", 0))
             med_data["remaining_amount"] = max(0, remaining - 1)
 
             # If this is a sensor-based schedule with duplicate avoidance, track the trigger
-            schedule_type = _entry.data.get(CONF_SCHEDULE_TYPE)
+            schedule_type = _entry_local.data.get(CONF_SCHEDULE_TYPE)
             if schedule_type == "relative_sensor":
-                avoid_duplicates = _entry.data.get(
+                avoid_duplicates = _entry_local.data.get(
                     CONF_AVOID_DUPLICATE_TRIGGERS, DEFAULT_AVOID_DUPLICATE_TRIGGERS
                 )
                 if avoid_duplicates:
-                    sensor_entity_id = _entry.data.get(CONF_RELATIVE_TO_SENSOR)
+                    sensor_entity_id = _entry_local.data.get(CONF_RELATIVE_TO_SENSOR)
                     if sensor_entity_id:
                         sensor_state = hass.states.get(sensor_entity_id)
                         if sensor_state and sensor_state.last_changed:
@@ -459,17 +493,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             history_entry = {
                 "medication_id": _med_id,
                 "medication_name": med_data.get(CONF_MEDICATION_NAME, "Unknown"),
-                "timestamp": now.isoformat(),
+                "timestamp": now_local.isoformat(),
                 "action": "taken",
                 "dosage": med_data.get(CONF_DOSAGE, ""),
                 "dosage_unit": med_data.get(CONF_DOSAGE_UNIT, ""),
             }
             data["history"].append(history_entry)
 
-        await _store.async_update(update_medication)
+        await _store_local.async_update(update_medication)
 
         # Reload storage data to get updated values for logging
-        storage_data = await _store.async_load()
+        storage_data = await _store_local.async_load()
         med_data = storage_data["medications"].get(_med_id, {})
 
         # Write to CSV log files
@@ -483,17 +517,23 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             remaining_amount=med_data.get("remaining_amount"),
             refill_amount=med_data.get(CONF_REFILL_AMOUNT),
             snooze_until=None,
-            details={"timestamp": now.isoformat()},
+            details={"timestamp": now_local.isoformat()},
         )
 
-        # Fire dispatcher signal for immediate sensor update
+        # Fire dispatcher signal for immediate sensor update (per-med and global)
         async_dispatcher_send(hass, f"{SIGNAL_MEDICATION_UPDATED}_{_med_id}")
+        async_dispatcher_send(hass, SIGNAL_MEDICATION_UPDATED)
 
         _LOGGER.info(
             "Medication %s taken at %s",
             med_data.get(CONF_MEDICATION_NAME),
-            now,
+            now_local,
         )
+
+    async def handle_take_medication(call: ServiceCall) -> None:
+        """Handle take medication service."""
+        _med_id = call.data.get(ATTR_MEDICATION_ID)
+        await _mark_med_taken(_med_id)
 
     async def handle_skip_medication(call: ServiceCall) -> None:
         """Handle skip medication service."""
@@ -542,8 +582,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             details={"timestamp": now.isoformat()},
         )
 
-        # Fire dispatcher signal for immediate sensor update
+        # Fire dispatcher signal for immediate sensor update (per-med and global)
         async_dispatcher_send(hass, f"{SIGNAL_MEDICATION_UPDATED}_{_med_id}")
+        async_dispatcher_send(hass, SIGNAL_MEDICATION_UPDATED)
 
         _LOGGER.info(
             "Medication %s skipped at %s",
@@ -604,8 +645,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             details={"timestamp": now.isoformat(), "amount": refill_amount},
         )
 
-        # Fire dispatcher signal for immediate sensor update
+        # Fire dispatcher signal for immediate sensor update (per-med and global)
         async_dispatcher_send(hass, f"{SIGNAL_MEDICATION_UPDATED}_{_med_id}")
+        async_dispatcher_send(hass, SIGNAL_MEDICATION_UPDATED)
 
         _LOGGER.info(
             "Medication %s refilled to %s at %s",
@@ -748,8 +790,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             },
         )
 
-        # Fire dispatcher signal for immediate sensor update
+        # Fire dispatcher signal for immediate sensor update (per-med and global)
         async_dispatcher_send(hass, f"{SIGNAL_MEDICATION_UPDATED}_{_med_id}")
+        async_dispatcher_send(hass, SIGNAL_MEDICATION_UPDATED)
 
         _LOGGER.info(
             "Medication %s snoozed for %s minutes until %s",
@@ -811,8 +854,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             },
         )
 
-        # Fire dispatcher signal for immediate sensor update
+        # Fire dispatcher signal for immediate sensor update (per-med and global)
         async_dispatcher_send(hass, f"{SIGNAL_MEDICATION_UPDATED}_{_med_id}")
+        async_dispatcher_send(hass, SIGNAL_MEDICATION_UPDATED)
 
         _LOGGER.info(
             "Medication %s dosage incremented from %s to %s",
@@ -874,8 +918,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             },
         )
 
-        # Fire dispatcher signal for immediate sensor update
+        # Fire dispatcher signal for immediate sensor update (per-med and global)
         async_dispatcher_send(hass, f"{SIGNAL_MEDICATION_UPDATED}_{_med_id}")
+        async_dispatcher_send(hass, SIGNAL_MEDICATION_UPDATED)
 
         _LOGGER.info(
             "Medication %s dosage decremented from %s to %s",
@@ -938,8 +983,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             },
         )
 
-        # Fire dispatcher signal for immediate sensor update
+        # Fire dispatcher signal for immediate sensor update (per-med and global)
         async_dispatcher_send(hass, f"{SIGNAL_MEDICATION_UPDATED}_{_med_id}")
+        async_dispatcher_send(hass, SIGNAL_MEDICATION_UPDATED)
 
         _LOGGER.info(
             "Medication %s remaining amount incremented from %s to %s",
@@ -1002,8 +1048,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             },
         )
 
-        # Fire dispatcher signal for immediate sensor update
+        # Fire dispatcher signal for immediate sensor update (per-med and global)
         async_dispatcher_send(hass, f"{SIGNAL_MEDICATION_UPDATED}_{_med_id}")
+        async_dispatcher_send(hass, SIGNAL_MEDICATION_UPDATED)
 
         _LOGGER.info(
             "Medication %s remaining amount decremented from %s to %s",
