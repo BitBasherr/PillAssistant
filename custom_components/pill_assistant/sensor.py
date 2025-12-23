@@ -145,11 +145,21 @@ class PillAssistantSensor(SensorEntity):
 
     async def async_added_to_hass(self) -> None:
         """Run when entity about to be added to hass."""
-        # Subscribe to dispatcher signal for immediate updates
+        # Subscribe to dispatcher signal for immediate updates (per-med and global)
         self.async_on_remove(
             async_dispatcher_connect(
                 self.hass,
                 f"pill_assistant_medication_updated_{self._medication_id}",
+                self._async_update,
+            )
+        )
+
+        # Also listen for global medication updates so dependent/relative medications
+        # can recalculate next doses immediately when any medication changes
+        self.async_on_remove(
+            async_dispatcher_connect(
+                self.hass,
+                f"{DOMAIN}_medication_updated",
                 self._async_update,
             )
         )
@@ -483,9 +493,23 @@ class PillAssistantSensor(SensorEntity):
 
         now = dt_util.now()
 
-        # Find next scheduled time
+        # If the medication was just taken, prefer the next scheduled time after that
+        storage_data = self._store_data["storage_data"]
+        med_data = storage_data["medications"].get(self._medication_id, {})
+        last_taken_str = med_data.get("last_taken")
+        reference_time = now
+        if last_taken_str:
+            try:
+                last_taken_dt = datetime.fromisoformat(last_taken_str)
+                # Use the later of now and last_taken to compute the next occurrence
+                if last_taken_dt > reference_time:
+                    reference_time = last_taken_dt
+            except (ValueError, TypeError):
+                pass
+
+        # Find next scheduled time after reference_time
         for day_offset in range(8):  # Check next 7 days plus today
-            check_date = now + timedelta(days=day_offset)
+            check_date = reference_time + timedelta(days=day_offset)
             check_day = check_date.strftime("%a").lower()[:3]
 
             if check_day not in normalized_days:
@@ -502,8 +526,8 @@ class PillAssistantSensor(SensorEntity):
                         hour=hour, minute=minute, second=0, microsecond=0
                     )
 
-                    # Only return future times
-                    if dose_time > now:
+                    # Only return times after our reference
+                    if dose_time > reference_time:
                         return dose_time
                 except (ValueError, AttributeError) as e:
                     _LOGGER.error("Error parsing time %s: %s", time_str, e)
@@ -745,6 +769,9 @@ class PillAssistantSensor(SensorEntity):
         if not notify_services:
             return
 
+        # Determine current next dose (used for deduplication)
+        current_next = self._calculate_next_dose()
+
         # Check if we already sent a notification recently (within the last hour)
         now = dt_util.now()
         if self._last_notification_time:
@@ -754,6 +781,16 @@ class PillAssistantSensor(SensorEntity):
                 if (now - last_notif).total_seconds() < 3600:
                     return
             except (ValueError, TypeError):
+                pass
+
+        # If we've already sent a notification for this exact scheduled occurrence,
+        # don't send it again (prevents spam/loops for the same dose)
+        if hasattr(self, "_last_notified_next_dose") and current_next is not None:
+            try:
+                if self._last_notified_next_dose == current_next.isoformat():
+                    return
+            except Exception:
+                # On any error, just proceed to attempt notification
                 pass
 
         # Get medication details from storage
@@ -816,8 +853,10 @@ class PillAssistantSensor(SensorEntity):
                     err,
                 )
 
-        # Update last notification time
+        # Update last notification time and record which next-dose we notified for
         self._last_notification_time = now.isoformat()
+        if current_next is not None:
+            self._last_notified_next_dose = current_next.isoformat()
         _LOGGER.info("Automatic notification sent for %s", med_name)
 
     @callback
