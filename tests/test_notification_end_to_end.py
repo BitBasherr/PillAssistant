@@ -1,4 +1,5 @@
 """End-to-end test for automatic notifications and mobile app action handling."""
+
 from datetime import timedelta
 from unittest.mock import AsyncMock, patch
 
@@ -44,7 +45,9 @@ async def test_notification_and_action_flow(hass: "HomeAssistant"):
     entry.add_to_hass(hass)
 
     # Patch the notify service async_call to capture notifications
-    with patch("homeassistant.core.ServiceRegistry.async_call", new_callable=AsyncMock) as mock_call:
+    with patch(
+        "homeassistant.core.ServiceRegistry.async_call", new_callable=AsyncMock
+    ) as mock_call:
         await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
 
@@ -62,18 +65,26 @@ async def test_notification_and_action_flow(hass: "HomeAssistant"):
                 service_data = call_args.args[2]
                 assert "data" in service_data
                 assert "actions" in service_data["data"]
-                assert any(a["action"].startswith("take_medication_") for a in service_data["data"]["actions"])
+                assert any(
+                    a["action"].startswith("take_medication_")
+                    for a in service_data["data"]["actions"]
+                )
         assert called, "Notify mobile app call not found in service calls"
 
         # Simulate user pressing the 'Mark as Taken' action in the mobile app
-        hass.bus.async_fire("mobile_app_notification_action", {"action": f"take_medication_{entry.entry_id}"})
+        hass.bus.async_fire(
+            "mobile_app_notification_action",
+            {"action": f"take_medication_{entry.entry_id}"},
+        )
         await hass.async_block_till_done()
 
     # Verify medication was marked as taken in storage
     store = hass.data[DOMAIN][entry.entry_id]["store"]
     storage_data = await store.async_load()
     med_data = storage_data["medications"][entry.entry_id]
-    assert med_data["last_taken"] is not None, "Medication should have last_taken set after action"
+    assert (
+        med_data["last_taken"] is not None
+    ), "Medication should have last_taken set after action"
 
 
 async def test_notification_dedup_same_occurrence(hass: "HomeAssistant"):
@@ -98,7 +109,9 @@ async def test_notification_dedup_same_occurrence(hass: "HomeAssistant"):
 
     entry.add_to_hass(hass)
 
-    with patch("homeassistant.core.ServiceRegistry.async_call", new_callable=AsyncMock) as mock_call:
+    with patch(
+        "homeassistant.core.ServiceRegistry.async_call", new_callable=AsyncMock
+    ) as mock_call:
         await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
 
@@ -112,4 +125,6 @@ async def test_notification_dedup_same_occurrence(hass: "HomeAssistant"):
         await hass.async_block_till_done()
 
         # No additional notify call for the same scheduled occurrence
-        assert mock_call.call_count == 1, "Duplicate notification was sent for same occurrence" 
+        assert (
+            mock_call.call_count == 1
+        ), "Duplicate notification was sent for same occurrence"

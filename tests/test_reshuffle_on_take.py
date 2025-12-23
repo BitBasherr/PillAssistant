@@ -85,9 +85,15 @@ async def test_reshuffle_after_take(hass: HomeAssistant):
 
     assert state1 is not None and state2 is not None and state3 is not None
 
-    nd1 = state1.attributes.get("Next dose time") or state1.attributes.get("next_dose_time")
-    nd2 = state2.attributes.get("Next dose time") or state2.attributes.get("next_dose_time")
-    nd3 = state3.attributes.get("Next dose time") or state3.attributes.get("next_dose_time")
+    nd1 = state1.attributes.get("Next dose time") or state1.attributes.get(
+        "next_dose_time"
+    )
+    nd2 = state2.attributes.get("Next dose time") or state2.attributes.get(
+        "next_dose_time"
+    )
+    nd3 = state3.attributes.get("Next dose time") or state3.attributes.get(
+        "next_dose_time"
+    )
 
     assert nd1 and nd2 and nd3
 
@@ -101,7 +107,9 @@ async def test_reshuffle_after_take(hass: HomeAssistant):
 
     # Take medication A
     med_id = hass.states.get("sensor.pa_reshuffle_a").attributes.get("Medication ID")
-    await hass.services.async_call(DOMAIN, "take_medication", {"medication_id": med_id}, blocking=True)
+    await hass.services.async_call(
+        DOMAIN, "take_medication", {"medication_id": med_id}, blocking=True
+    )
     await hass.async_block_till_done()
 
     # Reload states
@@ -109,7 +117,9 @@ async def test_reshuffle_after_take(hass: HomeAssistant):
     state2_after = hass.states.get("sensor.pa_reshuffle_b")
     state3_after = hass.states.get("sensor.pa_reshuffle_c")
 
-    nd1_after = state1_after.attributes.get("Next dose time") or state1_after.attributes.get("next_dose_time")
+    nd1_after = state1_after.attributes.get(
+        "Next dose time"
+    ) or state1_after.attributes.get("next_dose_time")
 
     assert nd1_after is not None
 
