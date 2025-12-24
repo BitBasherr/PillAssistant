@@ -941,19 +941,18 @@ class PillAssistantSensor(SensorEntity):
                     # Check last taken
                     last_taken_str = med_data.get("last_taken")
                     if last_taken_str:
+                        last_taken = None
                         try:
-                            last_taken = None
-                            try:
-                                parsed_last = dt_util.parse_datetime(last_taken_str)
-                                if parsed_last is not None:
-                                    last_taken = dt_util.as_local(parsed_last)
-                                # If taken within last 6 hours, show as taken
-                                if last_taken and (now - last_taken).total_seconds() < 21600:
-                                    self._attr_native_value = "taken"
-                                else:
-                                    self._attr_native_value = "scheduled"
-                            except (ValueError, TypeError):
+                            parsed_last = dt_util.parse_datetime(last_taken_str)
+                            if parsed_last is not None:
+                                last_taken = dt_util.as_local(parsed_last)
+                            # If taken within last 6 hours, show as taken
+                            if last_taken and (now - last_taken).total_seconds() < 21600:
+                                self._attr_native_value = "taken"
+                            else:
                                 self._attr_native_value = "scheduled"
+                        except (ValueError, TypeError):
+                            self._attr_native_value = "scheduled"
                     else:
                         self._attr_native_value = "scheduled"
             else:
