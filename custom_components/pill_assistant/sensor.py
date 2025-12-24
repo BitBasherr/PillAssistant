@@ -422,10 +422,13 @@ class PillAssistantSensor(SensorEntity):
                 and entry.get("action") == "taken"
             ):
                 try:
-                    timestamp = datetime.fromisoformat(entry["timestamp"])
+                    parsed_ts = dt_util.parse_datetime(entry["timestamp"])
+                    if parsed_ts is None:
+                        continue
+                    timestamp = dt_util.as_local(parsed_ts)
                     if timestamp >= today_start:
                         doses_today.append(timestamp.strftime("%H:%M"))
-                except (ValueError, KeyError):
+                except (ValueError, KeyError, TypeError):
                     continue
 
         return doses_today
@@ -500,10 +503,12 @@ class PillAssistantSensor(SensorEntity):
         reference_time = now
         if last_taken_str:
             try:
-                last_taken_dt = datetime.fromisoformat(last_taken_str)
-                # Use the later of now and last_taken to compute the next occurrence
-                if last_taken_dt > reference_time:
-                    reference_time = last_taken_dt
+                last_taken_dt = dt_util.parse_datetime(last_taken_str)
+                if last_taken_dt is not None:
+                    last_taken_dt = dt_util.as_local(last_taken_dt)
+                    # Use the later of now and last_taken to compute the next occurrence
+                    if last_taken_dt > reference_time:
+                        reference_time = last_taken_dt
             except (ValueError, TypeError):
                 pass
 
@@ -560,7 +565,10 @@ class PillAssistantSensor(SensorEntity):
             return None
 
         try:
-            ref_last_taken = datetime.fromisoformat(ref_last_taken_str)
+            ref_last_taken = dt_util.parse_datetime(ref_last_taken_str)
+            if ref_last_taken is None:
+                return None
+            ref_last_taken = dt_util.as_local(ref_last_taken)
         except (ValueError, TypeError):
             return None
 
@@ -711,7 +719,9 @@ class PillAssistantSensor(SensorEntity):
         last_taken = None
         if last_taken_str:
             try:
-                last_taken = datetime.fromisoformat(last_taken_str)
+                last_taken = dt_util.parse_datetime(last_taken_str)
+                if last_taken is not None:
+                    last_taken = dt_util.as_local(last_taken)
             except (ValueError, TypeError):
                 pass
 
@@ -776,10 +786,12 @@ class PillAssistantSensor(SensorEntity):
         now = dt_util.now()
         if self._last_notification_time:
             try:
-                last_notif = datetime.fromisoformat(self._last_notification_time)
-                # Don't send another notification if we sent one within the last hour
-                if (now - last_notif).total_seconds() < 3600:
-                    return
+                last_notif = dt_util.parse_datetime(self._last_notification_time)
+                if last_notif is not None:
+                    last_notif_local = dt_util.as_local(last_notif)
+                    # Don't send another notification if we sent one within the last hour
+                    if (now - last_notif_local).total_seconds() < 3600:
+                        return
             except (ValueError, TypeError):
                 pass
 
@@ -875,20 +887,22 @@ class PillAssistantSensor(SensorEntity):
 
         if snooze_until_str:
             try:
-                snooze_until = datetime.fromisoformat(snooze_until_str)
-                if snooze_until > now:
-                    is_snoozed = True
-                else:
-                    # Snooze period has expired, clear it
-                    store = self._store_data["store"]
+                snooze_until_dt = dt_util.parse_datetime(snooze_until_str)
+                if snooze_until_dt is not None:
+                    snooze_until = dt_util.as_local(snooze_until_dt)
+                    if snooze_until > now:
+                        is_snoozed = True
+                    else:
+                        # Snooze period has expired, clear it
+                        store = self._store_data["store"]
 
-                    def clear_snooze(data: dict) -> None:
-                        """Clear snooze atomically."""
-                        med_data = data["medications"].get(self._medication_id)
-                        if med_data:
-                            med_data["snooze_until"] = None
+                        def clear_snooze(data: dict) -> None:
+                            """Clear snooze atomically."""
+                            med_data = data["medications"].get(self._medication_id)
+                            if med_data:
+                                med_data["snooze_until"] = None
 
-                    await store.async_update(clear_snooze)
+                        await store.async_update(clear_snooze)
             except (ValueError, TypeError):
                 pass
 
@@ -928,14 +942,18 @@ class PillAssistantSensor(SensorEntity):
                     last_taken_str = med_data.get("last_taken")
                     if last_taken_str:
                         try:
-                            last_taken = datetime.fromisoformat(last_taken_str)
-                            # If taken within last 6 hours, show as taken
-                            if (now - last_taken).total_seconds() < 21600:
-                                self._attr_native_value = "taken"
-                            else:
+                            last_taken = None
+                            try:
+                                parsed_last = dt_util.parse_datetime(last_taken_str)
+                                if parsed_last is not None:
+                                    last_taken = dt_util.as_local(parsed_last)
+                                # If taken within last 6 hours, show as taken
+                                if last_taken and (now - last_taken).total_seconds() < 21600:
+                                    self._attr_native_value = "taken"
+                                else:
+                                    self._attr_native_value = "scheduled"
+                            except (ValueError, TypeError):
                                 self._attr_native_value = "scheduled"
-                        except (ValueError, TypeError):
-                            self._attr_native_value = "scheduled"
                     else:
                         self._attr_native_value = "scheduled"
             else:
