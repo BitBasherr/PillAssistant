@@ -947,7 +947,10 @@ class PillAssistantSensor(SensorEntity):
                             if parsed_last is not None:
                                 last_taken = dt_util.as_local(parsed_last)
                             # If taken within last 6 hours, show as taken
-                            if last_taken and (now - last_taken).total_seconds() < 21600:
+                            if (
+                                last_taken
+                                and (now - last_taken).total_seconds() < 21600
+                            ):
                                 self._attr_native_value = "taken"
                             else:
                                 self._attr_native_value = "scheduled"
