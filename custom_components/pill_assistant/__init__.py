@@ -421,7 +421,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         now_local = _now or dt_util.now()
 
         # Helper to compute next fixed-time scheduled occurrence after a reference time
-        def _next_fixed_time_after(schedule_times: list, schedule_days: list, reference: datetime) -> datetime | None:
+        def _next_fixed_time_after(
+            schedule_times: list, schedule_days: list, reference: datetime
+        ) -> datetime | None:
             if not schedule_times or not schedule_days:
                 return None
             # Normalize days to 3-letter lower-case
@@ -436,7 +438,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                         if isinstance(time_str, list):
                             time_str = time_str[0] if time_str else "00:00"
                         hour, minute = map(int, time_str.split(":"))
-                        dose_time = check_date.replace(hour=hour, minute=minute, second=0, microsecond=0)
+                        dose_time = check_date.replace(
+                            hour=hour, minute=minute, second=0, microsecond=0
+                        )
                         if dose_time > reference:
                             return dose_time
                     except (ValueError, AttributeError):
@@ -458,7 +462,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             if schedule_type_local == "fixed_time":
                 schedule_times = _entry_local.data.get(CONF_SCHEDULE_TIMES, [])
                 schedule_days = _entry_local.data.get(CONF_SCHEDULE_DAYS, [])
-                next_sched = _next_fixed_time_after(schedule_times, schedule_days, now_local)
+                next_sched = _next_fixed_time_after(
+                    schedule_times, schedule_days, now_local
+                )
                 if next_sched:
                     med_data["last_taken"] = next_sched.isoformat()
                 else:
