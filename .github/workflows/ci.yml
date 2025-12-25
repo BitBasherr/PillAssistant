@@ -19,7 +19,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.13'
 
       - name: Install dependencies
         run: |
@@ -42,7 +42,7 @@ jobs:
       contents: read
     strategy:
       matrix:
-        python-version: ['3.11', '3.12']
+        python-version: ['3.11', '3.12', '3.13']
     steps:
       - uses: actions/checkout@v4
 
@@ -58,11 +58,25 @@ jobs:
 
       - name: Run tests with pytest
         run: |
-          pytest tests/ -v --cov=custom_components/pill_assistant --cov-report=xml --cov-report=term
+          pytest tests/ -v --cov=custom_components/pill_assistant --cov-report=xml:coverage.xml --cov-report=term
+
+      - name: Debug coverage artifact
+        if: matrix.python-version == '3.13'
+        run: |
+          echo "Listing workspace for debugging coverage artifact..."
+          ls -la
+          if [ -f coverage.xml ]; then
+            echo "coverage.xml present, size:" $(stat -c%s coverage.xml)
+            echo "First 20 lines of coverage.xml:" 
+            head -n 20 coverage.xml || true
+          else
+            echo "coverage.xml NOT found"
+          fi
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
-        if: matrix.python-version == '3.12'
+        if: matrix.python-version == '3.13'
+        continue-on-error: true
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.xml
@@ -85,7 +99,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.13'
 
       - name: Install dependencies
         run: |

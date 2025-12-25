@@ -8,7 +8,7 @@ param(
 )
 
 if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
-    Write-Error "Python is not found in PATH. Please install Python 3.10+ and ensure 'python' is on PATH."
+    Write-Error "Python is not found in PATH. Please install Python 3.11+ and ensure 'python' is on PATH."
     exit 1
 }
 

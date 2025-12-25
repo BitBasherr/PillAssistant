@@ -121,6 +121,10 @@ schedules, and log medication history.
 
 ## Installation
 
+### Requirements
+
+- Python 3.11+ is required for development and running the test suite. Note: this change raises the minimum supported Python version from 3.10 to 3.11 (intentional breaking change); see below for migration guidance.
+
 ### HACS (Recommended)
 
 1. Open HACS in your Home Assistant instance
@@ -138,6 +142,20 @@ schedules, and log medication history.
 1. Copy the `custom_components/pill_assistant` folder to your  
    Home Assistant's `custom_components` directory
 2. Restart Home Assistant
+
+---
+
+## Breaking Change: Minimum Python 3.11 (Important)
+
+To improve compatibility with recent Home Assistant releases and take advantage of newer language features, Pill Assistant now requires **Python 3.11 or newer** for development and test execution. This is an intentional breaking change that may affect contributors and users who run local test tooling.
+
+Migration guidance:
+
+- If you run development or tests locally, upgrade your Python installation to 3.11 or later. Using the Home Assistant-supported Python versions (3.11–3.13) is recommended.
+- If you rely on automated pipelines, update any CI job matrix entries or workflow runners to include Python 3.11+.
+- Python 3.10 has reached end-of-life; we recommend upgrading to stay on supported security and bug fix releases.
+
+If you need help upgrading your local environment (venv or pyenv), open an issue and I can provide step-by-step instructions.
 
 ## Configuration
 

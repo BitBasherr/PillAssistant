@@ -1094,27 +1094,31 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         end_date = None
         if start_date_str:
             try:
-                parsed = datetime.fromisoformat(start_date_str.replace("Z", "+00:00"))
+                parsed = dt_util.parse_datetime(start_date_str)
+                if parsed is None:
+                    raise ValueError("Invalid datetime")
                 # If naive, make it timezone-aware using the system timezone
                 if parsed.tzinfo is None:
                     start_date = dt_util.as_local(
                         dt_util.utc_from_timestamp(parsed.timestamp())
                     )
                 else:
-                    start_date = parsed
-            except (ValueError, OSError):
+                    start_date = dt_util.as_local(parsed)
+            except (ValueError, OSError, TypeError):
                 _LOGGER.warning("Invalid start_date format: %s", start_date_str)
         if end_date_str:
             try:
-                parsed = datetime.fromisoformat(end_date_str.replace("Z", "+00:00"))
+                parsed = dt_util.parse_datetime(end_date_str)
+                if parsed is None:
+                    raise ValueError("Invalid datetime")
                 # If naive, make it timezone-aware using the system timezone
                 if parsed.tzinfo is None:
                     end_date = dt_util.as_local(
                         dt_util.utc_from_timestamp(parsed.timestamp())
                     )
                 else:
-                    end_date = parsed
-            except (ValueError, OSError):
+                    end_date = dt_util.as_local(parsed)
+            except (ValueError, OSError, TypeError):
                 _LOGGER.warning("Invalid end_date format: %s", end_date_str)
 
         # Get storage data from any medication entry (they all share the same storage)

@@ -128,3 +128,95 @@ async def test_reshuffle_after_take(hass: HomeAssistant):
     b_time = datetime.fromisoformat(nd2.replace("Z", "+00:00"))
 
     assert a_time > b_time, "After taking, Med A should be scheduled after Med B"
+
+
+async def test_reshuffle_with_z_timestamps(hass: HomeAssistant):
+    """Ensure reshuffle works when timestamps include trailing Z (UTC) in storage."""
+    now = dt_util.now()
+
+    # Create 3 medications with times relative to now (30, 60, 120 minutes)
+    t1 = (now + timedelta(minutes=30)).strftime("%H:%M")
+    t2 = (now + timedelta(minutes=60)).strftime("%H:%M")
+    t3 = (now + timedelta(minutes=120)).strftime("%H:%M")
+
+    entry1 = MockConfigEntry(
+        domain=DOMAIN,
+        data={
+            CONF_MEDICATION_NAME: "reshuffle_z_a",
+            CONF_DOSAGE: "1",
+            CONF_DOSAGE_UNIT: "each",
+            CONF_SCHEDULE_TYPE: "fixed_time",
+            CONF_SCHEDULE_TIMES: [t1],
+            CONF_SCHEDULE_DAYS: [now.strftime("%a").lower()[:3]],
+            CONF_REFILL_AMOUNT: 30,
+            CONF_REFILL_REMINDER_DAYS: 7,
+        },
+    )
+    entry2 = MockConfigEntry(
+        domain=DOMAIN,
+        data={
+            CONF_MEDICATION_NAME: "reshuffle_z_b",
+            CONF_DOSAGE: "1",
+            CONF_DOSAGE_UNIT: "each",
+            CONF_SCHEDULE_TYPE: "fixed_time",
+            CONF_SCHEDULE_TIMES: [t2],
+            CONF_SCHEDULE_DAYS: [now.strftime("%a").lower()[:3]],
+            CONF_REFILL_AMOUNT: 30,
+            CONF_REFILL_REMINDER_DAYS: 7,
+        },
+    )
+    entry3 = MockConfigEntry(
+        domain=DOMAIN,
+        data={
+            CONF_MEDICATION_NAME: "reshuffle_z_c",
+            CONF_DOSAGE: "1",
+            CONF_DOSAGE_UNIT: "each",
+            CONF_SCHEDULE_TYPE: "fixed_time",
+            CONF_SCHEDULE_TIMES: [t3],
+            CONF_SCHEDULE_DAYS: [now.strftime("%a").lower()[:3]],
+            CONF_REFILL_AMOUNT: 30,
+            CONF_REFILL_REMINDER_DAYS: 7,
+        },
+    )
+
+    for e in (entry1, entry2, entry3):
+        e.add_to_hass(hass)
+        await hass.config_entries.async_setup(e.entry_id)
+    await hass.async_block_till_done()
+
+    # Put a Z-suffixed last_taken into storage to simulate UTC timestamp format
+    store = hass.data[DOMAIN][entry1.entry_id]["store"]
+
+    def update_last_taken(data: dict) -> None:
+        med = data["medications"].get(entry1.entry_id)
+        if med:
+            med["last_taken"] = (now + timedelta(minutes=30)).isoformat() + "Z"
+
+    await store.async_update(update_last_taken)
+
+    # Take medication A to trigger reshuffle
+    med_id = hass.states.get("sensor.pa_reshuffle_z_a").attributes.get("Medication ID")
+    await hass.services.async_call(
+        DOMAIN, "take_medication", {"medication_id": med_id}, blocking=True
+    )
+    await hass.async_block_till_done()
+
+    # Reload states
+    state1_after = hass.states.get("sensor.pa_reshuffle_z_a")
+    state2_after = hass.states.get("sensor.pa_reshuffle_z_b")
+
+    nd1_after = state1_after.attributes.get(
+        "Next dose time"
+    ) or state1_after.attributes.get("next_dose_time")
+    nd2 = state2_after.attributes.get("Next dose time") or state2_after.attributes.get(
+        "next_dose_time"
+    )
+
+    assert nd1_after is not None and nd2 is not None
+
+    a_time = datetime.fromisoformat(nd1_after.replace("Z", "+00:00"))
+    b_time = datetime.fromisoformat(nd2.replace("Z", "+00:00"))
+
+    assert (
+        a_time > b_time
+    ), "After taking, Med A should be scheduled after Med B (with Z timestamp)"
