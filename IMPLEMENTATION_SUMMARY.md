@@ -273,7 +273,11 @@ Test Coverage:
 
 ## Breaking Changes
 
-**None** - All changes are backward compatible. Existing medications with `schedule_times` will default to `schedule_type: "fixed_time"` and continue to work without modification.
+- **Minimum Python version raised to 3.11** — This release raises the minimum supported Python version from 3.10 to **3.11** (and supports 3.11–3.13 in CI). This is an intentional, documented breaking change primarily affecting developers and contributors who run the test/build tooling locally.
+
+  Migration guidance: Upgrade local development environments and CI runners to Python 3.11 or newer. This change helps maintain compatibility with recent Home Assistant releases and ensures continued security and bug-fix support (Python 3.10 is now past end-of-life).
+
+- No breaking changes to stored medication data or user-facing configuration were introduced. Existing medications and schedules continue to work without modification.
 
 ## What Was Requested vs. Implemented
 
