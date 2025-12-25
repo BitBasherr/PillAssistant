@@ -196,19 +196,27 @@ async def test_reshuffle_with_z_timestamps(hass: HomeAssistant):
 
     # Take medication A to trigger reshuffle
     med_id = hass.states.get("sensor.pa_reshuffle_z_a").attributes.get("Medication ID")
-    await hass.services.async_call(DOMAIN, "take_medication", {"medication_id": med_id}, blocking=True)
+    await hass.services.async_call(
+        DOMAIN, "take_medication", {"medication_id": med_id}, blocking=True
+    )
     await hass.async_block_till_done()
 
     # Reload states
     state1_after = hass.states.get("sensor.pa_reshuffle_z_a")
     state2_after = hass.states.get("sensor.pa_reshuffle_z_b")
 
-    nd1_after = state1_after.attributes.get("Next dose time") or state1_after.attributes.get("next_dose_time")
-    nd2 = state2_after.attributes.get("Next dose time") or state2_after.attributes.get("next_dose_time")
+    nd1_after = state1_after.attributes.get(
+        "Next dose time"
+    ) or state1_after.attributes.get("next_dose_time")
+    nd2 = state2_after.attributes.get("Next dose time") or state2_after.attributes.get(
+        "next_dose_time"
+    )
 
     assert nd1_after is not None and nd2 is not None
 
     a_time = datetime.fromisoformat(nd1_after.replace("Z", "+00:00"))
     b_time = datetime.fromisoformat(nd2.replace("Z", "+00:00"))
 
-    assert a_time > b_time, "After taking, Med A should be scheduled after Med B (with Z timestamp)"
+    assert (
+        a_time > b_time
+    ), "After taking, Med A should be scheduled after Med B (with Z timestamp)"
